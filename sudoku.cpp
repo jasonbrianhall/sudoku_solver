@@ -38,7 +38,7 @@ int main(void)
   for(;;)
   {
      
-    printw("Welcome to Sudoku Solver (Press S to Solve)\n\n");
+    printw("Welcome to Sudoku Solver (Press 's' to solve, 0 to clear, 'q' to quit, and numbers to fill in the current position)\n\n");
     for(y=0;y<9;y++)
     {
 	if(y%3==0)
