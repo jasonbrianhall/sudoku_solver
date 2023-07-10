@@ -45,7 +45,18 @@ def lineElim(board):
 def setValue(board, x,y, value):
 	if value<=0 or value>=10:
 		value=-1
-	board[x][y]=value
+	isvalid=True
+	for newx in range(1,10):
+		if board[newx][y]==value:
+			isvalid=False
+			break
+	for newy in range(1,10):
+		if board[x][newy]==value:
+			isvalid=False
+			break
+
+	if isvalid==True:	
+		board[x][y]=value
 	
 
 def main(stdscr):
@@ -91,7 +102,7 @@ def main(stdscr):
 		elif key >= ord("0") and key<= ord("9"):
 			setValue(board, cursorx, cursory, key-ord("0"))
 		elif key == ord("s"):
-			lineElim(stdscr, board)
+			lineElim(board)
 
 
 		# Display a message
@@ -118,13 +129,13 @@ def main(stdscr):
 
 if __name__ == '__main__':
 	# Initialize curses and run the main function
-	#curses.wrapper(main)
-	board={}
+	curses.wrapper(main)
+	'''board={}
 	init_board(board)
 	for x in range(1,9):
 		setValue(board, x, 1, x)
 	lineElim(board)
-	print(json.dumps(board, indent=5))
+	print(json.dumps(board, indent=5))'''
 	
 		
 	
