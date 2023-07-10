@@ -121,13 +121,7 @@ def main(stdscr):
 		for y in range(1,10):
 			for x in range(1,10):
 				if len(board[x][y])==1:
-					stdscr.addstr(y*2+1,(x-1)*4+4, str(board[x][y][0]))
-		
-		'''for y in range(1,10):
-			stdscr.addstr(y*2,4, "-"*37)
-			for x in range(1,11):
-				stdscr.addstr((y*2)+1,(x-1)*4+4, "|")
-		stdscr.addstr(10*2,4, "-"*37)'''
+					stdscr.addstr(y*2+1,(x-1)*4+6, str(board[x][y][0]))
 		
 		for y in range(1,10):
 			stdscr.addstr(y*2+1, 2, str(y))  # Add Y-axis numbering
