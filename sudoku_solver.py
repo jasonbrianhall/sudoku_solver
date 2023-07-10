@@ -54,16 +54,16 @@ def update_board(board, x, y, value):
 
 	for k in range(1,10):
 		counter=0
+		lastx=0
+		lasty=0
 		for x in range(1,10):
 			for y in range(1,10):
-				if len(board[x][y])==1 and board[x][y][0]==k:
+				if len(board[x][y])>1 and k in board[x][y]:
 					counter+=1
-		if counter==8:
-			for x in range(1,10):
-				for y in range(1,10):
-					if k in board[x][y] and len(board[x][y])>1:
-						board[x][y]==[k]
-						
+					lastx=x
+					lasty=y
+		if counter==1:
+			board[lastx][lasty]=[k]
 
 				
 def main(stdscr):
