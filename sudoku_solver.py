@@ -3,14 +3,45 @@
 import curses
 import time
 import sys
+import json
 
 def init_board(board={}):
-	print("Hello World")
 	for x in range(1,10):
 		board[x]={}
 		for y in range(1,10):
 			board[x][y]=-1
 
+def lineElim(board):
+	for y in range(1,10):
+		countvalues=0
+		sumdata=0
+		for x in range(1,10):
+			if board[x][y]>=1 and board[x][y]<=9:
+				sumdata+=board[x][y]
+				countvalues+=1
+		if countvalues==8:
+			# 9*10/2 = 45
+			remaining=45-sumdata
+			for x in range(1,10):
+				if board[x][y]==-1:
+					board[x][y]=remaining
+					break
+	for x in range(1,10):
+		countvalues=0
+		sumdata=0
+		for y in range(1,10):
+			if board[x][y]>=1 and board[x][y]<=9:
+				sumdata+=board[x][y]
+				countvalues+=1
+		if countvalues==8:
+			# 9*10/2 = 45
+			remaining=45-sumdata
+			for y in range(1,10):
+				if board[x][y]==-1:
+					board[x][y]=remaining
+					break
+
+				
 def setValue(board, x,y, value):
 	if value<=0 or value>=10:
 		value=-1
@@ -33,7 +64,7 @@ def main(stdscr):
 	
 	while True:
 		# Clear the screen
-		stdscr.clear()
+		#stdscr.clear()
 
 		# Get user input
 		key = stdscr.getch()
@@ -59,6 +90,8 @@ def main(stdscr):
 				cursory=1
 		elif key >= ord("0") and key<= ord("9"):
 			setValue(board, cursorx, cursory, key-ord("0"))
+		elif key == ord("s"):
+			lineElim(stdscr, board)
 
 
 		# Display a message
@@ -85,5 +118,14 @@ def main(stdscr):
 
 if __name__ == '__main__':
 	# Initialize curses and run the main function
-	curses.wrapper(main)
+	#curses.wrapper(main)
+	board={}
+	init_board(board)
+	for x in range(1,9):
+		setValue(board, x, 1, x)
+	lineElim(board)
+	print(json.dumps(board, indent=5))
+	
+		
+	
 
