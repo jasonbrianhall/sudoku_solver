@@ -24,7 +24,7 @@ def lineElim(board):
 			remaining=45-sumdata
 			for x in range(1,10):
 				if board[x][y]==-1:
-					board[x][y]=remaining
+					setValue(board, x, y, remaining)
 					break
 	for x in range(1,10):
 		countvalues=0
@@ -38,7 +38,7 @@ def lineElim(board):
 			remaining=45-sumdata
 			for y in range(1,10):
 				if board[x][y]==-1:
-					board[x][y]=remaining
+					setValue(board, x, y, remaining)
 					break
 
 				
