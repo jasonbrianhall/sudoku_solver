@@ -52,6 +52,18 @@ def update_board(board, x, y, value):
 						if (i, j) != (x, y) and value in board[i][j]:
 							board[i][j].remove(value)
 
+	for k in range(1,10):
+		counter=0
+		for x in range(1,10):
+			for y in range(1,10):
+				if len(board[x][y])==1 and board[x][y][0]==k:
+					counter+=1
+		if counter==8:
+			for x in range(1,10):
+				for y in range(1,10):
+					if k in board[x][y] and len(board[x][y])>1:
+						board[x][y]==[k]
+						
 
 				
 def main(stdscr):
@@ -110,13 +122,29 @@ def main(stdscr):
 			for x in range(1,10):
 				if len(board[x][y])==1:
 					stdscr.addstr(y*2+1,(x-1)*4+4, str(board[x][y][0]))
-					
-		for y in range(1,10):
-			stdscr.addstr(y*2,2, "-"*37)
+		
+		'''for y in range(1,10):
+			stdscr.addstr(y*2,4, "-"*37)
 			for x in range(1,11):
-				stdscr.addstr((y*2)+1,(x-1)*4+2, "|")
-		stdscr.addstr(10*2,2, "-"*37)
-		stdscr.move(cursory*2+1,(cursorx-1)*4+4)
+				stdscr.addstr((y*2)+1,(x-1)*4+4, "|")
+		stdscr.addstr(10*2,4, "-"*37)'''
+		
+		for y in range(1,10):
+			stdscr.addstr(y*2+1, 2, str(y))  # Add Y-axis numbering
+
+		for x in range(1,10):
+			stdscr.addstr(21, (x-1)*4+6, str(x))  # Add X-axis numbering'''
+		
+
+
+		for y in range(1, 11):
+			stdscr.addstr(y*2, 4, "-"*37)
+			for x in range(1, 11):
+				if y<10:
+					stdscr.addstr((y*2)+1, (x-1)*4+4, "|")
+
+		
+		stdscr.move(cursory*2+1,(cursorx-1)*4+6)
 
 
 		# Refresh the screen
