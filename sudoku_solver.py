@@ -9,15 +9,45 @@ def init_board(board={}):
 	for x in range(1,10):
 		board[x]={}
 		for y in range(1,10):
-			board[x][y]=-1
+			board[x][y]=[1,2,3,4,5,6,7,8,9]
+		
+		
+		
+		
+def update_board(board, x, y, value):
+	# Update the specified cell with the given value
+	if value in board[x][y]: 	
+		board[x][y] = [value]
+	
+	
+		# Remove the value from the corresponding row
+		for i in range(1, 10):
+			if i != y and value in board[x][i]:
+				board[x][i].remove(value)
+	
+		# Remove the value from the corresponding column
+		for i in range(1, 10):
+			if i != x and value in board[i][y]:
+				board[i][y].remove(value)
 
-def lineElim(board):
+		# Calculate the starting positions of the 3x3 area
+		start_x = 1 if x <= 3 else 4 if x <= 6 else 7
+		start_y = 1 if y <= 3 else 4 if y <= 6 else 7
+    
+		# Remove the value from the corresponding 3x3 area
+		for i in range(start_x, start_x + 3):
+			for j in range(start_y, start_y + 3):
+				if (i, j) != (x, y) and value in board[i][j]:
+					board[i][j].remove(value)
+
+
+'''def lineElim(board):
 	for y in range(1,10):
 		countvalues=0
 		sumdata=0
 		for x in range(1,10):
-			if board[x][y]>=1 and board[x][y]<=9:
-				sumdata+=board[x][y]
+			if len(board[x][y])==1:
+				sumdata+=board[x][y][0]
 				countvalues+=1
 		if countvalues==8:
 			# 9*10/2 = 45
@@ -30,8 +60,8 @@ def lineElim(board):
 		countvalues=0
 		sumdata=0
 		for y in range(1,10):
-			if board[x][y]>=1 and board[x][y]<=9:
-				sumdata+=board[x][y]
+			if len(board[x][y])==1:
+				sumdata+=board[x][y][0]
 				countvalues+=1
 		if countvalues==8:
 			# 9*10/2 = 45
@@ -59,18 +89,18 @@ def squareElim(board):
 						if board[x][y]==-1:
 							setValue(board, x, y, remaining)
 							break
-		
+'''		
 
 				
 def setValue(board, x,y, value):
-	if value<=0 or value>=10:
+	'''if value<=0 or value>=10:
 		value=-1
 		board[x][y]=-1
-		return
+		return'''
 		
 	isvalid=True
 	for newx in range(1,10):
-		if board[newx][y]==value:
+		if len(board[newx][y])==1 and board[newx][y][0]==value:
 			isvalid=False
 			break
 	if isvalid==True:
@@ -79,7 +109,7 @@ def setValue(board, x,y, value):
 				isvalid=False
 				break
 
-	if isvalid==True:
+	'''if isvalid==True:
 		l=int((x-1)/3)*3+1
 		k=int((y-1)/3)*3+1
 
@@ -88,10 +118,10 @@ def setValue(board, x,y, value):
 				if board[newx][newy]==value:
 					isvalid=False
 					break
-
+	'''
 	
 	if isvalid==True:	
-		board[x][y]=value
+		board[x][y]=[value]
 	
 
 def main(stdscr):
@@ -135,10 +165,11 @@ def main(stdscr):
 			if cursory>=10:
 				cursory=1
 		elif key >= ord("0") and key<= ord("9"):
-			setValue(board, cursorx, cursory, key-ord("0"))
+			update_board(board, cursorx, cursory, key-ord("0"))
 		elif key == ord("s"):
-			lineElim(board)
-			squareElim(board)
+			True
+			#lineElim(board)
+			#squareElim(board)
 
 
 		# Display a message
@@ -146,8 +177,8 @@ def main(stdscr):
 
 		for y in range(1,10):
 			for x in range(1,10):
-				if not board[x][y]==-1:
-					stdscr.addstr(y*2+1,(x-1)*4+4, str(board[x][y]))
+				if len(board[x][y])==1:
+					stdscr.addstr(y*2+1,(x-1)*4+4, str(board[x][y][0]))
 					
 		for y in range(1,10):
 			stdscr.addstr(y*2,2, "-"*37)
