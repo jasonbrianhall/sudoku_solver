@@ -35,12 +35,20 @@ def main(stdscr):
 		# Display a message
 		stdscr.addstr(0, 0, "Welcome to Sudoku Solver (Press 's' to solve, 0 to clear, 'q' to quit, and numbers to fill in the current position)\n\n")
 
-		for y in range(1,10):
+		'''for y in range(1,10):
 			for x in range(1,10):
 				if not board[x][y]==-1:
-					stdscr.addstr(x*3, y*3, str(board[x][y]))
+					stdscr.addstr(1,2, str(board[x][y]))
 				else:				
-					stdscr.addstr(x*3, y*3, "0")
+					stdscr.addstr(1,2, "0")'''
+
+		for y in range(1,10):
+			stdscr.addstr(y*2,2, "-"*28)
+			for x in range(1,11):
+				stdscr.addstr((y*2)+1,(x-1)*3+2, "|")
+		stdscr.addstr(10*2,2, "-"*28)
+				
+
 
 		# Refresh the screen
 		stdscr.refresh()
