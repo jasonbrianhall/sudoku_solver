@@ -12,8 +12,6 @@ def init_board(board={}):
 			board[x][y]=[1,2,3,4,5,6,7,8,9]
 		
 		
-		
-		
 def update_board(board, x, y, value):
 	# Update the specified cell with the given value
 
@@ -113,7 +111,9 @@ def main(stdscr):
 			if cursory>=10:
 				cursory=1
 		elif key >= ord("0") and key<= ord("9"):
-			update_board(board, cursorx, cursory, key-ord("0"))
+			# Doing it ten times because some previous updates don't get caught
+			for x in range(1,10):
+				update_board(board, cursorx, cursory, key-ord("0"))
 			screenupdate=True
 		elif key == ord("c"):
 			init_board(board)
@@ -162,11 +162,9 @@ if __name__ == '__main__':
 	#lineElim(board)
 	update_board(board, 1, 1, 1)
 	update_board(board, 1, 1, 0)
-	print(ord("0"))
+	trial_solve(board)
+	print(json.dumps(board, indent=5))'''
 	
-		
-	print(json.dumps(board, indent=5))
-	'''	
 	
 		
 	
