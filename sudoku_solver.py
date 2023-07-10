@@ -79,6 +79,10 @@ def main(stdscr):
 	cursorx=1
 	cursory=1
 	screenupdate=False
+	curses.start_color()
+	curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+
+
 	
 	while True:
 		# Clear the screen
@@ -121,18 +125,19 @@ def main(stdscr):
 		for y in range(1,10):
 			for x in range(1,10):
 				if len(board[x][y])==1:
-					stdscr.addstr(y*2+1,(x-1)*4+6, str(board[x][y][0]))
+					stdscr.addstr(y*2+1,(x-1)*4+6, str(board[x][y][0]), curses.color_pair(1))
 		
 		for y in range(1,10):
-			stdscr.addstr(y*2+1, 2, str(y))  # Add Y-axis numbering
+			stdscr.addstr(y*2+1, 2, str(y), curses.color_pair(1))  # Add Y-axis numbering
 
 		for x in range(1,10):
-			stdscr.addstr(21, (x-1)*4+6, str(x))  # Add X-axis numbering'''
+			stdscr.addstr(21, (x-1)*4+6, str(x), curses.color_pair(1))  # Add X-axis numbering
 		
 
 
 		for y in range(1, 11):
 			stdscr.addstr(y*2, 4, "-"*37)
+			
 			for x in range(1, 11):
 				if y<10:
 					stdscr.addstr((y*2)+1, (x-1)*4+4, "|")
