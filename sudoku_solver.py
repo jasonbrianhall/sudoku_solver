@@ -40,21 +40,56 @@ def lineElim(board):
 				if board[x][y]==-1:
 					setValue(board, x, y, remaining)
 					break
+					
+def squareElim(board):
+	for k in 1,4,7:
+		for l in 1,4,7:
+			countvalues=0
+			sumdata=0
+			for x in range(k,k+3):
+				for y in range(l,l+3):
+					if board[x][y]>=1 and board[x][y]<=9:
+						sumdata+=board[x][y]
+						countvalues+=1
+			#print(countvalues, sumdata)
+			if countvalues==8:
+				remaining=45-sumdata
+				for x in range(k,k+3):
+					for y in range(l,l+3):
+						if board[x][y]==-1:
+							setValue(board, x, y, remaining)
+							break
+		
 
 				
 def setValue(board, x,y, value):
 	if value<=0 or value>=10:
 		value=-1
+		board[x][y]=-1
+		return
+		
 	isvalid=True
 	for newx in range(1,10):
 		if board[newx][y]==value:
 			isvalid=False
 			break
-	for newy in range(1,10):
-		if board[x][newy]==value:
-			isvalid=False
-			break
+	if isvalid==True:
+		for newy in range(1,10):
+			if board[x][newy]==value:
+				isvalid=False
+				break
 
+	if isvalid==True:
+		l=int((x-1)/3)*3+1
+		k=int((y-1)/3)*3+1
+
+		for newx in range(k,k+3):
+			for newy in range(l,l+3):
+				if board[newx][newy]==value:
+					isvalid=False
+					break
+
+	
 	if isvalid==True:	
 		board[x][y]=value
 	
@@ -103,6 +138,7 @@ def main(stdscr):
 			setValue(board, cursorx, cursory, key-ord("0"))
 		elif key == ord("s"):
 			lineElim(board)
+			squareElim(board)
 
 
 		# Display a message
@@ -132,10 +168,15 @@ if __name__ == '__main__':
 	curses.wrapper(main)
 	'''board={}
 	init_board(board)
-	for x in range(1,9):
-		setValue(board, x, 1, x)
-	lineElim(board)
+	#for x in range(1,9):
+		#setValue(board, x, 1, x)
+	#lineElim(board)
+	setValue(board, 4, 2, 1)
+	setValue(board, 5, 3, 1)
+	
+		
 	print(json.dumps(board, indent=5))'''
+		
 	
 		
 	
