@@ -16,12 +16,7 @@ def init_board(board={}):
 		
 def update_board(board, x, y, value):
 	# Update the specified cell with the given value
-	'''if value in board[x][y]: 	
-		board[x][y] = [value]
-	else:
-		if value==0:
-			board[x][y]=[1,2,3,4,5,6,7,8,9]'''
-	#print("Value is", value)
+
 	if value<=0 or value>=10:
 		board[x][y]=[1,2,3,4,5,6,7,8,9]
 	else:
@@ -104,14 +99,12 @@ def main(stdscr):
 		elif key >= ord("0") and key<= ord("9"):
 			update_board(board, cursorx, cursory, key-ord("0"))
 			screenupdate=True
-		elif key == ord("s"):
-			True
-			#lineElim(board)
-			#squareElim(board)
-
+		elif key == ord("c"):
+			init_board(board)
+			screenupdate=True
 
 		# Display a message
-		stdscr.addstr(0, 0, "Welcome to Sudoku Solver (Press 's' to solve, 0 to clear, 'q' to quit, and numbers to fill in the current position)\n\n")
+		stdscr.addstr(0, 0, "Welcome to Sudoku Solver (Press 'c' to clear, 0 to clear, 'q' to quit, and numbers to fill in the current position)")
 
 		for y in range(1,10):
 			for x in range(1,10):
