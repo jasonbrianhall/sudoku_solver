@@ -16,114 +16,49 @@ def init_board(board={}):
 		
 def update_board(board, x, y, value):
 	# Update the specified cell with the given value
-	if value in board[x][y]: 	
+	'''if value in board[x][y]: 	
 		board[x][y] = [value]
+	else:
+		if value==0:
+			board[x][y]=[1,2,3,4,5,6,7,8,9]'''
+	#print("Value is", value)
+	if value<=0 or value>=10:
+		board[x][y]=[1,2,3,4,5,6,7,8,9]
+	else:
+		if value in board[x][y]: 	
+			board[x][y] = [value]
 	
-	
-		# Remove the value from the corresponding row
-		for i in range(1, 10):
-			if i != y and value in board[x][i]:
-				board[x][i].remove(value)
-	
-		# Remove the value from the corresponding column
-		for i in range(1, 10):
-			if i != x and value in board[i][y]:
-				board[i][y].remove(value)
-
-		# Calculate the starting positions of the 3x3 area
-		start_x = 1 if x <= 3 else 4 if x <= 6 else 7
-		start_y = 1 if y <= 3 else 4 if y <= 6 else 7
-    
-		# Remove the value from the corresponding 3x3 area
-		for i in range(start_x, start_x + 3):
-			for j in range(start_y, start_y + 3):
-				if (i, j) != (x, y) and value in board[i][j]:
-					board[i][j].remove(value)
-
-
-'''def lineElim(board):
-	for y in range(1,10):
-		countvalues=0
-		sumdata=0
-		for x in range(1,10):
-			if len(board[x][y])==1:
-				sumdata+=board[x][y][0]
-				countvalues+=1
-		if countvalues==8:
-			# 9*10/2 = 45
-			remaining=45-sumdata
-			for x in range(1,10):
-				if board[x][y]==-1:
-					setValue(board, x, y, remaining)
-					break
 	for x in range(1,10):
-		countvalues=0
-		sumdata=0
+		for y in range(1,10):
+			if not len(board[x][y])==1:
+				board[x][y]=[1,2,3,4,5,6,7,8,9]
+	
+	for x in range(1,10):
 		for y in range(1,10):
 			if len(board[x][y])==1:
-				sumdata+=board[x][y][0]
-				countvalues+=1
-		if countvalues==8:
-			# 9*10/2 = 45
-			remaining=45-sumdata
-			for y in range(1,10):
-				if board[x][y]==-1:
-					setValue(board, x, y, remaining)
-					break
-					
-def squareElim(board):
-	for k in 1,4,7:
-		for l in 1,4,7:
-			countvalues=0
-			sumdata=0
-			for x in range(k,k+3):
-				for y in range(l,l+3):
-					if board[x][y]>=1 and board[x][y]<=9:
-						sumdata+=board[x][y]
-						countvalues+=1
-			#print(countvalues, sumdata)
-			if countvalues==8:
-				remaining=45-sumdata
-				for x in range(k,k+3):
-					for y in range(l,l+3):
-						if board[x][y]==-1:
-							setValue(board, x, y, remaining)
-							break
-'''		
+				value=board[x][y][0]
+				# Remove the value from the corresponding row
+				for i in range(1, 10):
+					if i != y and value in board[x][i]:
+						board[x][i].remove(value)
+			
+				# Remove the value from the corresponding column
+				for i in range(1, 10):
+					if i != x and value in board[i][y]:
+						board[i][y].remove(value)
+
+				# Calculate the starting positions of the 3x3 area
+				start_x = 1 if x <= 3 else 4 if x <= 6 else 7
+				start_y = 1 if y <= 3 else 4 if y <= 6 else 7
+		    
+				# Remove the value from the corresponding 3x3 area
+				for i in range(start_x, start_x + 3):
+					for j in range(start_y, start_y + 3):
+						if (i, j) != (x, y) and value in board[i][j]:
+							board[i][j].remove(value)
+
 
 				
-def setValue(board, x,y, value):
-	'''if value<=0 or value>=10:
-		value=-1
-		board[x][y]=-1
-		return'''
-		
-	isvalid=True
-	for newx in range(1,10):
-		if len(board[newx][y])==1 and board[newx][y][0]==value:
-			isvalid=False
-			break
-	if isvalid==True:
-		for newy in range(1,10):
-			if board[x][newy]==value:
-				isvalid=False
-				break
-
-	'''if isvalid==True:
-		l=int((x-1)/3)*3+1
-		k=int((y-1)/3)*3+1
-
-		for newx in range(k,k+3):
-			for newy in range(l,l+3):
-				if board[newx][newy]==value:
-					isvalid=False
-					break
-	'''
-	
-	if isvalid==True:	
-		board[x][y]=[value]
-	
-
 def main(stdscr):
 	# Initialization
 	curses.curs_set(2)
@@ -136,11 +71,13 @@ def main(stdscr):
 	# Main loop
 	cursorx=1
 	cursory=1
-	
+	screenupdate=False
 	
 	while True:
 		# Clear the screen
-		#stdscr.clear()
+		if screenupdate==True:
+			stdscr.clear()
+			screenupdate=False
 
 		# Get user input
 		key = stdscr.getch()
@@ -166,6 +103,7 @@ def main(stdscr):
 				cursory=1
 		elif key >= ord("0") and key<= ord("9"):
 			update_board(board, cursorx, cursory, key-ord("0"))
+			screenupdate=True
 		elif key == ord("s"):
 			True
 			#lineElim(board)
@@ -202,12 +140,13 @@ if __name__ == '__main__':
 	#for x in range(1,9):
 		#setValue(board, x, 1, x)
 	#lineElim(board)
-	setValue(board, 4, 2, 1)
-	setValue(board, 5, 3, 1)
+	update_board(board, 1, 1, 1)
+	update_board(board, 1, 1, 0)
+	print(ord("0"))
 	
 		
-	print(json.dumps(board, indent=5))'''
-		
+	print(json.dumps(board, indent=5))
+	'''	
 	
 		
 	
