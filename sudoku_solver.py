@@ -15,16 +15,20 @@ def init_board(board={}):
 def update_board(board, x, y, value):
 	# Update the specified cell with the given value
 
+	cleared=False
 	if value<=0 or value>=10:
 		board[x][y]=[1,2,3,4,5,6,7,8,9]
+		cleared=True
 	else:
 		if value in board[x][y]: 	
 			board[x][y] = [value]
 	
-	for x in range(1,10):
-		for y in range(1,10):
-			if not len(board[x][y])==1:
-				board[x][y]=[1,2,3,4,5,6,7,8,9]
+	# Restart if data invalidated
+	if cleared==True:
+		for x in range(1,10):
+			for y in range(1,10):
+				if not len(board[x][y])==1:
+					board[x][y]=[1,2,3,4,5,6,7,8,9]
 	
 	for x in range(1,10):
 		for y in range(1,10):
