@@ -366,11 +366,22 @@ bool Sudoku::IsValidSolution() {
 
 int Sudoku::Solve() {
     int stop;
-    int counter1, counter2, i, j;
+    int counter1, counter2, i, j,k;
     move(22, 0);
     printw("Starting Solve() - Cleaning board...\n");
     refresh();
     Clean();
+    int original_board[9][9][9];
+    for (i=0;i<9;i++)
+    {
+        for (j=0;j<9;j++)
+        {
+            for (k=0;k<9;k++)
+            {
+                 original_board[i][j][k]=board[i][j][k];
+            }
+        }
+    }
     
     do {
         counter1 = 0;
