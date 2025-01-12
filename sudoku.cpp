@@ -18,6 +18,7 @@ class Sudoku
     int GetValue(int x, int y);
     int ClearValue(int x, int y);
     int Solve();
+    int SolveBasic();
     bool LegalValue(int x, int y, int value);
     
   private:
@@ -200,6 +201,7 @@ int main(void)
 	return 0;
 	break;
       case 'S':
+	NewGame.SolveBasic();
 	NewGame.Solve();
 	break;
     }
@@ -444,8 +446,8 @@ int Sudoku::Solve() {
             if(!IsValidSolution()) {
                 move(23, 0);
                 printw("Invalid solution detected after FindPointingPairs\n");
-                refresh();
                 RestoreBoard(board, original_board);
+                refresh();
                 return -1;
             }
 
@@ -457,8 +459,8 @@ int Sudoku::Solve() {
             if(!IsValidSolution()) {
                 move(23, 0);
                 printw("Invalid solution detected after FindXWing\n");
-                refresh();
                 RestoreBoard(board, original_board);
+                refresh();
                 return -1;
             }
             
@@ -469,8 +471,8 @@ int Sudoku::Solve() {
             if(!IsValidSolution()) {
                 move(23, 0);
                 printw("Invalid solution detected after FindSwordFish\n");
-                refresh();
                 RestoreBoard(board, original_board);
+                refresh();
                 return -1;
             }
             
@@ -481,8 +483,8 @@ int Sudoku::Solve() {
             if(!IsValidSolution()) {
                 move(23, 0);
                 printw("Invalid solution detected after FindHiddenSingles\n");
-                refresh();
                 RestoreBoard(board, original_board);
+                refresh();
                 return -1;
             }
             
@@ -493,6 +495,77 @@ int Sudoku::Solve() {
             if(!IsValidSolution()) {
                 move(23, 0);
                 printw("Invalid solution detected after FindNakedSets\n");
+                RestoreBoard(board, original_board);
+                refresh();
+                return -1;
+            }
+            
+            for(i = 0; i < 9; i++) {
+                for(j = 0; j < 9; j++) {
+                    if(GetValue(i,j) != -1) {
+                        counter2++;
+                    }
+                }
+            }
+        } else {
+            counter2 = 81;
+        }
+    } while(counter1 != counter2);
+    
+    // Final validation check
+    if(!IsValidSolution()) {
+        move(23, 0);
+        printw("Invalid final solution detected\n");
+        refresh();
+        return -1;
+    }
+    
+    return 0;
+}
+
+int Sudoku::SolveBasic() {
+    int stop;
+    int counter1, counter2, i, j,k;
+    move(22, 0);
+    printw("Starting Solve() - Cleaning board...\n");
+    refresh();
+    Clean();
+    int original_board[9][9][9];
+    
+    
+    do {
+        RestoreBoard(original_board, board);
+        counter1 = 0;
+        counter2 = 0;
+        for(i = 0; i < 9; i++) {
+            for(j = 0; j < 9; j++) {
+                if(GetValue(i,j) != -1) {
+                    counter1++;
+                }
+            }
+        }
+        
+        if(counter1 != 81) {
+            // Run each solving technique and validate after each
+            move(22, 0);
+            printw("Running StdElim...                    \n");
+            refresh();
+            StdElim();
+            if(!IsValidSolution()) {
+                move(23, 0);
+                printw("Invalid solution detected after StdElim\n");
+                refresh();
+                RestoreBoard(board, original_board);
+                return -1;
+            }
+            
+            move(22, 0);
+            printw("Running LinElim...                    \n");
+            refresh();
+            LinElim();
+            if(!IsValidSolution()) {
+                move(23, 0);
+                printw("Invalid solution detected after LinElim\n");
                 refresh();
                 RestoreBoard(board, original_board);
                 return -1;
@@ -520,6 +593,8 @@ int Sudoku::Solve() {
     
     return 0;
 }
+
+
 
 int Sudoku::EliminatePossibility(int x, int y, int value)
 {
