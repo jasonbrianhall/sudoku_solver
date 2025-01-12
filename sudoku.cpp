@@ -22,6 +22,7 @@ class Sudoku
     int board[9][9][9];
     int FindHiddenPairs();
     int FindXWing();
+    int FindSwordFish();
     int StdElim();
     int LinElim();
     int Clean();
@@ -323,6 +324,7 @@ int Sudoku::Solve()
       LinElim();
       FindHiddenPairs();
       FindXWing();
+      FindSwordFish();
       for(i=0;i<9;i++)
       {
 	for(j=0;j<9;j++)
@@ -519,6 +521,232 @@ int Sudoku::FindXWing() {
                                     if(board[row][col][val] != -1) {
                                         board[row][col][val] = -1;
                                         changed++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return changed;
+}
+
+int Sudoku::FindSwordFish() {
+    int changed = 0;
+    
+    // Check for Swordfish patterns in rows
+    for(int val = 0; val < 9; val++) {
+        for(int row1 = 0; row1 < 7; row1++) {
+            for(int row2 = row1 + 1; row2 < 8; row2++) {
+                for(int row3 = row2 + 1; row3 < 9; row3++) {
+                    // Find positions where val can appear in each row
+                    int cols1[3], cols2[3], cols3[3];
+                    int count1 = 0, count2 = 0, count3 = 0;
+                    
+                    // Find candidates in row1
+                    for(int col = 0; col < 9; col++) {
+                        if(GetValue(row1, col) == -1 && board[row1][col][val] == val) {
+                            if(count1 < 3) {
+                                cols1[count1++] = col;
+                            } else {
+                                count1++;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // If 2 or 3 positions in row1
+                    if(count1 >= 2 && count1 <= 3) {
+                        // Check row2
+                        for(int col = 0; col < 9; col++) {
+                            if(GetValue(row2, col) == -1 && board[row2][col][val] == val) {
+                                if(count2 < 3) {
+                                    cols2[count2++] = col;
+                                } else {
+                                    count2++;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // If row2 also has 2-3 positions
+                        if(count2 >= 2 && count2 <= 3) {
+                            // Check row3
+                            for(int col = 0; col < 9; col++) {
+                                if(GetValue(row3, col) == -1 && board[row3][col][val] == val) {
+                                    if(count3 < 3) {
+                                        cols3[count3++] = col;
+                                    } else {
+                                        count3++;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // If row3 also has 2-3 positions
+                            if(count3 >= 2 && count3 <= 3) {
+                                // Collect all unique columns
+                                int uniqueCols[9], uniqueCount = 0;
+                                
+                                // Add columns from row1
+                                for(int i = 0; i < count1; i++) {
+                                    uniqueCols[uniqueCount++] = cols1[i];
+                                }
+                                
+                                // Add new columns from row2
+                                for(int i = 0; i < count2; i++) {
+                                    bool found = false;
+                                    for(int j = 0; j < uniqueCount; j++) {
+                                        if(cols2[i] == uniqueCols[j]) {
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if(!found) {
+                                        uniqueCols[uniqueCount++] = cols2[i];
+                                    }
+                                }
+                                
+                                // Add new columns from row3
+                                for(int i = 0; i < count3; i++) {
+                                    bool found = false;
+                                    for(int j = 0; j < uniqueCount; j++) {
+                                        if(cols3[i] == uniqueCols[j]) {
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if(!found) {
+                                        uniqueCols[uniqueCount++] = cols3[i];
+                                    }
+                                }
+                                
+                                // If exactly 3 unique columns found, we have a Swordfish pattern
+                                if(uniqueCount == 3) {
+                                    // Eliminate val from other cells in these columns
+                                    for(int row = 0; row < 9; row++) {
+                                        if(row != row1 && row != row2 && row != row3) {
+                                            for(int i = 0; i < 3; i++) {
+                                                int col = uniqueCols[i];
+                                                if(board[row][col][val] != -1) {
+                                                    board[row][col][val] = -1;
+                                                    changed++;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Check for Swordfish patterns in columns
+    for(int val = 0; val < 9; val++) {
+        for(int col1 = 0; col1 < 7; col1++) {
+            for(int col2 = col1 + 1; col2 < 8; col2++) {
+                for(int col3 = col2 + 1; col3 < 9; col3++) {
+                    // Find positions where val can appear in each column
+                    int rows1[3], rows2[3], rows3[3];
+                    int count1 = 0, count2 = 0, count3 = 0;
+                    
+                    // Find candidates in col1
+                    for(int row = 0; row < 9; row++) {
+                        if(GetValue(row, col1) == -1 && board[row][col1][val] == val) {
+                            if(count1 < 3) {
+                                rows1[count1++] = row;
+                            } else {
+                                count1++;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // If 2 or 3 positions in col1
+                    if(count1 >= 2 && count1 <= 3) {
+                        // Check col2
+                        for(int row = 0; row < 9; row++) {
+                            if(GetValue(row, col2) == -1 && board[row][col2][val] == val) {
+                                if(count2 < 3) {
+                                    rows2[count2++] = row;
+                                } else {
+                                    count2++;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // If col2 also has 2-3 positions
+                        if(count2 >= 2 && count2 <= 3) {
+                            // Check col3
+                            for(int row = 0; row < 9; row++) {
+                                if(GetValue(row, col3) == -1 && board[row][col3][val] == val) {
+                                    if(count3 < 3) {
+                                        rows3[count3++] = row;
+                                    } else {
+                                        count3++;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // If col3 also has 2-3 positions
+                            if(count3 >= 2 && count3 <= 3) {
+                                // Collect all unique rows
+                                int uniqueRows[9], uniqueCount = 0;
+                                
+                                // Add rows from col1
+                                for(int i = 0; i < count1; i++) {
+                                    uniqueRows[uniqueCount++] = rows1[i];
+                                }
+                                
+                                // Add new rows from col2
+                                for(int i = 0; i < count2; i++) {
+                                    bool found = false;
+                                    for(int j = 0; j < uniqueCount; j++) {
+                                        if(rows2[i] == uniqueRows[j]) {
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if(!found) {
+                                        uniqueRows[uniqueCount++] = rows2[i];
+                                    }
+                                }
+                                
+                                // Add new rows from col3
+                                for(int i = 0; i < count3; i++) {
+                                    bool found = false;
+                                    for(int j = 0; j < uniqueCount; j++) {
+                                        if(rows3[i] == uniqueRows[j]) {
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if(!found) {
+                                        uniqueRows[uniqueCount++] = rows3[i];
+                                    }
+                                }
+                                
+                                // If exactly 3 unique rows found, we have a Swordfish pattern
+                                if(uniqueCount == 3) {
+                                    // Eliminate val from other cells in these rows
+                                    for(int col = 0; col < 9; col++) {
+                                        if(col != col1 && col != col2 && col != col3) {
+                                            for(int i = 0; i < 3; i++) {
+                                                int row = uniqueRows[i];
+                                                if(board[row][col][val] != -1) {
+                                                    board[row][col][val] = -1;
+                                                    changed++;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
