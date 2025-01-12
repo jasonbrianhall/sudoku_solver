@@ -201,10 +201,10 @@ int main(void)
 	return 0;
 	break;
       case 'S':
-	NewGame.SolveBasic();
-	NewGame.Solve();
-	NewGame.SolveBasic();
-	NewGame.Solve();
+        for(i=0;i<2;i++) {
+            NewGame.SolveBasic();
+            NewGame.Solve();
+        }
 	break;
     }
     move(0,0);
