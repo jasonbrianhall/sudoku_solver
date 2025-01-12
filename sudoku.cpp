@@ -33,69 +33,101 @@ int main(void)
 
   initscr();
   keypad(stdscr, true);
-  start_color();			/* Start color 			*/
-  init_pair(1, COLOR_RED, COLOR_BLACK);
-  init_pair(2, COLOR_BLUE, COLOR_BLACK);
+  start_color();
+  init_pair(1, COLOR_RED, COLOR_BLACK);    // 3x3 borders
+  init_pair(2, COLOR_BLUE, COLOR_BLACK);    // Numbers
+  init_pair(3, COLOR_WHITE, COLOR_BLACK);   // Inner grid lines
+  
   for(;;)
   {
-     
     printw("Welcome to Sudoku Solver (Press 's' to solve, 0 to clear, 'q' to quit, and numbers to fill in the current position)\n\n");
+    
+    // Draw the grid
     for(y=0;y<9;y++)
     {
-	if(y%3==0)
-	{
-	    attron(COLOR_PAIR(1));
-	}
-	for(i=0;i<37;i++)
-	{
-	  printw("-");
-	}
-	printw("\n");
-	for(x=0;x<9;x++)
-	{
-	    temp=NewGame.GetValue(x,y);
-	    if(temp>=0 && temp<=8)
-	    {
-		if(x%3==0)
-		{
-		  attron(COLOR_PAIR(1));
-		  printw("|");
-		  attroff(COLOR_PAIR(1));
-		}
-		else
-		{
-		  printw("|");
-		}
-		attron(COLOR_PAIR(2));
-		printw(" %i ", temp+1);
-		attroff(COLOR_PAIR(2));	    
-	    }
-	    else
-	    {
-	      if(x%3==0)
-	      {
-		attron(COLOR_PAIR(1));
-		printw("|");
-		attroff(COLOR_PAIR(1));
-	      }
-	      else
-	      {
-		printw("|");
-	      }
-	      attron(COLOR_PAIR(2));
-	      printw("   ");
-	      attroff(COLOR_PAIR(2));
-	    }
-	  
-	}
-      attron(COLOR_PAIR(1));
-      printw("|\n");
-      attroff(COLOR_PAIR(1));
+        // Draw horizontal lines
+        if(y%3==0)
+        {
+            // Draw 3x3 border lines in blue
+            attron(COLOR_PAIR(1));
+            for(i=0;i<37;i++)
+            {
+                printw("-");
+            }
+            attroff(COLOR_PAIR(1));
+        }
+        else
+        {
+            // Draw inner horizontal lines in white
+            attron(COLOR_PAIR(3));
+            for(i=0;i<37;i++)
+            {
+                if(i%4==0)  // Position for vertical lines
+                {
+                    if(i%12==0)  // 3x3 border positions
+                    {
+                        attroff(COLOR_PAIR(3));
+                        attron(COLOR_PAIR(1));
+                        printw("+");
+                        attroff(COLOR_PAIR(1));
+                        attron(COLOR_PAIR(3));
+                    }
+                    else
+                    {
+                        printw("+");
+                    }
+                }
+                else
+                {
+                    printw("-");
+                }
+            }
+            attroff(COLOR_PAIR(3));
+        }
+        printw("\n");
+        
+        // Draw cells and vertical lines
+        for(x=0;x<9;x++)
+        {
+            // Draw vertical lines
+            if(x%3==0)
+            {
+                attron(COLOR_PAIR(1));
+                printw("|");
+                attroff(COLOR_PAIR(1));
+            }
+            else
+            {
+                attron(COLOR_PAIR(3));
+                printw("|");
+                attroff(COLOR_PAIR(3));
+            }
+            
+            // Draw cell content
+            temp=NewGame.GetValue(x,y);
+            if(temp>=0 && temp<=8)
+            {
+                attron(COLOR_PAIR(2));
+                printw(" %i ", temp+1);
+                attroff(COLOR_PAIR(2));
+            }
+            else
+            {
+                printw("   ");
+            }
+        }
+        
+        // Draw final vertical line of each row
+        attron(COLOR_PAIR(1));
+        printw("|\n");
+        attroff(COLOR_PAIR(1));
     }
+    
+    // Draw bottom border
     attron(COLOR_PAIR(1));
     for(i=0;i<37;i++)
     {
-      printw("-");
+        printw("-");
     }
     attroff(COLOR_PAIR(1));
 
@@ -103,6 +135,7 @@ int main(void)
     refresh();
     input=getch();
     clear();
+
     // Upper Case
     if(input>='a' && input<='z')
     {
