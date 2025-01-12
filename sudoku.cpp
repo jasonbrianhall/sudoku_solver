@@ -363,84 +363,127 @@ bool Sudoku::IsValidSolution() {
     return true;
 }
 
-int Sudoku::Solve() 
-{
-  int stop;
-  int counter1, counter2, i, j;
-  move(22, 0);
-  printw("Starting Solve() - Cleaning board...\n");
-  refresh();
-  Clean();
-  do
-  {
-    counter1=0;
-    counter2=0;
-    for(i=0;i<9;i++)
-    {
-      for(j=0;j<9;j++)
-      {
-	if(GetValue(i,j)!=-1)
-	{
-	  counter1++;
-	}
-      }
+int Sudoku::Solve() {
+    int stop;
+    int counter1, counter2, i, j;
+    move(22, 0);
+    printw("Starting Solve() - Cleaning board...\n");
+    refresh();
+    Clean();
+    
+    do {
+        counter1 = 0;
+        counter2 = 0;
+        for(i = 0; i < 9; i++) {
+            for(j = 0; j < 9; j++) {
+                if(GetValue(i,j) != -1) {
+                    counter1++;
+                }
+            }
+        }
+        
+        if(counter1 != 81) {
+            // Run each solving technique and validate after each
+            move(22, 0);
+            printw("Running StdElim...                    \n");
+            refresh();
+            do {
+                stop = StdElim();
+                if(!IsValidSolution()) {
+                    move(23, 0);
+                    printw("Invalid solution detected after StdElim\n");
+                    refresh();
+                    return -1;
+                }
+            } while(stop == 0);
+            
+            move(22, 0);
+            printw("Running LinElim...                    \n");
+            refresh();
+            LinElim();
+            if(!IsValidSolution()) {
+                move(23, 0);
+                printw("Invalid solution detected after LinElim\n");
+                refresh();
+                return -1;
+            }
+            
+            move(22, 0);
+            printw("Running FindHiddenPairs...            \n");
+            refresh();
+            FindHiddenPairs();
+            if(!IsValidSolution()) {
+                move(23, 0);
+                printw("Invalid solution detected after FindHiddenPairs\n");
+                refresh();
+                return -1;
+            }
+            
+            move(22, 0);
+            printw("Running FindXWing...                  \n");
+            refresh();
+            FindXWing();
+            if(!IsValidSolution()) {
+                move(23, 0);
+                printw("Invalid solution detected after FindXWing\n");
+                refresh();
+                return -1;
+            }
+            
+            move(22, 0);
+            printw("Running FindSwordFish...              \n");
+            refresh();
+            FindSwordFish();
+            if(!IsValidSolution()) {
+                move(23, 0);
+                printw("Invalid solution detected after FindSwordFish\n");
+                refresh();
+                return -1;
+            }
+            
+            move(22, 0);
+            printw("Running FindHiddenSingles...          \n");
+            refresh();
+            FindHiddenSingles();
+            if(!IsValidSolution()) {
+                move(23, 0);
+                printw("Invalid solution detected after FindHiddenSingles\n");
+                refresh();
+                return -1;
+            }
+            
+            move(22, 0);
+            printw("Running FindNakedSets...              \n");
+            refresh();
+            FindNakedSets();
+            if(!IsValidSolution()) {
+                move(23, 0);
+                printw("Invalid solution detected after FindNakedSets\n");
+                refresh();
+                return -1;
+            }
+            
+            for(i = 0; i < 9; i++) {
+                for(j = 0; j < 9; j++) {
+                    if(GetValue(i,j) != -1) {
+                        counter2++;
+                    }
+                }
+            }
+        } else {
+            counter2 = 81;
+        }
+    } while(counter1 != counter2);
+    
+    // Final validation check
+    if(!IsValidSolution()) {
+        move(23, 0);
+        printw("Invalid final solution detected\n");
+        refresh();
+        return -1;
     }
-    if(counter1!=81)
-    {
-      move(22, 0);
-      printw("Running StdElim...                    \n");
-      refresh();
-      do
-      {
-	stop=StdElim();
-      }while(stop==0);
-      
-      move(22, 0);
-      printw("Running LinElim...                    \n");
-      refresh();
-      LinElim();
-      
-      move(22, 0);
-      printw("Running FindHiddenPairs...            \n");
-      refresh();
-      FindHiddenPairs();
-      
-      move(22, 0);
-      printw("Running FindXWing...                  \n");
-      refresh();
-      FindXWing();
-      
-      move(22, 0);
-      printw("Running FindSwordFish...              \n");
-      refresh();
-      FindSwordFish();
-      
-      move(22, 0);
-      printw("Running FindHiddenSingles...          \n");
-      refresh();
-      FindHiddenSingles();
-      
-      move(22, 0);
-      printw("Running FindNakedSets...              \n");
-      refresh();
-      FindNakedSets();
-      for(i=0;i<9;i++)
-      {
-	for(j=0;j<9;j++)
-	{
-	  if(GetValue(i,j)!=-1)
-	  {
-	    counter2++;
-	  }
-	}
-      }
-    }
-    else
-    {
-      counter2=81;
-    }
-  }while(counter1!=counter2);
-  return 0;
+    
+    return 0;
 }
 
 int Sudoku::EliminatePossibility(int x, int y, int value)
