@@ -20,6 +20,7 @@ class Sudoku
 
     int EliminatePossibility(int x, int y, int value);
     int board[9][9][9];
+    int FindHiddenPairs();
     int StdElim();
     int LinElim();
     int Clean();
@@ -285,6 +286,7 @@ int Sudoku::Solve()
 	stop=StdElim();
       }while(stop==0);
       LinElim();
+      FindHiddenPairs();
       for(i=0;i<9;i++)
       {
 	for(j=0;j<9;j++)
@@ -301,7 +303,7 @@ int Sudoku::Solve()
       counter2=81;
     }
   }while(counter1!=counter2);
-
+  return 0;
 }
 
 int Sudoku::EliminatePossibility(int x, int y, int value)
@@ -376,6 +378,145 @@ bool Sudoku::LegalValue(int x, int y, int value)
   {
     return FALSE;
   }
+}
+
+int Sudoku::FindHiddenPairs() {
+    int changed = 0;
+    
+    // For each row
+    for(int row = 0; row < 9; row++) {
+        // Try each pair of values
+        for(int val1 = 0; val1 < 8; val1++) {
+            for(int val2 = val1 + 1; val2 < 9; val2++) {
+                // Find which positions could contain val1 or val2
+                int pos1 = -1;
+                int pos2 = -1;
+                int count = 0;
+                
+                // Check each position in this row
+                for(int col = 0; col < 9; col++) {
+                    // If cell is empty and could contain val1 or val2
+                    if(GetValue(row, col) == -1 && 
+                       (board[row][col][val1] == val1 || board[row][col][val2] == val2)) {
+                        count++;
+                        if(pos1 == -1)
+                            pos1 = col;
+                        else
+                            pos2 = col;
+                    }
+                }
+                
+                // Found a hidden pair - exactly 2 positions can take these values
+                if(count == 2) {
+                    // Clear all other values from these two cells
+                    bool cleared = false;
+                    for(int val = 0; val < 9; val++) {
+                        if(val != val1 && val != val2) {
+                            if(board[row][pos1][val] != -1) {
+                                board[row][pos1][val] = -1;
+                                cleared = true;
+                            }
+                            if(board[row][pos2][val] != -1) {
+                                board[row][pos2][val] = -1;
+                                cleared = true;
+                            }
+                        }
+                    }
+                    if(cleared) changed++;
+                }
+            }
+        }
+    }
+    
+    // Same thing for columns
+    for(int col = 0; col < 9; col++) {
+        for(int val1 = 0; val1 < 8; val1++) {
+            for(int val2 = val1 + 1; val2 < 9; val2++) {
+                int pos1 = -1;
+                int pos2 = -1;
+                int count = 0;
+                
+                for(int row = 0; row < 9; row++) {
+                    if(GetValue(row, col) == -1 && 
+                       (board[row][col][val1] == val1 || board[row][col][val2] == val2)) {
+                        count++;
+                        if(pos1 == -1)
+                            pos1 = row;
+                        else
+                            pos2 = row;
+                    }
+                }
+                
+                if(count == 2) {
+                    bool cleared = false;
+                    for(int val = 0; val < 9; val++) {
+                        if(val != val1 && val != val2) {
+                            if(board[pos1][col][val] != -1) {
+                                board[pos1][col][val] = -1;
+                                cleared = true;
+                            }
+                            if(board[pos2][col][val] != -1) {
+                                board[pos2][col][val] = -1;
+                                cleared = true;
+                            }
+                        }
+                    }
+                    if(cleared) changed++;
+                }
+            }
+        }
+    }
+    
+    // Same for 3x3 boxes
+    for(int box = 0; box < 9; box++) {
+        int startRow = (box / 3) * 3;
+        int startCol = (box % 3) * 3;
+        
+        for(int val1 = 0; val1 < 8; val1++) {
+            for(int val2 = val1 + 1; val2 < 9; val2++) {
+                int row1 = -1, col1 = -1;
+                int row2 = -1, col2 = -1;
+                int count = 0;
+                
+                for(int i = 0; i < 3; i++) {
+                    for(int j = 0; j < 3; j++) {
+                        int row = startRow + i;
+                        int col = startCol + j;
+                        if(GetValue(row, col) == -1 && 
+                           (board[row][col][val1] == val1 || board[row][col][val2] == val2)) {
+                            count++;
+                            if(row1 == -1) {
+                                row1 = row;
+                                col1 = col;
+                            } else {
+                                row2 = row;
+                                col2 = col;
+                            }
+                        }
+                    }
+                }
+                
+                if(count == 2) {
+                    bool cleared = false;
+                    for(int val = 0; val < 9; val++) {
+                        if(val != val1 && val != val2) {
+                            if(board[row1][col1][val] != -1) {
+                                board[row1][col1][val] = -1;
+                                cleared = true;
+                            }
+                            if(board[row2][col2][val] != -1) {
+                                board[row2][col2][val] = -1;
+                                cleared = true;
+                            }
+                        }
+                    }
+                    if(cleared) changed++;
+                }
+            }
+        }
+    }
+    
+    return changed;
 }
 
 int Sudoku::StdElim()
