@@ -3,6 +3,10 @@ using namespace std;
 #include <stdlib.h>
 #include <ncurses.h>
 
+#include <vector>
+#include <set>
+#include <algorithm>
+
 class Sudoku
 {
   public:
@@ -27,6 +31,10 @@ class Sudoku
     int LinElim();
     int FindHiddenSingles();
     int Clean();
+    int FindNakedSets();
+    std::vector<int> GetCellCandidates(int x, int y);
+    bool VectorsEqual(const std::vector<int>& v1, const std::vector<int>& v2);
+    void FindNakedSetInUnit(std::vector<std::pair<int, int>>& cells, const std::vector<int>& candidates, int& changed);
 };
 
 int main(void)
@@ -327,6 +335,7 @@ int Sudoku::Solve()
       FindXWing();
       FindSwordFish();
       FindHiddenSingles();
+      FindNakedSets();
       for(i=0;i<9;i++)
       {
 	for(j=0;j<9;j++)
@@ -1102,4 +1111,171 @@ int Sudoku::LinElim()
 
 
   return 0;
+}
+
+// Implementation:
+std::vector<int> Sudoku::GetCellCandidates(int x, int y) {
+    std::vector<int> candidates;
+    for(int val = 0; val < 9; val++) {
+        if(board[x][y][val] == val) {
+            candidates.push_back(val);
+        }
+    }
+    return candidates;
+}
+
+bool Sudoku::VectorsEqual(const std::vector<int>& v1, const std::vector<int>& v2) {
+    if(v1.size() != v2.size()) return false;
+    for(size_t i = 0; i < v1.size(); i++) {
+        if(v1[i] != v2[i]) return false;
+    }
+    return true;
+}
+
+void Sudoku::FindNakedSetInUnit(std::vector<std::pair<int, int>>& cells, const std::vector<int>& candidates, int& changed) {
+    // For each cell in the unit that's not part of our naked set
+    for(auto& cell : cells) {
+        int x = cell.first;
+        int y = cell.second;
+        
+        std::vector<int> cellCandidates = GetCellCandidates(x, y);
+        if(!VectorsEqual(cellCandidates, candidates)) {
+            // Remove the naked set candidates from this cell
+            for(int val : candidates) {
+                if(board[x][y][val] != -1) {
+                    board[x][y][val] = -1;
+                    changed++;
+                }
+            }
+        }
+    }
+}
+
+int Sudoku::FindNakedSets() {
+    int changed = 0;
+
+    // Function to check if a set of candidates forms a naked set
+    auto isNakedSet = [](const std::vector<std::vector<int>>& candidateSets, const std::vector<int>& positions, std::vector<int>& uniqueCandidates) -> bool {
+        uniqueCandidates.clear();
+        std::set<int> candidateSet;
+        
+        // Collect all unique candidates from the potential naked set cells
+        for(int pos : positions) {
+            const auto& candidates = candidateSets[pos];
+            candidateSet.insert(candidates.begin(), candidates.end());
+        }
+        
+        // Convert set to vector and sort
+        uniqueCandidates = std::vector<int>(candidateSet.begin(), candidateSet.end());
+        std::sort(uniqueCandidates.begin(), uniqueCandidates.end());
+        
+        // If number of unique candidates equals the size of the naked set, we found one
+        return uniqueCandidates.size() == positions.size();
+    };
+
+    // Check each unit (row, column, box) for naked sets
+    for(int size = 2; size <= 4; size++) {  // Check for pairs, triples, and quads
+        // Check rows
+        for(int row = 0; row < 9; row++) {
+            std::vector<std::pair<int, int>> emptyCells;
+            std::vector<std::vector<int>> candidateSets;
+            
+            // Collect empty cells and their candidates
+            for(int col = 0; col < 9; col++) {
+                if(GetValue(row, col) == -1) {
+                    emptyCells.push_back({row, col});
+                    candidateSets.push_back(GetCellCandidates(row, col));
+                }
+            }
+            
+            // Try all combinations of 'size' cells
+            std::vector<int> positions(size);
+            for(int i = 0; i < size; i++) positions[i] = i;
+            
+            do {
+                std::vector<int> uniqueCandidates;
+                if(isNakedSet(candidateSets, positions, uniqueCandidates)) {
+                    // We found a naked set, eliminate these candidates from other cells
+                    std::vector<std::pair<int, int>> unitCells;
+                    for(int col = 0; col < 9; col++) {
+                        if(GetValue(row, col) == -1) {
+                            unitCells.push_back({row, col});
+                        }
+                    }
+                    FindNakedSetInUnit(unitCells, uniqueCandidates, changed);
+                }
+            } while(std::next_permutation(positions.begin(), positions.end()));
+        }
+
+        // Check columns
+        for(int col = 0; col < 9; col++) {
+            std::vector<std::pair<int, int>> emptyCells;
+            std::vector<std::vector<int>> candidateSets;
+            
+            for(int row = 0; row < 9; row++) {
+                if(GetValue(row, col) == -1) {
+                    emptyCells.push_back({row, col});
+                    candidateSets.push_back(GetCellCandidates(row, col));
+                }
+            }
+            
+            std::vector<int> positions(size);
+            for(int i = 0; i < size; i++) positions[i] = i;
+            
+            do {
+                std::vector<int> uniqueCandidates;
+                if(isNakedSet(candidateSets, positions, uniqueCandidates)) {
+                    std::vector<std::pair<int, int>> unitCells;
+                    for(int row = 0; row < 9; row++) {
+                        if(GetValue(row, col) == -1) {
+                            unitCells.push_back({row, col});
+                        }
+                    }
+                    FindNakedSetInUnit(unitCells, uniqueCandidates, changed);
+                }
+            } while(std::next_permutation(positions.begin(), positions.end()));
+        }
+
+        // Check boxes
+        for(int box = 0; box < 9; box++) {
+            int startRow = (box / 3) * 3;
+            int startCol = (box % 3) * 3;
+            
+            std::vector<std::pair<int, int>> emptyCells;
+            std::vector<std::vector<int>> candidateSets;
+            
+            for(int i = 0; i < 3; i++) {
+                for(int j = 0; j < 3; j++) {
+                    int row = startRow + i;
+                    int col = startCol + j;
+                    if(GetValue(row, col) == -1) {
+                        emptyCells.push_back({row, col});
+                        candidateSets.push_back(GetCellCandidates(row, col));
+                    }
+                }
+            }
+            
+            std::vector<int> positions(size);
+            for(int i = 0; i < size; i++) positions[i] = i;
+            
+            do {
+                std::vector<int> uniqueCandidates;
+                if(isNakedSet(candidateSets, positions, uniqueCandidates)) {
+                    std::vector<std::pair<int, int>> unitCells;
+                    for(int i = 0; i < 3; i++) {
+                        for(int j = 0; j < 3; j++) {
+                            int row = startRow + i;
+                            int col = startCol + j;
+                            if(GetValue(row, col) == -1) {
+                                unitCells.push_back({row, col});
+                            }
+                        }
+                    }
+                    FindNakedSetInUnit(unitCells, uniqueCandidates, changed);
+                }
+            } while(std::next_permutation(positions.begin(), positions.end()));
+        }
+    }
+    
+    return changed;
 }
