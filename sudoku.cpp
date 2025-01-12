@@ -21,6 +21,7 @@ class Sudoku
     int EliminatePossibility(int x, int y, int value);
     int board[9][9][9];
     int FindHiddenPairs();
+    int FindXWing();
     int StdElim();
     int LinElim();
     int Clean();
@@ -321,6 +322,7 @@ int Sudoku::Solve()
       }while(stop==0);
       LinElim();
       FindHiddenPairs();
+      FindXWing();
       for(i=0;i<9;i++)
       {
 	for(j=0;j<9;j++)
@@ -412,6 +414,122 @@ bool Sudoku::LegalValue(int x, int y, int value)
   {
     return FALSE;
   }
+}
+
+int Sudoku::FindXWing() {
+    int changed = 0;
+    
+    // Check for X-Wing patterns in rows
+    for(int val = 0; val < 9; val++) {
+        for(int row1 = 0; row1 < 8; row1++) {
+            for(int row2 = row1 + 1; row2 < 9; row2++) {
+                // Find positions where val can appear in row1
+                int cols1[2], cols2[2];
+                int count1 = 0, count2 = 0;
+                
+                // Find candidates in row1
+                for(int col = 0; col < 9; col++) {
+                    if(GetValue(row1, col) == -1 && board[row1][col][val] == val) {
+                        if(count1 < 2) {
+                            cols1[count1++] = col;
+                        } else {
+                            count1++;
+                            break;
+                        }
+                    }
+                }
+                
+                // If exactly 2 positions in row1
+                if(count1 == 2) {
+                    // Check if same columns in row2 also have exactly 2 positions
+                    for(int col = 0; col < 9; col++) {
+                        if(GetValue(row2, col) == -1 && board[row2][col][val] == val) {
+                            if(count2 < 2) {
+                                cols2[count2++] = col;
+                            } else {
+                                count2++;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // If we found an X-Wing pattern
+                    if(count2 == 2 && cols1[0] == cols2[0] && cols1[1] == cols2[1]) {
+                        // Eliminate val from other cells in these columns
+                        for(int row = 0; row < 9; row++) {
+                            if(row != row1 && row != row2) {
+                                // Check both columns
+                                for(int i = 0; i < 2; i++) {
+                                    int col = cols1[i];
+                                    if(board[row][col][val] != -1) {
+                                        board[row][col][val] = -1;
+                                        changed++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Check for X-Wing patterns in columns
+    for(int val = 0; val < 9; val++) {
+        for(int col1 = 0; col1 < 8; col1++) {
+            for(int col2 = col1 + 1; col2 < 9; col2++) {
+                // Find positions where val can appear in col1
+                int rows1[2], rows2[2];
+                int count1 = 0, count2 = 0;
+                
+                // Find candidates in col1
+                for(int row = 0; row < 9; row++) {
+                    if(GetValue(row, col1) == -1 && board[row][col1][val] == val) {
+                        if(count1 < 2) {
+                            rows1[count1++] = row;
+                        } else {
+                            count1++;
+                            break;
+                        }
+                    }
+                }
+                
+                // If exactly 2 positions in col1
+                if(count1 == 2) {
+                    // Check if same rows in col2 also have exactly 2 positions
+                    for(int row = 0; row < 9; row++) {
+                        if(GetValue(row, col2) == -1 && board[row][col2][val] == val) {
+                            if(count2 < 2) {
+                                rows2[count2++] = row;
+                            } else {
+                                count2++;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // If we found an X-Wing pattern
+                    if(count2 == 2 && rows1[0] == rows2[0] && rows1[1] == rows2[1]) {
+                        // Eliminate val from other cells in these rows
+                        for(int col = 0; col < 9; col++) {
+                            if(col != col1 && col != col2) {
+                                // Check both rows
+                                for(int i = 0; i < 2; i++) {
+                                    int row = rows1[i];
+                                    if(board[row][col][val] != -1) {
+                                        board[row][col][val] = -1;
+                                        changed++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return changed;
 }
 
 int Sudoku::FindHiddenPairs() {
