@@ -1026,36 +1026,44 @@ int Sudoku::FindHiddenSingles() {
 
 int Sudoku::LinElim()
 {
-  int v, w, x, y, k, xpos, ypos, counter=0;
+  int v, w, x, y, k, xpos, ypos, counter;
+  int changed = 0;
+  
   for(k=0;k<9;k++)
   {
+    // Check boxes
     for(v=0;v<9;v=v+3)
     {
       for(w=0;w<9;w=w+3)
       {
-	xpos=-1;
-	ypos=-1;
-	counter=0;
-	for(x=v;x<v+3;x++)
-	{
-	  for(y=w;y<w+3;y++)
-	  {
-	    if(board[x][y][k]==k)
-	    {
-	      xpos=x;
-	      ypos=y;
-	      counter++;
-	    }
-	  }
-	}
-	if(counter==1)
-	{
-	  SetValue(xpos, ypos, k);
-	}
+        xpos=-1;
+        ypos=-1;
+        counter=0;
+        for(x=v;x<v+3;x++)
+        {
+          for(y=w;y<w+3;y++)
+          {
+            // Only consider empty cells and verify legal placement
+            if(GetValue(x,y) == -1 && board[x][y][k]==k && LegalValue(x,y,k))
+            {
+              xpos=x;
+              ypos=y;
+              counter++;
+            }
+          }
+        }
+        if(counter==1 && xpos != -1 && ypos != -1)
+        {
+          if(LegalValue(xpos, ypos, k)) {
+            SetValue(xpos, ypos, k);
+            changed++;
+          }
+        }
       }
     }
   }
 
+  // Check rows
   for(k=0;k<9;k++)
   {
     for(x=0;x<9;x++)
@@ -1066,20 +1074,24 @@ int Sudoku::LinElim()
     
       for(y=0;y<9;y++)
       {
-	if(board[x][y][k]==k)
-	{
-	  xpos=x;
-	  ypos=y;
-	  counter++;
-	 }
+        if(GetValue(x,y) == -1 && board[x][y][k]==k && LegalValue(x,y,k))
+        {
+          xpos=x;
+          ypos=y;
+          counter++;
+        }
       }
-      if(counter==1)
+      if(counter==1 && xpos != -1 && ypos != -1)
       {
-	SetValue(xpos, ypos, k);
+        if(LegalValue(xpos, ypos, k)) {
+          SetValue(xpos, ypos, k);
+          changed++;
+        }
       }
     }
   }
 
+  // Check columns
   for(k=0;k<9;k++)
   {
     for(y=0;y<9;y++)
@@ -1090,24 +1102,25 @@ int Sudoku::LinElim()
   
       for(x=0;x<9;x++)
       {
-	if(board[x][y][k]==k)
-	{
-	  xpos=x;
-	  ypos=y;
-	  counter++;
-	 }
+        if(GetValue(x,y) == -1 && board[x][y][k]==k && LegalValue(x,y,k))
+        {
+          xpos=x;
+          ypos=y;
+          counter++;
+        }
       }
-      if(counter==1)
+      if(counter==1 && xpos != -1 && ypos != -1)
       {
-	SetValue(xpos, ypos, k);
+        if(LegalValue(xpos, ypos, k)) {
+          SetValue(xpos, ypos, k);
+          changed++;
+        }
       }
     }
   }
 
-
-  return 0;
+  return changed;
 }
-
 // Implementation:
 std::vector<int> Sudoku::GetCellCandidates(int x, int y) {
     std::vector<int> candidates;
