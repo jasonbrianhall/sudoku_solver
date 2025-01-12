@@ -385,10 +385,10 @@ int Sudoku::Solve() {
     refresh();
     Clean();
     int original_board[9][9][9];
-    RestoreBoard(original_board, board);
     
     
     do {
+        RestoreBoard(original_board, board);
         counter1 = 0;
         counter2 = 0;
         for(i = 0; i < 9; i++) {
