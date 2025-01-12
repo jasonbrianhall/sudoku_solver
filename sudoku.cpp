@@ -168,7 +168,8 @@ int main(void)
       case '7':
       case '8':
       case '9':
-	if(NewGame.LegalValue(x_pos, y_pos, input-'1')==TRUE)
+        NewGame.SetValue(x_pos, y_pos, input - '1');
+	/*if(NewGame.LegalValue(x_pos, y_pos, input-'1')==TRUE)
 	{
 	  NewGame.SetValue(x_pos, y_pos, input - '1');
 	}
@@ -176,7 +177,7 @@ int main(void)
 	{
 	  move(23,0);
 	  printw("Illegal Value\n");
-	}
+	}*/
 	break;
       case 'Q':
 	endwin();
