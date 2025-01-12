@@ -25,6 +25,7 @@ class Sudoku
     int FindSwordFish();
     int StdElim();
     int LinElim();
+    int FindHiddenSingles();
     int Clean();
 };
 
@@ -325,6 +326,7 @@ int Sudoku::Solve()
       FindHiddenPairs();
       FindXWing();
       FindSwordFish();
+      FindHiddenSingles();
       for(i=0;i<9;i++)
       {
 	for(j=0;j<9;j++)
@@ -975,6 +977,47 @@ int Sudoku::StdElim()
     returned=0;
   }
   return returned;
+}
+
+int Sudoku::FindHiddenSingles() {
+    int changed = 0;
+
+    // For each 3x3 box
+    for(int boxRow = 0; boxRow < 9; boxRow += 3) {
+        for(int boxCol = 0; boxCol < 9; boxCol += 3) {
+            // For each value 1-9
+            for(int val = 0; val < 9; val++) {
+                int count = 0;          // How many times value appears as candidate
+                int foundX = -1;        // Position where value was found
+                int foundY = -1;
+                
+                // Check each cell in this box
+                for(int i = 0; i < 3; i++) {
+                    for(int j = 0; j < 3; j++) {
+                        int x = boxRow + i;
+                        int y = boxCol + j;
+                        
+                        // If cell is empty and val is a candidate
+                        if(GetValue(x, y) == -1 && board[x][y][val] == val) {
+                            count++;
+                            foundX = x;
+                            foundY = y;
+                        }
+                    }
+                }
+                
+                // If value appears exactly once, it's a hidden single
+                if(count == 1) {
+                    // Set this value in the cell
+                    if(GetValue(foundX, foundY) == -1) {  // Double check cell is still empty
+                        SetValue(foundX, foundY, val);
+                        changed++;
+                    }
+                }
+            }
+        }
+    }
+    return changed;
 }
 
 int Sudoku::LinElim()
