@@ -26,6 +26,7 @@ class Sudoku
     int board[9][9][9];
     int FindHiddenPairs();
     int FindXWing();
+    int FindPointingPairs();
     int FindSwordFish();
     int StdElim();
     int LinElim();
@@ -419,6 +420,18 @@ int Sudoku::Solve() {
                 return -1;
             }
             
+            move(22, 0);
+            printw("Running FindPointingPairs...            \n");
+            refresh();
+            FindPointingPairs();
+            if(!IsValidSolution()) {
+                move(23, 0);
+                printw("Invalid solution detected after FindPointingPairs\n");
+                refresh();
+                return -1;
+            }
+
+
             move(22, 0);
             printw("Running FindXWing...                  \n");
             refresh();
@@ -1739,5 +1752,129 @@ int Sudoku::FindNakedSets() {
         }
     }
 
+    return changed;
+}
+
+
+int Sudoku::FindPointingPairs() {
+    int changed = 0;
+
+    // Helper to validate if elimination is safe
+    auto isSafeElimination = [this](int row, int col, int val) -> bool {
+        // Don't eliminate if cell is already solved
+        if(GetValue(row, col) != -1) return false;
+        
+        // Don't eliminate if value isn't a candidate
+        if(board[row][col][val] != val) return false;
+        
+        // Count remaining candidates before elimination
+        int candidateCount = 0;
+        for(int v = 0; v < 9; v++) {
+            if(board[row][col][v] == v) candidateCount++;
+        }
+        
+        // Don't eliminate if it's the last candidate
+        if(candidateCount <= 1) return false;
+
+        // Temporarily eliminate and check validity
+        board[row][col][val] = -1;
+        bool valid = IsValidSolution();
+        board[row][col][val] = val;  // Restore
+        
+        return valid;
+    };
+
+    // For each 3x3 box
+    for(int boxRow = 0; boxRow < 3; boxRow++) {
+        for(int boxCol = 0; boxCol < 3; boxCol++) {
+            // For each possible value
+            for(int val = 0; val < 9; val++) {
+                std::vector<std::pair<int, int>> positions;
+                
+                // Find all positions where val is a candidate in this box
+                for(int i = 0; i < 3; i++) {
+                    for(int j = 0; j < 3; j++) {
+                        int row = boxRow * 3 + i;
+                        int col = boxCol * 3 + j;
+                        if(GetValue(row, col) == -1 && board[row][col][val] == val) {
+                            positions.push_back({row, col});
+                        }
+                    }
+                }
+
+                // Only proceed if we have 2 or 3 positions
+                if(positions.size() >= 2 && positions.size() <= 3) {
+                    // Check if all positions are in the same row
+                    bool sameRow = true;
+                    int firstRow = positions[0].first;
+                    for(const auto& pos : positions) {
+                        if(pos.first != firstRow) {
+                            sameRow = false;
+                            break;
+                        }
+                    }
+
+                    if(sameRow) {
+                        // Before eliminating, verify the pattern is necessary
+                        int candidatesInRow = 0;
+                        for(int col = 0; col < 9; col++) {
+                            if(GetValue(firstRow, col) == -1 && board[firstRow][col][val] == val) {
+                                candidatesInRow++;
+                            }
+                        }
+                        
+                        // Only proceed if there are more candidates outside the box
+                        if(candidatesInRow > positions.size()) {
+                            bool madeChange = false;
+                            // Eliminate val from other cells in this row
+                            for(int col = 0; col < 9; col++) {
+                                if(col / 3 != boxCol && // Skip cells in our box
+                                   isSafeElimination(firstRow, col, val)) {
+                                    board[firstRow][col][val] = -1;
+                                    madeChange = true;
+                                }
+                            }
+                            if(madeChange) changed++;
+                        }
+                    }
+
+                    // Check if all positions are in the same column
+                    bool sameCol = true;
+                    int firstCol = positions[0].second;
+                    for(const auto& pos : positions) {
+                        if(pos.second != firstCol) {
+                            sameCol = false;
+                            break;
+                        }
+                    }
+
+                    if(sameCol) {
+                        // Before eliminating, verify the pattern is necessary
+                        int candidatesInCol = 0;
+                        for(int row = 0; row < 9; row++) {
+                            if(GetValue(row, firstCol) == -1 && board[row][firstCol][val] == val) {
+                                candidatesInCol++;
+                            }
+                        }
+                        
+                        // Only proceed if there are more candidates outside the box
+                        if(candidatesInCol > positions.size()) {
+                            bool madeChange = false;
+                            // Eliminate val from other cells in this column
+                            for(int row = 0; row < 9; row++) {
+                                if(row / 3 != boxRow && // Skip cells in our box
+                                   isSafeElimination(row, firstCol, val)) {
+                                    board[row][firstCol][val] = -1;
+                                    madeChange = true;
+                                }
+                            }
+                            if(madeChange) changed++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     return changed;
 }
