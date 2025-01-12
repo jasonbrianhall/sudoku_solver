@@ -388,15 +388,13 @@ int Sudoku::Solve() {
             move(22, 0);
             printw("Running StdElim...                    \n");
             refresh();
-            do {
-                stop = StdElim();
-                if(!IsValidSolution()) {
-                    move(23, 0);
-                    printw("Invalid solution detected after StdElim\n");
-                    refresh();
-                    return -1;
-                }
-            } while(stop == 0);
+            StdElim();
+            if(!IsValidSolution()) {
+                move(23, 0);
+                printw("Invalid solution detected after StdElim\n");
+                refresh();
+                return -1;
+            }
             
             move(22, 0);
             printw("Running LinElim...                    \n");
