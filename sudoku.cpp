@@ -203,6 +203,8 @@ int main(void)
       case 'S':
 	NewGame.SolveBasic();
 	NewGame.Solve();
+	NewGame.SolveBasic();
+	NewGame.Solve();
 	break;
     }
     move(0,0);
