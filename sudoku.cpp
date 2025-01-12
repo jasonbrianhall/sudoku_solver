@@ -701,220 +701,237 @@ next_pair:
 
 int Sudoku::FindSwordFish() {
     int changed = 0;
-    
-    // Check for Swordfish patterns in rows
+
+    // Helper to get candidates for a cell
+    auto getCandidates = [this](int row, int col) -> std::vector<int> {
+        std::vector<int> candidates;
+        if(GetValue(row, col) == -1) {
+            for(int val = 0; val < 9; val++) {
+                if(board[row][col][val] == val) {
+                    candidates.push_back(val);
+                }
+            }
+        }
+        return candidates;
+    };
+
+    // Helper to validate elimination
+    auto isSafeElimination = [this](int row, int col, int val) -> bool {
+        // Don't eliminate if it's the only candidate
+        int candidateCount = 0;
+        for(int v = 0; v < 9; v++) {
+            if(board[row][col][v] == v) {
+                candidateCount++;
+            }
+        }
+        if(candidateCount <= 1) {
+            move(24, 0);
+            printw("Cannot eliminate only candidate %d at (%d,%d)\n", 
+                   val + 1, row + 1, col + 1);
+            refresh();
+            return false;
+        }
+
+        // Verify the elimination won't create an invalid state
+        board[row][col][val] = -1;  // Temporarily eliminate
+        bool valid = IsValidSolution();
+        board[row][col][val] = val;  // Restore
+        return valid;
+    };
+
+    // Process Swordfish patterns in rows
     for(int val = 0; val < 9; val++) {
+        // Try each triplet of rows
         for(int row1 = 0; row1 < 7; row1++) {
             for(int row2 = row1 + 1; row2 < 8; row2++) {
                 for(int row3 = row2 + 1; row3 < 9; row3++) {
                     // Find positions where val can appear in each row
-                    int cols1[3], cols2[3], cols3[3];
-                    int count1 = 0, count2 = 0, count3 = 0;
+                    std::vector<int> cols1, cols2, cols3;
                     
-                    // Find candidates in row1
+                    // Collect positions for each row
                     for(int col = 0; col < 9; col++) {
                         if(GetValue(row1, col) == -1 && board[row1][col][val] == val) {
-                            if(count1 < 3) {
-                                cols1[count1++] = col;
-                            } else {
-                                count1++;
-                                break;
-                            }
+                            cols1.push_back(col);
+                        }
+                        if(GetValue(row2, col) == -1 && board[row2][col][val] == val) {
+                            cols2.push_back(col);
+                        }
+                        if(GetValue(row3, col) == -1 && board[row3][col][val] == val) {
+                            cols3.push_back(col);
                         }
                     }
                     
-                    // If 2 or 3 positions in row1
-                    if(count1 >= 2 && count1 <= 3) {
-                        // Check row2
-                        for(int col = 0; col < 9; col++) {
-                            if(GetValue(row2, col) == -1 && board[row2][col][val] == val) {
-                                if(count2 < 3) {
-                                    cols2[count2++] = col;
-                                } else {
-                                    count2++;
+                    // Each row must have 2-3 positions
+                    if(cols1.size() >= 2 && cols1.size() <= 3 &&
+                       cols2.size() >= 2 && cols2.size() <= 3 &&
+                       cols3.size() >= 2 && cols3.size() <= 3) {
+                        
+                        // Collect all unique columns
+                        std::set<int> uniqueCols;
+                        for(int col : cols1) uniqueCols.insert(col);
+                        for(int col : cols2) uniqueCols.insert(col);
+                        for(int col : cols3) uniqueCols.insert(col);
+                        
+                        // If exactly 3 columns, we have a Swordfish pattern
+                        if(uniqueCols.size() == 3) {
+                            move(23, 0);
+                            printw("Found Swordfish pattern for value %d in rows %d,%d,%d\n",
+                                   val + 1, row1 + 1, row2 + 1, row3 + 1);
+                            refresh();
+
+                            // Verify pattern won't create an unsolvable puzzle
+                            bool isSafe = true;
+                            for(int col : uniqueCols) {
+                                int count = 0;
+                                for(int row = 0; row < 9; row++) {
+                                    if(row != row1 && row != row2 && row != row3 &&
+                                       GetValue(row, col) == -1 && 
+                                       board[row][col][val] == val) {
+                                        count++;
+                                    }
+                                }
+                                if(count == 0) {
+                                    isSafe = false;
                                     break;
                                 }
                             }
-                        }
-                        
-                        // If row2 also has 2-3 positions
-                        if(count2 >= 2 && count2 <= 3) {
-                            // Check row3
-                            for(int col = 0; col < 9; col++) {
-                                if(GetValue(row3, col) == -1 && board[row3][col][val] == val) {
-                                    if(count3 < 3) {
-                                        cols3[count3++] = col;
-                                    } else {
-                                        count3++;
-                                        break;
-                                    }
-                                }
+
+                            if(!isSafe) {
+                                move(24, 0);
+                                printw("Skipping unsafe Swordfish pattern\n");
+                                refresh();
+                                continue;
                             }
-                            
-                            // If row3 also has 2-3 positions
-                            if(count3 >= 2 && count3 <= 3) {
-                                // Collect all unique columns
-                                int uniqueCols[9], uniqueCount = 0;
-                                
-                                // Add columns from row1
-                                for(int i = 0; i < count1; i++) {
-                                    uniqueCols[uniqueCount++] = cols1[i];
-                                }
-                                
-                                // Add new columns from row2
-                                for(int i = 0; i < count2; i++) {
-                                    bool found = false;
-                                    for(int j = 0; j < uniqueCount; j++) {
-                                        if(cols2[i] == uniqueCols[j]) {
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if(!found) {
-                                        uniqueCols[uniqueCount++] = cols2[i];
-                                    }
-                                }
-                                
-                                // Add new columns from row3
-                                for(int i = 0; i < count3; i++) {
-                                    bool found = false;
-                                    for(int j = 0; j < uniqueCount; j++) {
-                                        if(cols3[i] == uniqueCols[j]) {
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if(!found) {
-                                        uniqueCols[uniqueCount++] = cols3[i];
-                                    }
-                                }
-                                
-                                // If exactly 3 unique columns found, we have a Swordfish pattern
-                                if(uniqueCount == 3) {
-                                    // Eliminate val from other cells in these columns
-                                    for(int row = 0; row < 9; row++) {
-                                        if(row != row1 && row != row2 && row != row3) {
-                                            for(int i = 0; i < 3; i++) {
-                                                int col = uniqueCols[i];
-                                                if(board[row][col][val] != -1) {
-                                                    board[row][col][val] = -1;
-                                                    changed++;
-                                                }
+
+                            // Eliminate val from other cells in these columns
+                            bool madeChange = false;
+                            for(int col : uniqueCols) {
+                                for(int row = 0; row < 9; row++) {
+                                    if(row != row1 && row != row2 && row != row3 &&
+                                       GetValue(row, col) == -1 && 
+                                       board[row][col][val] == val) {
+                                        
+                                        move(25, 0);
+                                        printw("Checking elimination of %d at (%d,%d)\n",
+                                               val + 1, row + 1, col + 1);
+                                        auto candidates = getCandidates(row, col);
+                                        printw("Current candidates: ");
+                                        for(int c : candidates) printw("%d ", c + 1);
+                                        printw("\n");
+                                        refresh();
+
+                                        if(isSafeElimination(row, col, val)) {
+                                            board[row][col][val] = -1;
+                                            madeChange = true;
+
+                                            // Validate after each elimination
+                                            if(!IsValidSolution()) {
+                                                move(26, 0);
+                                                printw("Invalid solution after Swordfish elimination\n");
+                                                refresh();
+                                                return -1;
                                             }
                                         }
                                     }
                                 }
                             }
+                            if(madeChange) changed++;
                         }
                     }
                 }
             }
         }
     }
-    
-    // Check for Swordfish patterns in columns
+
+    // Process Swordfish patterns in columns
     for(int val = 0; val < 9; val++) {
         for(int col1 = 0; col1 < 7; col1++) {
             for(int col2 = col1 + 1; col2 < 8; col2++) {
                 for(int col3 = col2 + 1; col3 < 9; col3++) {
-                    // Find positions where val can appear in each column
-                    int rows1[3], rows2[3], rows3[3];
-                    int count1 = 0, count2 = 0, count3 = 0;
+                    std::vector<int> rows1, rows2, rows3;
                     
-                    // Find candidates in col1
                     for(int row = 0; row < 9; row++) {
                         if(GetValue(row, col1) == -1 && board[row][col1][val] == val) {
-                            if(count1 < 3) {
-                                rows1[count1++] = row;
-                            } else {
-                                count1++;
-                                break;
-                            }
+                            rows1.push_back(row);
+                        }
+                        if(GetValue(row, col2) == -1 && board[row][col2][val] == val) {
+                            rows2.push_back(row);
+                        }
+                        if(GetValue(row, col3) == -1 && board[row][col3][val] == val) {
+                            rows3.push_back(row);
                         }
                     }
                     
-                    // If 2 or 3 positions in col1
-                    if(count1 >= 2 && count1 <= 3) {
-                        // Check col2
-                        for(int row = 0; row < 9; row++) {
-                            if(GetValue(row, col2) == -1 && board[row][col2][val] == val) {
-                                if(count2 < 3) {
-                                    rows2[count2++] = row;
-                                } else {
-                                    count2++;
+                    if(rows1.size() >= 2 && rows1.size() <= 3 &&
+                       rows2.size() >= 2 && rows2.size() <= 3 &&
+                       rows3.size() >= 2 && rows3.size() <= 3) {
+                        
+                        std::set<int> uniqueRows;
+                        for(int row : rows1) uniqueRows.insert(row);
+                        for(int row : rows2) uniqueRows.insert(row);
+                        for(int row : rows3) uniqueRows.insert(row);
+                        
+                        if(uniqueRows.size() == 3) {
+                            move(23, 0);
+                            printw("Found Swordfish pattern for value %d in columns %d,%d,%d\n",
+                                   val + 1, col1 + 1, col2 + 1, col3 + 1);
+                            refresh();
+
+                            // Verify pattern safety
+                            bool isSafe = true;
+                            for(int row : uniqueRows) {
+                                int count = 0;
+                                for(int col = 0; col < 9; col++) {
+                                    if(col != col1 && col != col2 && col != col3 &&
+                                       GetValue(row, col) == -1 && 
+                                       board[row][col][val] == val) {
+                                        count++;
+                                    }
+                                }
+                                if(count == 0) {
+                                    isSafe = false;
                                     break;
                                 }
                             }
-                        }
-                        
-                        // If col2 also has 2-3 positions
-                        if(count2 >= 2 && count2 <= 3) {
-                            // Check col3
-                            for(int row = 0; row < 9; row++) {
-                                if(GetValue(row, col3) == -1 && board[row][col3][val] == val) {
-                                    if(count3 < 3) {
-                                        rows3[count3++] = row;
-                                    } else {
-                                        count3++;
-                                        break;
-                                    }
-                                }
+
+                            if(!isSafe) {
+                                move(24, 0);
+                                printw("Skipping unsafe Swordfish pattern\n");
+                                refresh();
+                                continue;
                             }
-                            
-                            // If col3 also has 2-3 positions
-                            if(count3 >= 2 && count3 <= 3) {
-                                // Collect all unique rows
-                                int uniqueRows[9], uniqueCount = 0;
-                                
-                                // Add rows from col1
-                                for(int i = 0; i < count1; i++) {
-                                    uniqueRows[uniqueCount++] = rows1[i];
-                                }
-                                
-                                // Add new rows from col2
-                                for(int i = 0; i < count2; i++) {
-                                    bool found = false;
-                                    for(int j = 0; j < uniqueCount; j++) {
-                                        if(rows2[i] == uniqueRows[j]) {
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if(!found) {
-                                        uniqueRows[uniqueCount++] = rows2[i];
-                                    }
-                                }
-                                
-                                // Add new rows from col3
-                                for(int i = 0; i < count3; i++) {
-                                    bool found = false;
-                                    for(int j = 0; j < uniqueCount; j++) {
-                                        if(rows3[i] == uniqueRows[j]) {
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                    if(!found) {
-                                        uniqueRows[uniqueCount++] = rows3[i];
-                                    }
-                                }
-                                
-                                // If exactly 3 unique rows found, we have a Swordfish pattern
-                                if(uniqueCount == 3) {
-                                    // Eliminate val from other cells in these rows
-                                    for(int col = 0; col < 9; col++) {
-                                        if(col != col1 && col != col2 && col != col3) {
-                                            for(int i = 0; i < 3; i++) {
-                                                int row = uniqueRows[i];
-                                                if(board[row][col][val] != -1) {
-                                                    board[row][col][val] = -1;
-                                                    changed++;
-                                                }
+
+                            bool madeChange = false;
+                            for(int row : uniqueRows) {
+                                for(int col = 0; col < 9; col++) {
+                                    if(col != col1 && col != col2 && col != col3 &&
+                                       GetValue(row, col) == -1 && 
+                                       board[row][col][val] == val) {
+                                        
+                                        move(25, 0);
+                                        printw("Checking elimination of %d at (%d,%d)\n",
+                                               val + 1, row + 1, col + 1);
+                                        auto candidates = getCandidates(row, col);
+                                        printw("Current candidates: ");
+                                        for(int c : candidates) printw("%d ", c + 1);
+                                        printw("\n");
+                                        refresh();
+
+                                        if(isSafeElimination(row, col, val)) {
+                                            board[row][col][val] = -1;
+                                            madeChange = true;
+
+                                            if(!IsValidSolution()) {
+                                                move(26, 0);
+                                                printw("Invalid solution after Swordfish elimination\n");
+                                                refresh();
+                                                return -1;
                                             }
                                         }
                                     }
                                 }
                             }
+                            if(madeChange) changed++;
                         }
                     }
                 }
@@ -996,26 +1013,71 @@ int Sudoku::FindHiddenPairs() {
     return changed;
 }
 
-int Sudoku::StdElim()
-{
-    int eliminated = 0;  // Track number of eliminations
-    
-    // Process each filled cell once
+int Sudoku::StdElim() {
+    int eliminated = 0;
+
+    // Helper to validate elimination
+    auto safeEliminate = [this](int row, int col, int value) -> bool {
+        if(board[row][col][value] != value) return false;  // Already eliminated
+
+        // Count remaining candidates before elimination
+        int candidateCount = 0;
+        for(int v = 0; v < 9; v++) {
+            if(board[row][col][v] == v) candidateCount++;
+        }
+        if(candidateCount <= 1) {
+            move(23, 0);
+            printw("Cannot eliminate only candidate %d at (%d,%d)\n", value + 1, row + 1, col + 1);
+            refresh();
+            return false;
+        }
+
+        // Make the elimination
+        board[row][col][value] = -1;
+
+        // Validate resulting state
+        if(!IsValidSolution()) {
+            // Restore if invalid
+            board[row][col][value] = value;
+            move(23, 0);
+            printw("Eliminating %d from (%d,%d) would create invalid state\n", 
+                   value + 1, row + 1, col + 1);
+            refresh();
+            return false;
+        }
+
+        return true;
+    };
+
+    // Process each cell once
+    std::vector<bool> processed(81, false);
+
     for(int y = 0; y < 9; y++) {
         for(int x = 0; x < 9; x++) {
+            int cellIndex = y * 9 + x;
+            if(processed[cellIndex]) continue;
+
             int value = GetValue(x, y);
             if(value >= 0 && value <= 8) {  // Found a filled cell
+                move(24, 0);
+                printw("Processing filled cell (%d,%d) with value %d\n", x + 1, y + 1, value + 1);
+                refresh();
+
                 // Eliminate from row
                 for(int i = 0; i < 9; i++) {
-                    if(i != x && EliminatePossibility(i, y, value) == 0) {
-                        eliminated++;
+                    if(i != x && GetValue(i, y) == -1) {
+                        if(safeEliminate(i, y, value)) {
+                            eliminated++;
+                        }
                     }
                 }
                 
                 // Eliminate from column
                 for(int i = 0; i < 9; i++) {
-                    if(i != y && EliminatePossibility(x, i, value) == 0) {
-                        eliminated++;
+                    if(i != y && GetValue(x, i) == -1) {
+                        if(safeEliminate(x, i, value)) {
+                            eliminated++;
+                        }
                     }
                 }
                 
@@ -1026,17 +1088,30 @@ int Sudoku::StdElim()
                     for(int j = 0; j < 3; j++) {
                         int cur_x = box_x + j;
                         int cur_y = box_y + i;
-                        if((cur_x != x || cur_y != y) && 
-                           EliminatePossibility(cur_x, cur_y, value) == 0) {
-                            eliminated++;
+                        if((cur_x != x || cur_y != y) && GetValue(cur_x, cur_y) == -1) {
+                            if(safeEliminate(cur_x, cur_y, value)) {
+                                eliminated++;
+                            }
                         }
                     }
+                }
+
+                // Mark cell as processed
+                processed[cellIndex] = true;
+
+                // Validate the entire board after processing each cell
+                if(!IsValidSolution()) {
+                    move(25, 0);
+                    printw("Invalid board state after processing cell (%d,%d)\n", x + 1, y + 1);
+                    refresh();
+                    return -1;
                 }
             }
         }
     }
     
-    return eliminated;  // Return number of eliminations (positive = changes made)
+    // Return -1 if no eliminations were made
+    return eliminated > 0 ? eliminated : -1;
 }
 
 int Sudoku::FindHiddenSingles() {
