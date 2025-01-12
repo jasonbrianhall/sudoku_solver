@@ -1333,56 +1333,137 @@ void Sudoku::FindNakedSetInUnit(std::vector<std::pair<int, int>>& cells, const s
 int Sudoku::FindNakedSets() {
     int changed = 0;
 
+    // Helper to get set of candidates for a cell
+    auto getCandidates = [this](int row, int col) -> std::vector<int> {
+        std::vector<int> candidates;
+        if(GetValue(row, col) == -1) {  // Only if cell is empty
+            for(int val = 0; val < 9; val++) {
+                if(board[row][col][val] == val) {
+                    candidates.push_back(val);
+                }
+            }
+        }
+        return candidates;
+    };
+
+    // Helper to check if elimination is safe
+    auto isSafeElimination = [this](int row, int col, int val) -> bool {
+        // Don't eliminate if this would leave cell with no candidates
+        int candidateCount = 0;
+        for(int v = 0; v < 9; v++) {
+            if(board[row][col][v] == v) {
+                candidateCount++;
+            }
+        }
+        if(candidateCount <= 1) {
+            move(24, 0);
+            printw("Cannot eliminate only remaining candidate at (%d,%d)\n", row + 1, col + 1);
+            refresh();
+            return false;
+        }
+
+        // Check if elimination would create invalid state
+        board[row][col][val] = -1;  // Temporarily eliminate
+        bool isValid = IsValidSolution();
+        board[row][col][val] = val; // Restore
+        
+        if(!isValid) {
+            move(24, 0);
+            printw("Eliminating %d from (%d,%d) would create invalid state\n", 
+                   val + 1, row + 1, col + 1);
+            refresh();
+            return false;
+        }
+        return true;
+    };
+
     // Process each row
     for(int row = 0; row < 9; row++) {
-        // First find all empty cells in this row and their candidates
-        std::vector<std::pair<int, std::vector<int>>> cellCandidates;
+        std::vector<std::pair<int, std::vector<int>>> cells;  // col, candidates
+        
+        // Collect all empty cells and their candidates
         for(int col = 0; col < 9; col++) {
-            if(GetValue(row, col) == -1) {
-                std::vector<int> candidates;
-                for(int val = 0; val < 9; val++) {
-                    if(board[row][col][val] == val) {
-                        candidates.push_back(val);
-                    }
+            auto candidates = getCandidates(row, col);
+            if(!candidates.empty()) {
+                cells.push_back({col, candidates});
+
+                // Debug output
+                move(25, 0);
+                printw("Row %d Col %d candidates: ", row + 1, col + 1);
+                for(int val : candidates) {
+                    printw("%d ", val + 1);
                 }
-                if(!candidates.empty()) {
-                    cellCandidates.push_back({col, candidates});
-                }
+                printw("\n");
+                refresh();
             }
         }
 
         // Look for naked pairs
-        for(size_t i = 0; i < cellCandidates.size(); i++) {
-            if(cellCandidates[i].second.size() != 2) continue;
+        for(size_t i = 0; i < cells.size(); i++) {
+            if(cells[i].second.size() != 2) continue;
             
-            for(size_t j = i + 1; j < cellCandidates.size(); j++) {
-                if(cellCandidates[j].second.size() != 2) continue;
+            for(size_t j = i + 1; j < cells.size(); j++) {
+                if(cells[j].second.size() != 2) continue;
                 
-                // Check if these two cells have the same candidates
-                if(cellCandidates[i].second == cellCandidates[j].second) {
-                    // Found a naked pair
+                // Check if these cells form a naked pair
+                bool isPair = true;
+                for(int val : cells[i].second) {
+                    if(std::find(cells[j].second.begin(), cells[j].second.end(), val) 
+                       == cells[j].second.end()) {
+                        isPair = false;
+                        break;
+                    }
+                }
+                
+                if(isPair) {
+                    move(26, 0);
+                    printw("Found naked pair in row %d at columns %d,%d: ", 
+                           row + 1, cells[i].first + 1, cells[j].first + 1);
+                    for(int val : cells[i].second) {
+                        printw("%d ", val + 1);
+                    }
+                    printw("\n");
+                    refresh();
+
+                    // Eliminate these values from other cells
                     bool madeChange = false;
-                    
-                    // Remove these candidates from other cells in the row
-                    for(size_t k = 0; k < cellCandidates.size(); k++) {
+                    for(size_t k = 0; k < cells.size(); k++) {
                         if(k != i && k != j) {
-                            int col = cellCandidates[k].first;
-                            for(int val : cellCandidates[i].second) {
+                            int col = cells[k].first;
+                            
+                            for(int val : cells[i].second) {
                                 if(board[row][col][val] == val) {
-                                    board[row][col][val] = -1;
-                                    madeChange = true;
+                                    // Debug before elimination
+                                    move(27, 0);
+                                    printw("Candidates at (%d,%d): ", row + 1, col + 1);
+                                    auto beforeCands = getCandidates(row, col);
+                                    for(int v : beforeCands) {
+                                        printw("%d ", v + 1);
+                                    }
+                                    printw("\n");
+                                    refresh();
+
+                                    if(isSafeElimination(row, col, val)) {
+                                        move(28, 0);
+                                        printw("Eliminating %d from (%d,%d)\n", 
+                                               val + 1, row + 1, col + 1);
+                                        refresh();
+                                        
+                                        board[row][col][val] = -1;
+                                        madeChange = true;
+
+                                        if(!IsValidSolution()) {
+                                            move(29, 0);
+                                            printw("Invalid solution after elimination!\n");
+                                            refresh();
+                                            return -1;
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                    
-                    if(madeChange) {
-                        changed++;
-                        // Validate after each change
-                        if(!IsValidSolution()) {
-                            return -1;
-                        }
-                    }
+                    if(madeChange) changed++;
                 }
             }
         }
@@ -1390,49 +1471,91 @@ int Sudoku::FindNakedSets() {
 
     // Process each column
     for(int col = 0; col < 9; col++) {
-        std::vector<std::pair<int, std::vector<int>>> cellCandidates;
+        std::vector<std::pair<int, std::vector<int>>> cells;  // row, candidates
+        
+        // Collect all empty cells and their candidates
         for(int row = 0; row < 9; row++) {
-            if(GetValue(row, col) == -1) {
-                std::vector<int> candidates;
-                for(int val = 0; val < 9; val++) {
-                    if(board[row][col][val] == val) {
-                        candidates.push_back(val);
-                    }
+            auto candidates = getCandidates(row, col);
+            if(!candidates.empty()) {
+                cells.push_back({row, candidates});
+
+                // Debug output
+                move(25, 0);
+                printw("Col %d Row %d candidates: ", col + 1, row + 1);
+                for(int val : candidates) {
+                    printw("%d ", val + 1);
                 }
-                if(!candidates.empty()) {
-                    cellCandidates.push_back({row, candidates});
-                }
+                printw("\n");
+                refresh();
             }
         }
 
         // Look for naked pairs
-        for(size_t i = 0; i < cellCandidates.size(); i++) {
-            if(cellCandidates[i].second.size() != 2) continue;
+        for(size_t i = 0; i < cells.size(); i++) {
+            if(cells[i].second.size() != 2) continue;
             
-            for(size_t j = i + 1; j < cellCandidates.size(); j++) {
-                if(cellCandidates[j].second.size() != 2) continue;
+            for(size_t j = i + 1; j < cells.size(); j++) {
+                if(cells[j].second.size() != 2) continue;
                 
-                if(cellCandidates[i].second == cellCandidates[j].second) {
+                // Check if these cells form a naked pair
+                bool isPair = true;
+                for(int val : cells[i].second) {
+                    if(std::find(cells[j].second.begin(), cells[j].second.end(), val) 
+                       == cells[j].second.end()) {
+                        isPair = false;
+                        break;
+                    }
+                }
+                
+                if(isPair) {
+                    move(26, 0);
+                    printw("Found naked pair in col %d at rows %d,%d: ", 
+                           col + 1, cells[i].first + 1, cells[j].first + 1);
+                    for(int val : cells[i].second) {
+                        printw("%d ", val + 1);
+                    }
+                    printw("\n");
+                    refresh();
+
+                    // Eliminate these values from other cells
                     bool madeChange = false;
-                    
-                    for(size_t k = 0; k < cellCandidates.size(); k++) {
+                    for(size_t k = 0; k < cells.size(); k++) {
                         if(k != i && k != j) {
-                            int row = cellCandidates[k].first;
-                            for(int val : cellCandidates[i].second) {
+                            int row = cells[k].first;
+                            
+                            for(int val : cells[i].second) {
                                 if(board[row][col][val] == val) {
-                                    board[row][col][val] = -1;
-                                    madeChange = true;
+                                    // Debug before elimination
+                                    move(27, 0);
+                                    printw("Candidates at (%d,%d): ", row + 1, col + 1);
+                                    auto beforeCands = getCandidates(row, col);
+                                    for(int v : beforeCands) {
+                                        printw("%d ", v + 1);
+                                    }
+                                    printw("\n");
+                                    refresh();
+
+                                    if(isSafeElimination(row, col, val)) {
+                                        move(28, 0);
+                                        printw("Eliminating %d from (%d,%d)\n", 
+                                               val + 1, row + 1, col + 1);
+                                        refresh();
+                                        
+                                        board[row][col][val] = -1;
+                                        madeChange = true;
+
+                                        if(!IsValidSolution()) {
+                                            move(29, 0);
+                                            printw("Invalid solution after elimination!\n");
+                                            refresh();
+                                            return -1;
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                    
-                    if(madeChange) {
-                        changed++;
-                        if(!IsValidSolution()) {
-                            return -1;
-                        }
-                    }
+                    if(madeChange) changed++;
                 }
             }
         }
@@ -1441,57 +1564,100 @@ int Sudoku::FindNakedSets() {
     // Process each 3x3 box
     for(int boxRow = 0; boxRow < 3; boxRow++) {
         for(int boxCol = 0; boxCol < 3; boxCol++) {
-            std::vector<std::pair<std::pair<int,int>, std::vector<int>>> cellCandidates;
+            std::vector<std::pair<std::pair<int,int>, std::vector<int>>> cells;  // {row,col}, candidates
             
-            // Collect candidates for each empty cell in this box
-            for(int r = 0; r < 3; r++) {
-                for(int c = 0; c < 3; c++) {
-                    int row = boxRow * 3 + r;
-                    int col = boxCol * 3 + c;
+            // Collect all empty cells and their candidates in this box
+            for(int i = 0; i < 3; i++) {
+                for(int j = 0; j < 3; j++) {
+                    int row = boxRow * 3 + i;
+                    int col = boxCol * 3 + j;
                     
-                    if(GetValue(row, col) == -1) {
-                        std::vector<int> candidates;
-                        for(int val = 0; val < 9; val++) {
-                            if(board[row][col][val] == val) {
-                                candidates.push_back(val);
-                            }
+                    auto candidates = getCandidates(row, col);
+                    if(!candidates.empty()) {
+                        cells.push_back({{row, col}, candidates});
+
+                        // Debug output
+                        move(25, 0);
+                        printw("Box (%d,%d) position (%d,%d) candidates: ", 
+                               boxRow + 1, boxCol + 1, row + 1, col + 1);
+                        for(int val : candidates) {
+                            printw("%d ", val + 1);
                         }
-                        if(!candidates.empty()) {
-                            cellCandidates.push_back({{row, col}, candidates});
-                        }
+                        printw("\n");
+                        refresh();
                     }
                 }
             }
 
-            // Look for naked pairs in this box
-            for(size_t i = 0; i < cellCandidates.size(); i++) {
-                if(cellCandidates[i].second.size() != 2) continue;
+            // Look for naked pairs
+            for(size_t i = 0; i < cells.size(); i++) {
+                if(cells[i].second.size() != 2) continue;
                 
-                for(size_t j = i + 1; j < cellCandidates.size(); j++) {
-                    if(cellCandidates[j].second.size() != 2) continue;
+                for(size_t j = i + 1; j < cells.size(); j++) {
+                    if(cells[j].second.size() != 2) continue;
                     
-                    if(cellCandidates[i].second == cellCandidates[j].second) {
+                    // Check if these cells form a naked pair
+                    bool isPair = true;
+                    for(int val : cells[i].second) {
+                        if(std::find(cells[j].second.begin(), cells[j].second.end(), val) 
+                           == cells[j].second.end()) {
+                            isPair = false;
+                            break;
+                        }
+                    }
+                    
+                    if(isPair) {
+                        move(26, 0);
+                        printw("Found naked pair in box (%d,%d) at positions (%d,%d),(%d,%d): ", 
+                               boxRow + 1, boxCol + 1,
+                               cells[i].first.first + 1, cells[i].first.second + 1,
+                               cells[j].first.first + 1, cells[j].first.second + 1);
+                        for(int val : cells[i].second) {
+                            printw("%d ", val + 1);
+                        }
+                        printw("\n");
+                        refresh();
+
+                        // Eliminate these values from other cells in box
                         bool madeChange = false;
-                        
-                        for(size_t k = 0; k < cellCandidates.size(); k++) {
+                        for(size_t k = 0; k < cells.size(); k++) {
                             if(k != i && k != j) {
-                                int row = cellCandidates[k].first.first;
-                                int col = cellCandidates[k].first.second;
-                                for(int val : cellCandidates[i].second) {
+                                int row = cells[k].first.first;
+                                int col = cells[k].first.second;
+                                
+                                for(int val : cells[i].second) {
                                     if(board[row][col][val] == val) {
-                                        board[row][col][val] = -1;
-                                        madeChange = true;
+                                        // Debug before elimination
+                                        move(27, 0);
+                                        printw("Candidates at (%d,%d): ", row + 1, col + 1);
+                                        auto beforeCands = getCandidates(row, col);
+                                        for(int v : beforeCands) {
+                                            printw("%d ", v + 1);
+                                        }
+                                        printw("\n");
+                                        refresh();
+
+                                        if(isSafeElimination(row, col, val)) {
+                                            move(28, 0);
+                                            printw("Eliminating %d from (%d,%d)\n", 
+                                                   val + 1, row + 1, col + 1);
+                                            refresh();
+                                            
+                                            board[row][col][val] = -1;
+                                            madeChange = true;
+
+                                            if(!IsValidSolution()) {
+                                                move(29, 0);
+                                                printw("Invalid solution after elimination!\n");
+                                                refresh();
+                                                return -1;
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
-                        
-                        if(madeChange) {
-                            changed++;
-                            if(!IsValidSolution()) {
-                                return -1;
-                            }
-                        }
+                        if(madeChange) changed++;
                     }
                 }
             }
