@@ -942,80 +942,45 @@ int Sudoku::FindHiddenPairs() {
 
 int Sudoku::StdElim()
 {
-
-  int x, y, temp, i, j, section1, section2, counter1=0, counter2=0, returned;
-  for(x=0;x<9;x++)
-  {
-    for(y=0;y<9;y++)
-    {
-      temp=GetValue(x,y);
-      if(temp>=0 && temp<=8)
-      {
-	counter1++;
-      }
+    int eliminated = 0;  // Track number of eliminations
+    
+    // Process each filled cell once
+    for(int y = 0; y < 9; y++) {
+        for(int x = 0; x < 9; x++) {
+            int value = GetValue(x, y);
+            if(value >= 0 && value <= 8) {  // Found a filled cell
+                // Eliminate from row
+                for(int i = 0; i < 9; i++) {
+                    if(i != x && EliminatePossibility(i, y, value) == 0) {
+                        eliminated++;
+                    }
+                }
+                
+                // Eliminate from column
+                for(int i = 0; i < 9; i++) {
+                    if(i != y && EliminatePossibility(x, i, value) == 0) {
+                        eliminated++;
+                    }
+                }
+                
+                // Eliminate from 3x3 box
+                int box_x = (x / 3) * 3;
+                int box_y = (y / 3) * 3;
+                for(int i = 0; i < 3; i++) {
+                    for(int j = 0; j < 3; j++) {
+                        int cur_x = box_x + j;
+                        int cur_y = box_y + i;
+                        if((cur_x != x || cur_y != y) && 
+                           EliminatePossibility(cur_x, cur_y, value) == 0) {
+                            eliminated++;
+                        }
+                    }
+                }
+            }
+        }
     }
-  }
-  for(y=0;y<9;y++)
-  {
-    for(x=0;x<9;x++)
-    {
-      temp=GetValue(x, y);
-      if(temp>=0 && temp<=8)
-      {
-	for(i=0;i<x;i++)
-	{
-	  EliminatePossibility(i, y, temp);
-	}
-	for(i=x+1;i<9;i++)
-	{
-	  EliminatePossibility(i, y, temp);
-	}
-	for(i=0;i<y;i++)
-	{
-	  EliminatePossibility(x, i, temp);
-	}
-	for(i=y+1;i<9;i++)
-	{
-	  EliminatePossibility(x, i, temp);
-	}
-
-	/*  Square Elimination */
-	
-	section1=(x/3)*3;
-	section2=(y/3)*3;
-	for(i=0;i<3;i++)
-	{
-	  for(j=0;j<3;j++)
-	  {
-	    if(x!=(section1+j) || y!=(section2+i))
-	    {
-	      EliminatePossibility(section1+j, section2+i, temp);
-	    }
-	  }
-	}
-      }
-    }
-  }
-  for(x=0;x<9;x++)
-  {
-    for(y=0;y<9;y++)
-    {
-      temp=GetValue(x,y);
-      if(temp>=0 && temp<=8)
-      {
-	counter2++;
-      }
-    }
-  }
-  if(counter1==counter2)
-  {
-    returned=-1;
-  }
-  else
-  {
-    returned=0;
-  }
-  return returned;
+    
+    return eliminated;  // Return number of eliminations (positive = changes made)
 }
 
 int Sudoku::FindHiddenSingles() {
