@@ -18,8 +18,8 @@ class Sudoku
     int GetValue(int x, int y);
     int ClearValue(int x, int y);
     int Solve();
-    
     bool LegalValue(int x, int y, int value);
+    
   private:
 
     int EliminatePossibility(int x, int y, int value);
@@ -35,6 +35,9 @@ class Sudoku
     std::vector<int> GetCellCandidates(int x, int y);
     bool VectorsEqual(const std::vector<int>& v1, const std::vector<int>& v2);
     void FindNakedSetInUnit(std::vector<std::pair<int, int>>& cells, const std::vector<int>& candidates, int& changed);
+    bool IsValidUnit(std::vector<int>& values);
+    bool IsValidSolution();
+
 };
 
 int main(void)
@@ -303,6 +306,61 @@ int Sudoku::ClearValue(int x, int y)
   {
     return -1;
   }
+}
+
+bool Sudoku::IsValidUnit(std::vector<int>& values) {
+    std::vector<bool> used(9, false);
+    for(int val : values) {
+        if(val != -1) {  // Skip empty cells
+            if(used[val]) {
+                return false;  // Duplicate found
+            }
+            used[val] = true;
+        }
+    }
+    return true;
+}
+
+bool Sudoku::IsValidSolution() {
+    // Check rows
+    for(int row = 0; row < 9; row++) {
+        std::vector<int> values;
+        for(int col = 0; col < 9; col++) {
+            values.push_back(GetValue(row, col));
+        }
+        if(!IsValidUnit(values)) {
+            return false;
+        }
+    }
+    
+    // Check columns
+    for(int col = 0; col < 9; col++) {
+        std::vector<int> values;
+        for(int row = 0; row < 9; row++) {
+            values.push_back(GetValue(row, col));
+        }
+        if(!IsValidUnit(values)) {
+            return false;
+        }
+    }
+    
+    // Check 3x3 boxes
+    for(int box = 0; box < 9; box++) {
+        std::vector<int> values;
+        int startRow = (box / 3) * 3;
+        int startCol = (box % 3) * 3;
+        
+        for(int i = 0; i < 3; i++) {
+            for(int j = 0; j < 3; j++) {
+                values.push_back(GetValue(startRow + i, startCol + j));
+            }
+        }
+        if(!IsValidUnit(values)) {
+            return false;
+        }
+    }
+    
+    return true;
 }
 
 int Sudoku::Solve() 
