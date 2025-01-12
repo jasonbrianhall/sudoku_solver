@@ -38,6 +38,7 @@ class Sudoku
     void FindNakedSetInUnit(std::vector<std::pair<int, int>>& cells, const std::vector<int>& candidates, int& changed);
     bool IsValidUnit(std::vector<int>& values);
     bool IsValidSolution();
+    void RestoreBoard(int original_board[9][9][9], int board[9][9][9]);
 
 };
 
@@ -364,6 +365,18 @@ bool Sudoku::IsValidSolution() {
     return true;
 }
 
+void Sudoku::RestoreBoard(int original_board[9][9][9], int board[9][9][9]) {
+    int i, j, k; 
+    for (i = 0; i < 9; i++) { 
+        for (j = 0; j < 9; j++) {
+            for (k = 0; k < 9; k++) { 
+                original_board[i][j][k] = board[i][j][k];
+            } 
+        } 
+   }
+} 
+
+
 int Sudoku::Solve() {
     int stop;
     int counter1, counter2, i, j,k;
@@ -372,16 +385,8 @@ int Sudoku::Solve() {
     refresh();
     Clean();
     int original_board[9][9][9];
-    for (i=0;i<9;i++)
-    {
-        for (j=0;j<9;j++)
-        {
-            for (k=0;k<9;k++)
-            {
-                 original_board[i][j][k]=board[i][j][k];
-            }
-        }
-    }
+    RestoreBoard(original_board, board);
+    
     
     do {
         counter1 = 0;
@@ -404,6 +409,7 @@ int Sudoku::Solve() {
                 move(23, 0);
                 printw("Invalid solution detected after StdElim\n");
                 refresh();
+                RestoreBoard(board, original_board);
                 return -1;
             }
             
@@ -415,6 +421,7 @@ int Sudoku::Solve() {
                 move(23, 0);
                 printw("Invalid solution detected after LinElim\n");
                 refresh();
+                RestoreBoard(board, original_board);
                 return -1;
             }
             
@@ -426,6 +433,7 @@ int Sudoku::Solve() {
                 move(23, 0);
                 printw("Invalid solution detected after FindHiddenPairs\n");
                 refresh();
+                RestoreBoard(board, original_board);
                 return -1;
             }
             
@@ -437,6 +445,7 @@ int Sudoku::Solve() {
                 move(23, 0);
                 printw("Invalid solution detected after FindPointingPairs\n");
                 refresh();
+                RestoreBoard(board, original_board);
                 return -1;
             }
 
@@ -449,6 +458,7 @@ int Sudoku::Solve() {
                 move(23, 0);
                 printw("Invalid solution detected after FindXWing\n");
                 refresh();
+                RestoreBoard(board, original_board);
                 return -1;
             }
             
@@ -460,6 +470,7 @@ int Sudoku::Solve() {
                 move(23, 0);
                 printw("Invalid solution detected after FindSwordFish\n");
                 refresh();
+                RestoreBoard(board, original_board);
                 return -1;
             }
             
@@ -471,6 +482,7 @@ int Sudoku::Solve() {
                 move(23, 0);
                 printw("Invalid solution detected after FindHiddenSingles\n");
                 refresh();
+                RestoreBoard(board, original_board);
                 return -1;
             }
             
@@ -482,6 +494,7 @@ int Sudoku::Solve() {
                 move(23, 0);
                 printw("Invalid solution detected after FindNakedSets\n");
                 refresh();
+                RestoreBoard(board, original_board);
                 return -1;
             }
             
