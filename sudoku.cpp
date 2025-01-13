@@ -634,8 +634,7 @@ int Sudoku::Solve() {
     return 0;
 }
 int Sudoku::SolveBasic() {
-    int stop;
-    int counter1, counter2, i, j,k;
+    int counter1, counter2, i, j;
     move(22, 0);
     printw("Starting Solve() - Cleaning board...\n");
     refresh();
@@ -811,7 +810,6 @@ int Sudoku::FindXWing() {
                    rows1[0] == rows2[0] && rows1[1] == rows2[1]) {
                     
                     bool madeChange = false;
-                    bool patternValid = true;
                     int backup[9][9][9];
 
                     // Backup current state
