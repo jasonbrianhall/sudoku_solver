@@ -392,7 +392,7 @@ int Sudoku::Solve() {
     
     
     do {
-        RestoreBoard(original_board, board);
+        //RestoreBoard(original_board, board);
         counter1 = 0;
         counter2 = 0;
         for(i = 0; i < 9; i++) {
