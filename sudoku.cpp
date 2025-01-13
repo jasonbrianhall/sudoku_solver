@@ -41,7 +41,8 @@ class Sudoku
     bool IsValidUnit(std::vector<int>& values);
     bool IsValidSolution();
     void RestoreBoard(int original_board[9][9][9], int board[9][9][9]);
-
+    void print_debug(const char* format, ...);
+    static int debug_line;  // Keep track of current debug line
 };
 
 int main(void)
@@ -245,6 +246,11 @@ Sudoku::~Sudoku()
 
 }
 
+// Add implementation
+int Sudoku::debug_line = 0;
+
+
+
 int Sudoku::Clean()
 {
   int x, y, k;
@@ -393,6 +399,23 @@ void Sudoku::RestoreBoard(int original_board[9][9][9], int board[9][9][9]) {
    }
 } 
 
+void Sudoku::print_debug(const char* format, ...) {
+    // Move to position below grid (header + 19 grid lines + 2 padding)
+    move(29 + debug_line, 0);
+    
+    // Handle variable arguments
+    va_list args;
+    va_start(args, format);
+    vw_printw(stdscr, format, args);
+    va_end(args);
+    
+    clrtoeol();  // Clear rest of line
+    refresh();
+    
+    // Increment line counter, wrap around after 10 lines
+    debug_line = (debug_line + 1) % 10;
+}
+
 
 int Sudoku::Solve() {
     int stop;
@@ -418,19 +441,19 @@ int Sudoku::Solve() {
         
         if(counter1 != 81) {
             // Run each solving technique and validate after each
-            move(22, 0);
+            move(50, 0);
             printw("Running StdElim...                    \n");
             refresh();
             StdElim();
             if(!IsValidSolution()) {
-                move(23, 0);
+                move(50, 0);
                 printw("Invalid solution detected after StdElim\n");
                 refresh();
                 //RestoreBoard(board, original_board);
                 return -1;
             }
             
-            move(22, 0);
+            move(50, 0);
             printw("Running LinElim...                    \n");
             refresh();
             LinElim();
@@ -442,7 +465,7 @@ int Sudoku::Solve() {
                 return -1;
             }
             
-            move(22, 0);
+            move(50, 0);
             printw("Running FindHiddenPairs...            \n");
             refresh();
             FindHiddenPairs();
@@ -454,7 +477,7 @@ int Sudoku::Solve() {
                 return -1;
             }
             
-            move(22, 0);
+            move(50, 0);
             printw("Running FindPointingPairs...            \n");
             refresh();
             FindPointingPairs();
@@ -467,7 +490,7 @@ int Sudoku::Solve() {
             }
 
 
-            move(22, 0);
+            move(50, 0);
             printw("Running FindXWing...                  \n");
             refresh();
             FindXWing();
@@ -479,7 +502,7 @@ int Sudoku::Solve() {
                 return -1;
             }
             
-            move(22, 0);
+            move(50, 0);
             printw("Running FindSwordFish...              \n");
             refresh();
             FindSwordFish();
@@ -491,25 +514,26 @@ int Sudoku::Solve() {
                 return -1;
             }
             
-            move(22, 0);
-            printw("Running FindHiddenSingles...          \n");
+            //move(50, 0);
+            print_debug("Running FindHiddenSingles...          \n");
             refresh();
             FindHiddenSingles();
             if(!IsValidSolution()) {
                 move(23, 0);
-                printw("Invalid solution detected after FindHiddenSingles\n");
+                print_debug("Invalid solution detected after FindHiddenSingles\n");
                 //RestoreBoard(board, original_board);
                 refresh();
                 return -1;
             }
             
-            move(22, 0);
-            printw("Running FindNakedSets...              \n");
+            //move(50, 0);
+            print_debug("Running FindNakedSets...              \n");
             refresh();
             FindNakedSets();
             if(!IsValidSolution()) {
-                move(23, 0);
-                printw("Invalid solution detected after FindNakedSets\n");
+                //move(23, 0);
+                //printw("Invalid solution detected after FindNakedSets\n");
+                print_debug("Invalid solution detected after FindNakedSets\n");
                 //RestoreBoard(board, original_board);
                 refresh();
                 return -1;
@@ -690,7 +714,7 @@ int Sudoku::FindXWing() {
 
     // Debug helper to print candidate info
     auto printCandidates = [this](int row, int col) {
-        move(25, 0);
+        move(52, 0);
         printw("Candidates at (%d,%d): ", row + 1, col + 1);
         for(int val = 0; val < 9; val++) {
             if(board[row][col][val] == val) {
