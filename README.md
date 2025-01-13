@@ -85,6 +85,8 @@ The solver implements several Sudoku solving techniques of increasing complexity
    - Swordfish (F): Advanced triple-line elimination strategy
    - Naked Sets (K): Identifies groups of cells with confined candidates
 
+Pressing A for All algorithms this strategy.
+
 ### Recommended Solving Strategy
 
 For the most efficient solving experience:
