@@ -84,6 +84,7 @@ The solver implements several Sudoku solving techniques of increasing complexity
    - X-Wing (X): Locates rectangle patterns that eliminate candidates
    - Swordfish (F): Advanced triple-line elimination strategy
    - Naked Sets (K): Identifies groups of cells with confined candidates
+   - XY-Wing (Y): Identifies XY Wing Patter
 
 ### Recommended Solving Strategy
 
@@ -93,7 +94,7 @@ For the most efficient solving experience:
 2. When stuck, try one of the advanced techniques:
    - Start with Hidden Singles (N) and Hidden Pairs (H)
    - Progress to Pointing Pairs (P) and X-Wing (X)
-   - Use Swordfish (F) and Naked Sets (K) for the most challenging situations
+   - Use Swordfish (F), Naked Sets (K), and XY-Wing (Y) for the most challenging situations
 3. After finding new possibilities with advanced techniques, return to alternating between Standard and Line Elimination
 4. Repeat this process until the puzzle is solved
 
