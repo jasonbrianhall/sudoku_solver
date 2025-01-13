@@ -72,7 +72,7 @@ int main(void)
     int header_lines = 8;  // Reduced header size with two columns
     
     printw("Welcome to Sudoku Solver\n");
-    printw("Commands:                          Solving techniques:                                Experimental Techniques\n");
+    printw("Commands:                          Solving techniques:                                Experimental Techniques (not part of the all chain)\n");
     printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles     Y - Find XY Wing\n");
     printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets         ; - Find XYZ Wing\n");  
     printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing             C - Simple Coloring\n"); 
