@@ -220,7 +220,7 @@ int main(void)
         }
         break;
     }
-    //move(0,0);
+    move(0,0);
   }
   return 0;
 }
