@@ -34,8 +34,7 @@ class Sudoku
     int FindNakedSets();
     int Clean();
     void LogBoard(std::ofstream& file, const char* algorithm_name);
-
-
+    void NewGame();
     
   private:
 
@@ -75,7 +74,7 @@ int main(void)
     printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets\n");
     printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing\n");
     printw(" q - Quit                           P - Pointing pairs          F - Swordfish\n");
-    printw(" A - Run all techniques\n\n");
+    printw(" A - Run all techniques             Z - New Game\n\n");
     
     // Draw the grid
     for(y=0;y<9;y++)
@@ -245,6 +244,9 @@ int main(void)
         NewGame.Solve();
         NewGame.LogBoard(logfile, "Run All Techniques After");
         break;
+      case 'Z':  // New Game
+        NewGame.NewGame();
+        break;
     }
     move(0,0);
   }
@@ -274,7 +276,14 @@ Sudoku::~Sudoku()
 // Add implementation
 int Sudoku::debug_line = 0;
 
-
+void Sudoku::NewGame() {
+    // Clear the entire board
+    for(int x = 0; x < 9; x++) {
+        for(int y = 0; y < 9; y++) {
+            ClearValue(x, y);
+        }
+    }
+}
 
 int Sudoku::Clean()
 {
