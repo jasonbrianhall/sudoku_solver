@@ -9,6 +9,7 @@ using namespace std;
 
 #include <fstream>
 #include <ctime>
+#include <cstring>
 
 class Sudoku
 {
@@ -759,133 +760,126 @@ bool Sudoku::LegalValue(int x, int y, int value)
 int Sudoku::FindXWing() {
     int changed = 0;
 
-    // Debug helper to print candidate info
-    auto printCandidates = [this](int row, int col) {
-        print_debug("Candidates at (%d,%d): ", row + 1, col + 1);
-        for(int val = 0; val < 9; val++) {
-            if(board[row][col][val] == val) {
-                print_debug("%d ", val + 1);
-            }
-        }
-        print_debug("\n");
-        refresh();
-    };
-
     // Helper to verify that a potential X-Wing position is valid
     auto isValidXWingCell = [this](int row, int col, int val) -> bool {
         // Cell must be empty
         if(GetValue(row, col) != -1) return false;
         
-        // Must have value as a candidate
-        if(board[row][col][val] != val) return false;
+        // Must have value as a candidate and be legal
+        if(board[row][col][val] != val || !LegalValue(row, col, val)) return false;
         
         // Must have at least one other candidate
         int candidateCount = 0;
         for(int v = 0; v < 9; v++) {
-            if(board[row][col][v] == v) candidateCount++;
+            if(board[row][col][v] == v && LegalValue(row, col, v)) candidateCount++;
         }
         return candidateCount > 1;
     };
 
-    // Process X-Wing patterns in columns first (as that's where we're seeing issues)
+    // Process column-based X-Wing patterns
     for(int val = 0; val < 9; val++) {
         for(int col1 = 0; col1 < 8; col1++) {
             for(int col2 = col1 + 1; col2 < 9; col2++) {
-                // First verify we can form an X-Wing in these columns
                 std::vector<int> rows1, rows2;
 
-                // Find candidate positions in first column
+                // Find candidate positions in columns
                 for(int row = 0; row < 9; row++) {
-                    if(isValidXWingCell(row, col1, val)) {
-                        rows1.push_back(row);
-                    }
+                    if(isValidXWingCell(row, col1, val)) rows1.push_back(row);
+                    if(isValidXWingCell(row, col2, val)) rows2.push_back(row);
                 }
 
-                // Check second column if first has exactly 2 positions
-                if(rows1.size() == 2) {
-                    for(int row = 0; row < 9; row++) {
-                        if(isValidXWingCell(row, col2, val)) {
-                            rows2.push_back(row);
+                // Check for X-Wing pattern
+                if(rows1.size() == 2 && rows2.size() == 2 && 
+                   rows1[0] == rows2[0] && rows1[1] == rows2[1]) {
+                    
+                    bool madeChange = false;
+                    bool patternValid = true;
+                    int backup[9][9][9];
+
+                    // Backup current state
+                    memcpy(backup, board, sizeof(backup));
+
+                    // Try eliminations for this pattern
+                    for(int row : rows1) {
+                        int rowPlaces = 0;
+                        for(int c = 0; c < 9; c++) {
+                            if(isValidXWingCell(row, c, val)) rowPlaces++;
                         }
-                    }
-
-                    // Verify exact match of row positions
-                    if(rows2.size() == 2 && rows1[0] == rows2[0] && rows1[1] == rows2[1]) {
-                        // We have a potential X-Wing pattern
-                        print_debug("Found X-Wing pattern for value %d in columns %d,%d at rows %d,%d\n",
-                               val + 1, col1 + 1, col2 + 1, rows1[0] + 1, rows1[1] + 1);
-                        refresh();
-
-                        bool madeChange = false;
-                        
-                        // Before eliminating, verify the pattern is necessary
-                        for(int row : rows1) {
-                            // Count how many places val can go in this row
-                            int rowPlaces = 0;
-                            for(int c = 0; c < 9; c++) {
-                                if(isValidXWingCell(row, c, val)) rowPlaces++;
-                            }
-                            if(rowPlaces <= 2) {
-                                print_debug("Skipping elimination - value %d is too constrained in row %d\n",
-                                       val + 1, row + 1);
-                                refresh();
-                                goto next_pair;  // Pattern could create unsolvable puzzle
-                            }
-                        }
-
-                        // Eliminate val from other positions in these rows
-                        for(int col = 0; col < 9; col++) {
-                            if(col != col1 && col != col2) {  // Skip X-Wing columns
-                                for(int row : rows1) {
-                                    if(isValidXWingCell(row, col, val)) {
-                                        printCandidates(row, col);
-                                        
-                                        // Verify elimination won't create an invalid state
-                                        bool canEliminate = true;
-                                        board[row][col][val] = -1;  // Temporarily eliminate
-                                        
-                                        // Count remaining candidates
-                                        int remainingCandidates = 0;
-                                        for(int v = 0; v < 9; v++) {
-                                            if(board[row][col][v] == v) remainingCandidates++;
-                                        }
-                                        
-                                        if(remainingCandidates == 0) {
-                                            canEliminate = false;
-                                        }
-                                        
-                                        board[row][col][val] = val;  // Restore
-                                        
-                                        if(canEliminate) {
-                                            print_debug("Eliminating %d from (%d,%d)\n",
-                                                   val + 1, row + 1, col + 1);
-                                            refresh();
-                                            
-                                            board[row][col][val] = -1;
-                                            madeChange = true;
-                                            
-                                            // Verify solution remains valid
-                                            if(!IsValidSolution()) {
-                                                print_debug("Invalid solution after elimination!\n");
-                                                refresh();
-                                                return -1;
-                                            }
-                                        }
-                                    }
+                        if(rowPlaces > 2) {  // Only eliminate if not too constrained
+                            for(int col = 0; col < 9; col++) {
+                                if(col != col1 && col != col2 && isValidXWingCell(row, col, val)) {
+                                    board[row][col][val] = -1;
+                                    madeChange = true;
                                 }
                             }
                         }
-                        if(madeChange) changed++;
+                    }
+
+                    // Validate all eliminations together
+                    if(madeChange) {
+                        if(!IsValidSolution()) {
+                            // Restore state if invalid
+                            memcpy(board, backup, sizeof(backup));
+                        } else {
+                            changed++;
+                        }
                     }
                 }
-next_pair:
-                continue;
             }
         }
     }
 
-    // Similar process for row-based X-Wings...
-    // (Previous row-based code here, with similar validation)
+    // Process row-based X-Wing patterns
+    for(int val = 0; val < 9; val++) {
+        for(int row1 = 0; row1 < 8; row1++) {
+            for(int row2 = row1 + 1; row2 < 9; row2++) {
+                std::vector<int> cols1, cols2;
+
+                // Find candidate positions in rows
+                for(int col = 0; col < 9; col++) {
+                    if(isValidXWingCell(row1, col, val)) cols1.push_back(col);
+                    if(isValidXWingCell(row2, col, val)) cols2.push_back(col);
+                }
+
+                // Check for X-Wing pattern
+                if(cols1.size() == 2 && cols2.size() == 2 && 
+                   cols1[0] == cols2[0] && cols1[1] == cols2[1]) {
+                    
+                    bool madeChange = false;
+                    int backup[9][9][9];
+
+                    // Backup current state
+                    memcpy(backup, board, sizeof(backup));
+
+                    // Try eliminations for this pattern
+                    for(int col : cols1) {
+                        int colPlaces = 0;
+                        for(int r = 0; r < 9; r++) {
+                            if(isValidXWingCell(r, col, val)) colPlaces++;
+                        }
+                        if(colPlaces > 2) {  // Only eliminate if not too constrained
+                            for(int row = 0; row < 9; row++) {
+                                if(row != row1 && row != row2 && isValidXWingCell(row, col, val)) {
+                                    board[row][col][val] = -1;
+                                    madeChange = true;
+                                }
+                            }
+                        }
+                    }
+
+                    // Validate all eliminations together
+                    if(madeChange) {
+                        if(!IsValidSolution()) {
+                            // Restore state if invalid
+                            memcpy(board, backup, sizeof(backup));
+                        } else {
+                            changed++;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     return changed;
 }
