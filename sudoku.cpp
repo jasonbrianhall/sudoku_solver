@@ -46,39 +46,7 @@ class Sudoku
     void RestoreBoard(int original_board[9][9][9], int board[9][9][9]);
     void print_debug(const char* format, ...);
     static int debug_line;  // Keep track of current debug line
-    void LogBoard(std::ofstream& file, const char* algorithm_name) {
-        file << "\n=== " << algorithm_name << " ===\n";
-        
-        // Print timestamp
-        time_t now = time(nullptr);
-        file << "Time: " << ctime(&now);
-        
-        // Print horizontal border
-        file << "+---+---+---+---+---+---+---+---+---+\n";
-        
-        // Print board contents
-        for(int y = 0; y < 9; y++) {
-            file << "|";
-            for(int x = 0; x < 9; x++) {
-                int value = GetValue(x, y);
-                if(value >= 0 && value <= 8) {
-                    file << " " << value + 1 << " ";
-                } else {
-                    file << " . ";
-                }
-                if((x + 1) % 3 == 0) file << "|";
-                else file << " ";
-            }
-            file << "\n";
-            
-            // Print horizontal borders
-            if((y + 1) % 3 == 0) {
-                file << "+---+---+---+---+---+---+---+---+---+\n";
-            }
-        }
-        file << "\n";
-    }
-
+    void LogBoard(std::ofstream& file, const char* algorithm_name);
 };
 
 int main(void)
@@ -456,6 +424,40 @@ void Sudoku::print_debug(const char *format, ...) {
     // Increment line counter, wrap around after 20 lines
     debug_line = (debug_line + 1) % 20;
 }
+
+    void Sudoku::LogBoard(std::ofstream& file, const char* algorithm_name) {
+        file << "\n=== " << algorithm_name << " ===\n";
+        
+        // Print timestamp
+        time_t now = time(nullptr);
+        file << "Time: " << ctime(&now);
+        
+        // Print horizontal border
+        file << "+---+---+---+---+---+---+---+---+---+\n";
+        
+        // Print board contents
+        for(int y = 0; y < 9; y++) {
+            file << "|";
+            for(int x = 0; x < 9; x++) {
+                int value = GetValue(x, y);
+                if(value >= 0 && value <= 8) {
+                    file << " " << value + 1 << " ";
+                } else {
+                    file << " . ";
+                }
+                if((x + 1) % 3 == 0) file << "|";
+                else file << " ";
+            }
+            file << "\n";
+            
+            // Print horizontal borders
+            if((y + 1) % 3 == 0) {
+                file << "+---+---+---+---+---+---+---+---+---+\n";
+            }
+        }
+        file << "\n";
+    }
+
 
 int Sudoku::Solve() {
     int stop;
