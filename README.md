@@ -67,6 +67,7 @@ python3 sudoku_solver.py
 - '0' or 'c': Clear current cell
 - 'q': Quit the program
 - ESC: Quit (Python version only)
+- Z: New Game
 
 ### Solving Techniques (C++ version)
 
