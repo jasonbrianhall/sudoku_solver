@@ -1865,12 +1865,12 @@ int Sudoku::FindPointingPairs() {
 int Sudoku::FindXYWing() {
     int changed = 0;
 
-    // Helper to get candidates for a cell
+    // Helper to get raw candidates for a cell without legality check
     auto getCandidates = [this](int row, int col) -> std::vector<int> {
         std::vector<int> candidates;
-        if(GetValue(row, col) == -1) {  // Only if cell is empty
+        if(GetValue(row, col) == -1) {
             for(int val = 0; val < 9; val++) {
-                if(board[row][col][val] == val && LegalValue(row, col, val)) {
+                if(board[row][col][val] == val) {  // Only check if candidate is present
                     candidates.push_back(val);
                 }
             }
@@ -1878,10 +1878,11 @@ int Sudoku::FindXYWing() {
         return candidates;
     };
 
-    // Helper to check if two cells can see each other
-    auto cellsCanSee = [](int row1, int col1, int row2, int col2) -> bool {
-        return row1 == row2 || col1 == col2 ||  // Same row or column
-               (row1/3 == row2/3 && col1/3 == col2/3); // Same box
+    // Helper to check if two cells can see each other (share a house)
+    auto canSee = [](int row1, int col1, int row2, int col2) -> bool {
+        return row1 == row2 ||  // Same row
+               col1 == col2 ||  // Same column
+               (row1/3 == row2/3 && col1/3 == col2/3);  // Same box
     };
 
     // Helper to validate elimination
@@ -1889,7 +1890,6 @@ int Sudoku::FindXYWing() {
         if(GetValue(row, col) != -1) return false;
         if(board[row][col][val] != val) return false;
         
-        // Count remaining candidates
         int candidateCount = 0;
         for(int v = 0; v < 9; v++) {
             if(board[row][col][v] == v) candidateCount++;
@@ -1897,95 +1897,105 @@ int Sudoku::FindXYWing() {
         return candidateCount > 1;
     };
 
-    // Look for potential pivot cells (cells with exactly two candidates)
+    // Debug helper
+    auto printCell = [this](const char* desc, int row, int col, const std::vector<int>& cands) {
+        std::string candStr;
+        for(int val : cands) {
+            candStr += std::to_string(val + 1) + ",";
+        }
+        print_debug("%s at (%d,%d) candidates: %s\n", desc, row + 1, col + 1, candStr.c_str());
+        refresh();
+    };
+
+    // For each potential pivot cell
     for(int pivotRow = 0; pivotRow < 9; pivotRow++) {
         for(int pivotCol = 0; pivotCol < 9; pivotCol++) {
-            auto pivotCandidates = getCandidates(pivotRow, pivotCol);
-            
-            // Pivot must have exactly 2 candidates
-            if(pivotCandidates.size() != 2) continue;
-            
-            // Look for first wing
+            auto pivotCands = getCandidates(pivotRow, pivotCol);
+            if(pivotCands.size() != 2) continue;
+
+            printCell("Checking pivot", pivotRow, pivotCol, pivotCands);
+
+            // For each potential first wing
             for(int wing1Row = 0; wing1Row < 9; wing1Row++) {
                 for(int wing1Col = 0; wing1Col < 9; wing1Col++) {
-                    // Skip if same cell as pivot or can't see pivot
-                    if((wing1Row == pivotRow && wing1Col == pivotCol) ||
-                       !cellsCanSee(pivotRow, pivotCol, wing1Row, wing1Col)) continue;
-                    
-                    auto wing1Candidates = getCandidates(wing1Row, wing1Col);
-                    
-                    // First wing must have exactly 2 candidates
-                    if(wing1Candidates.size() != 2) continue;
-                    
-                    // Must share exactly one candidate with pivot
-                    std::vector<int> sharedWithWing1;
-                    for(int val : pivotCandidates) {
-                        if(std::find(wing1Candidates.begin(), wing1Candidates.end(), val) 
-                           != wing1Candidates.end()) {
-                            sharedWithWing1.push_back(val);
+                    if(wing1Row == pivotRow && wing1Col == pivotCol) continue;
+                    if(!canSee(pivotRow, pivotCol, wing1Row, wing1Col)) continue;
+
+                    auto wing1Cands = getCandidates(wing1Row, wing1Col);
+                    if(wing1Cands.size() != 2) continue;
+
+                    printCell("Checking wing1", wing1Row, wing1Col, wing1Cands);
+
+                    // Find shared candidate between pivot and wing1
+                    int sharedWithWing1 = -1;
+                    for(int val : pivotCands) {
+                        if(std::find(wing1Cands.begin(), wing1Cands.end(), val) != wing1Cands.end()) {
+                            sharedWithWing1 = val;
+                            break;
                         }
                     }
-                    if(sharedWithWing1.size() != 1) continue;
-                    
-                    // Look for second wing
+                    if(sharedWithWing1 == -1) continue;
+
+                    // For each potential second wing
                     for(int wing2Row = 0; wing2Row < 9; wing2Row++) {
                         for(int wing2Col = 0; wing2Col < 9; wing2Col++) {
-                            // Skip if same cell as pivot or first wing
                             if((wing2Row == pivotRow && wing2Col == pivotCol) ||
                                (wing2Row == wing1Row && wing2Col == wing1Col)) continue;
-                            
-                            // Must see pivot but not first wing
-                            if(!cellsCanSee(pivotRow, pivotCol, wing2Row, wing2Col) ||
-                               cellsCanSee(wing1Row, wing1Col, wing2Row, wing2Col)) continue;
-                            
-                            auto wing2Candidates = getCandidates(wing2Row, wing2Col);
-                            
-                            // Second wing must have exactly 2 candidates
-                            if(wing2Candidates.size() != 2) continue;
-                            
-                            // Must share exactly one candidate with pivot
-                            std::vector<int> sharedWithWing2;
-                            for(int val : pivotCandidates) {
-                                if(std::find(wing2Candidates.begin(), wing2Candidates.end(), val) 
-                                   != wing2Candidates.end()) {
-                                    sharedWithWing2.push_back(val);
+
+                            if(!canSee(pivotRow, pivotCol, wing2Row, wing2Col)) continue;
+
+                            auto wing2Cands = getCandidates(wing2Row, wing2Col);
+                            if(wing2Cands.size() != 2) continue;
+
+                            printCell("Checking wing2", wing2Row, wing2Col, wing2Cands);
+
+                            // Find shared candidate between pivot and wing2
+                            int sharedWithWing2 = -1;
+                            for(int val : pivotCands) {
+                                if(val != sharedWithWing1 && 
+                                   std::find(wing2Cands.begin(), wing2Cands.end(), val) != wing2Cands.end()) {
+                                    sharedWithWing2 = val;
+                                    break;
                                 }
                             }
-                            if(sharedWithWing2.size() != 1) continue;
-                            
-                            // Wings must share exactly one candidate (different from pivot shared)
+                            if(sharedWithWing2 == -1) continue;
+
+                            // Find common candidate between wings
                             int commonWingVal = -1;
-                            for(int val : wing1Candidates) {
-                                if(val != sharedWithWing1[0] && 
-                                   std::find(wing2Candidates.begin(), wing2Candidates.end(), val) 
-                                   != wing2Candidates.end()) {
+                            for(int val : wing1Cands) {
+                                if(val != sharedWithWing1 &&
+                                   std::find(wing2Cands.begin(), wing2Cands.end(), val) != wing2Cands.end()) {
                                     commonWingVal = val;
                                     break;
                                 }
                             }
                             if(commonWingVal == -1) continue;
-                            
-                            // Found valid XY-Wing pattern!
-                            // Look for cells that can see both wings
-                            bool madeChange = false;
+
+                            print_debug("Found XY-Wing pattern: pivot(%d,%d) wings(%d,%d)(%d,%d)\n",
+                                      pivotRow + 1, pivotCol + 1, 
+                                      wing1Row + 1, wing1Col + 1,
+                                      wing2Row + 1, wing2Col + 1);
+                            refresh();
+
+                            // Look for cells that can see both wings for elimination
                             for(int row = 0; row < 9; row++) {
                                 for(int col = 0; col < 9; col++) {
-                                    if(cellsCanSee(row, col, wing1Row, wing1Col) && 
-                                       cellsCanSee(row, col, wing2Row, wing2Col) &&
+                                    if(canSee(row, col, wing1Row, wing1Col) && 
+                                       canSee(row, col, wing2Row, wing2Col) &&
                                        isSafeElimination(row, col, commonWingVal)) {
-                                        // Can eliminate commonWingVal from this cell
+                                        print_debug("Eliminating %d from (%d,%d)\n", 
+                                                  commonWingVal + 1, row + 1, col + 1);
+                                        refresh();
+                                        
                                         board[row][col][commonWingVal] = -1;
-                                        madeChange = true;
+                                        changed++;
+                                        
+                                        if(!IsValidSolution()) {
+                                            print_debug("Invalid solution after elimination\n");
+                                            refresh();
+                                            return -1;
+                                        }
                                     }
-                                }
-                            }
-                            if(madeChange) {
-                                changed++;
-                                // Validate the board after each change
-                                if(!IsValidSolution()) {
-                                    print_debug("Invalid solution after XY-Wing elimination\n");
-                                    refresh();
-                                    return -1;
                                 }
                             }
                         }
