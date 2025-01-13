@@ -63,9 +63,9 @@ int main(void)
     printw("Welcome to Sudoku Solver\n");
     printw("Commands:                          Solving techniques:\n");
     printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles\n");
-    printw(" 1-9 - Fill number                  L - Line elimination       K - Naked sets\n");
-    printw(" 0 - Clear cell                     H - Hidden pairs          X - X-Wing\n");
-    printw(" q - Quit                           P - Pointing pairs        F - Swordfish\n");
+    printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets\n");
+    printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing\n");
+    printw(" q - Quit                           P - Pointing pairs          F - Swordfish\n");
     printw(" A - Run all techniques\n\n");
     
     // Draw the grid
