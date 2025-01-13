@@ -85,8 +85,6 @@ The solver implements several Sudoku solving techniques of increasing complexity
    - Swordfish (F): Advanced triple-line elimination strategy
    - Naked Sets (K): Identifies groups of cells with confined candidates
 
-Pressing A for All algorithms this strategy.
-
 ### Recommended Solving Strategy
 
 For the most efficient solving experience:
@@ -98,6 +96,10 @@ For the most efficient solving experience:
    - Use Swordfish (F) and Naked Sets (K) for the most challenging situations
 3. After finding new possibilities with advanced techniques, return to alternating between Standard and Line Elimination
 4. Repeat this process until the puzzle is solved
+
+Pressing (A) for All Algorithms implements this strategy.
+
+I've been testing it against https://sudoku.com/extreme/ and haven't had too many fail to solve.
 
 ## Implementation Details
 
