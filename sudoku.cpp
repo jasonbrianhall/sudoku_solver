@@ -577,8 +577,7 @@ int Sudoku::SolveBasic() {
         
         if(counter1 != 81) {
             // Run each solving technique and validate after each
-            move(22, 0);
-            printw("Running StdElim...                    \n");
+            print_debug("Running StdElim...                    \n");
             refresh();
             StdElim();
             if(!IsValidSolution()) {
@@ -589,13 +588,11 @@ int Sudoku::SolveBasic() {
                 return -1;
             }
             
-            move(22, 0);
-            printw("Running LinElim...                    \n");
+            print_debug("Running LinElim...                    \n");
             refresh();
             LinElim();
             if(!IsValidSolution()) {
-                move(23, 0);
-                printw("Invalid solution detected after LinElim\n");
+                print_debug("Invalid solution detected after LinElim\n");
                 refresh();
                 //RestoreBoard(board, original_board);
                 return -1;
@@ -615,8 +612,7 @@ int Sudoku::SolveBasic() {
     
     // Final validation check
     if(!IsValidSolution()) {
-        move(23, 0);
-        printw("Invalid final solution detected\n");
+        print_debug("Invalid final solution detected\n");
         refresh();
         return -1;
     }
