@@ -20,11 +20,6 @@ class Sudoku
     int Solve();
     int SolveBasic();
     bool LegalValue(int x, int y, int value);
-    
-  private:
-
-    int EliminatePossibility(int x, int y, int value);
-    int board[9][9][9];
     int FindHiddenPairs();
     int FindXWing();
     int FindPointingPairs();
@@ -32,8 +27,14 @@ class Sudoku
     int StdElim();
     int LinElim();
     int FindHiddenSingles();
-    int Clean();
     int FindNakedSets();
+    int Clean();
+
+    
+  private:
+
+    int EliminatePossibility(int x, int y, int value);
+    int board[9][9][9];
     std::vector<int> GetCellCandidates(int x, int y);
     bool VectorsEqual(const std::vector<int>& v1, const std::vector<int>& v2);
     void FindNakedSetInUnit(std::vector<std::pair<int, int>>& cells, const std::vector<int>& candidates, int& changed);
@@ -52,12 +53,20 @@ int main(void)
   keypad(stdscr, true);
   start_color();
   init_pair(1, COLOR_RED, COLOR_BLACK);    // 3x3 borders
-  init_pair(2, COLOR_BLUE, COLOR_BLACK);    // Numbers
-  init_pair(3, COLOR_WHITE, COLOR_BLACK);   // Inner grid lines
+  init_pair(2, COLOR_BLUE, COLOR_BLACK);   // Numbers
+  init_pair(3, COLOR_WHITE, COLOR_BLACK);  // Inner grid lines
   
   for(;;)
   {
-    printw("Welcome to Sudoku Solver (Press 's' to solve, 0 to clear, 'q' to quit, and numbers to fill in the current position)\n\n");
+    int header_lines = 8;  // Reduced header size with two columns
+    
+    printw("Welcome to Sudoku Solver\n");
+    printw("Commands:                          Solving techniques:\n");
+    printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles\n");
+    printw(" 1-9 - Fill number                  L - Line elimination       K - Naked sets\n");
+    printw(" 0 - Clear cell                     H - Hidden pairs          X - X-Wing\n");
+    printw(" q - Quit                           P - Pointing pairs        F - Swordfish\n");
+    printw(" A - Run all techniques\n\n");
     
     // Draw the grid
     for(y=0;y<9;y++)
@@ -65,23 +74,18 @@ int main(void)
         // Draw horizontal lines
         if(y%3==0)
         {
-            // Draw 3x3 border lines in blue
             attron(COLOR_PAIR(1));
-            for(i=0;i<37;i++)
-            {
-                printw("-");
-            }
+            for(i=0;i<37;i++) printw("-");
             attroff(COLOR_PAIR(1));
         }
         else
         {
-            // Draw inner horizontal lines in white
             attron(COLOR_PAIR(3));
             for(i=0;i<37;i++)
             {
-                if(i%4==0)  // Position for vertical lines
+                if(i%4==0)
                 {
-                    if(i%12==0)  // 3x3 border positions
+                    if(i%12==0)
                     {
                         attroff(COLOR_PAIR(3));
                         attron(COLOR_PAIR(1));
@@ -89,15 +93,9 @@ int main(void)
                         attroff(COLOR_PAIR(1));
                         attron(COLOR_PAIR(3));
                     }
-                    else
-                    {
-                        printw("+");
-                    }
+                    else printw("+");
                 }
-                else
-                {
-                    printw("-");
-                }
+                else printw("-");
             }
             attroff(COLOR_PAIR(3));
         }
@@ -106,7 +104,6 @@ int main(void)
         // Draw cells and vertical lines
         for(x=0;x<9;x++)
         {
-            // Draw vertical lines
             if(x%3==0)
             {
                 attron(COLOR_PAIR(1));
@@ -120,7 +117,6 @@ int main(void)
                 attroff(COLOR_PAIR(3));
             }
             
-            // Draw cell content
             temp=NewGame.GetValue(x,y);
             if(temp>=0 && temp<=8)
             {
@@ -128,13 +124,9 @@ int main(void)
                 printw(" %i ", temp+1);
                 attroff(COLOR_PAIR(2));
             }
-            else
-            {
-                printw("   ");
-            }
+            else printw("   ");
         }
         
-        // Draw final vertical line of each row
         attron(COLOR_PAIR(1));
         printw("|\n");
         attroff(COLOR_PAIR(1));
@@ -142,13 +134,20 @@ int main(void)
     
     // Draw bottom border
     attron(COLOR_PAIR(1));
-    for(i=0;i<37;i++)
-    {
-        printw("-");
-    }
+    for(i=0;i<37;i++) printw("-");
     attroff(COLOR_PAIR(1));
 
-    move(y_pos*2+3,x_pos*4+2);
+    // Calculate cursor position:
+    // header_lines for the top offset
+    // Each y_pos needs border line + content line
+    int cursor_y = header_lines;
+    // Add borders for 3x3 sections
+    //if (y_pos >= 3) cursor_y++;
+    //if (y_pos >= 6) cursor_y++;
+    // Add position within grid (2 lines per row: border + content)
+    cursor_y += y_pos * 2 + 1;  // +1 for initial border
+    
+    move(cursor_y, x_pos*4 + 2);  // x*4 accounts for "| n |" pattern
     refresh();
     input=getch();
     clear();
@@ -158,24 +157,24 @@ int main(void)
     {
       input=input+'A'-'a';
     }
+    
     switch (input)
     {
       case KEY_LEFT:
-	x_pos=(x_pos+8)%9;
-	move(23,0);
-	break;
+        x_pos=(x_pos+8)%9;
+        break;
       case KEY_RIGHT:
-	x_pos=(x_pos+1)%9;
-	break;
+        x_pos=(x_pos+1)%9;
+        break;
       case KEY_UP:
-	y_pos=(y_pos+8)%9;
-	break;
+        y_pos=(y_pos+8)%9;
+        break;
       case KEY_DOWN:
-	y_pos=(y_pos+1)%9;
-	break;
+        y_pos=(y_pos+1)%9;
+        break;
       case '0':
-	NewGame.ClearValue(x_pos, y_pos);
-	break;
+        NewGame.ClearValue(x_pos, y_pos);
+        break;
       case '1':
       case '2':
       case '3':
@@ -186,28 +185,42 @@ int main(void)
       case '8':
       case '9':
         NewGame.SetValue(x_pos, y_pos, input - '1');
-	/*if(NewGame.LegalValue(x_pos, y_pos, input-'1')==TRUE)
-	{
-	  NewGame.SetValue(x_pos, y_pos, input - '1');
-	}
-	else
-	{
-	  move(23,0);
-	  printw("Illegal Value\n");
-	}*/
-	break;
+        break;
       case 'Q':
-	endwin();
-	return 0;
-	break;
-      case 'S':
+        endwin();
+        return 0;
+      case 'S':  // Standard elimination
+        NewGame.StdElim();
+        break;
+      case 'L':  // Line elimination
+        NewGame.LinElim();
+        break;
+      case 'H':  // Hidden pairs
+        NewGame.FindHiddenPairs();
+        break;
+      case 'P':  // Pointing pairs
+        NewGame.FindPointingPairs();
+        break;
+      case 'X':  // X-Wing
+        NewGame.FindXWing();
+        break;
+      case 'F':  // Swordfish
+        NewGame.FindSwordFish();
+        break;
+      case 'N':  // Hidden singles
+        NewGame.FindHiddenSingles();
+        break;
+      case 'K':  // Naked sets
+        NewGame.FindNakedSets();
+        break;
+      case 'A':  // Run all techniques
         for(i=0;i<2;i++) {
             NewGame.SolveBasic();
             NewGame.Solve();
         }
-	break;
+        break;
     }
-    move(0,0);
+    //move(0,0);
   }
   return 0;
 }
@@ -387,7 +400,7 @@ int Sudoku::Solve() {
     move(22, 0);
     printw("Starting Solve() - Cleaning board...\n");
     refresh();
-    Clean();
+    //Clean();
     int original_board[9][9][9];
     
     
@@ -531,7 +544,7 @@ int Sudoku::SolveBasic() {
     move(22, 0);
     printw("Starting Solve() - Cleaning board...\n");
     refresh();
-    Clean();
+    //Clean();
     int original_board[9][9][9];
     
     
