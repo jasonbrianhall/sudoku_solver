@@ -241,13 +241,9 @@ int main(void)
 
         break;
       case 'A':  // Run all techniques
-        for(i=0;i<2;i++) {
-            NewGame.LogBoard(logfile, "Run All Techniques Before");
-            NewGame.SolveBasic();
-            NewGame.Solve();
-            NewGame.LogBoard(logfile, "Run All Techniques After");
-            
-        }
+        NewGame.LogBoard(logfile, "Run All Techniques Before");
+        NewGame.Solve();
+        NewGame.LogBoard(logfile, "Run All Techniques After");
         break;
     }
     move(0,0);
@@ -489,124 +485,138 @@ void Sudoku::print_debug(const char *format, ...) {
 
 
 int Sudoku::Solve() {
-    int stop;
-    int counter1, counter2, i, j,k;
-    move(22, 0);
-    printw("Starting Solve ...\n");
-    refresh();
-    //Clean();
-    int original_board[9][9][9];
-    
+    bool changes_made;
+    int result;
     
     do {
-        //RestoreBoard(original_board, board);
-        counter1 = 0;
-        counter2 = 0;
-        for(i = 0; i < 9; i++) {
-            for(j = 0; j < 9; j++) {
-                if(GetValue(i,j) != -1) {
-                    counter1++;
-                }
+        changes_made = false;
+        
+        // First phase: Alternate between Standard and Line elimination until no changes
+        bool basic_changes;
+        do {
+            basic_changes = false;
+            
+            // Run Standard elimination
+            print_debug("Running StdElim...\n");
+            refresh();
+            result = StdElim();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after StdElim\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                basic_changes = true;
+                changes_made = true;
+            }
+            
+            // Run Line elimination
+            print_debug("Running LinElim...\n");
+            refresh();
+            result = LinElim();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after LinElim\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                basic_changes = true;
+                changes_made = true;
+            }
+            
+        } while (basic_changes);
+        
+        // If no basic changes, try advanced techniques in sequence
+        if (!changes_made) {
+            // Try Hidden Singles
+            print_debug("Running FindHiddenSingles...\n");
+            refresh();
+            result = FindHiddenSingles();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after FindHiddenSingles\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                changes_made = true;
+                continue;  // Start over with basic eliminations
+            }
+            
+            // Try Hidden Pairs
+            print_debug("Running FindHiddenPairs...\n");
+            refresh();
+            result = FindHiddenPairs();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after FindHiddenPairs\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                changes_made = true;
+                continue;  // Start over with basic eliminations
+            }
+            
+            // Try Pointing Pairs
+            print_debug("Running FindPointingPairs...\n");
+            refresh();
+            result = FindPointingPairs();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after FindPointingPairs\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                changes_made = true;
+                continue;  // Start over with basic eliminations
+            }
+            
+            // Try X-Wing
+            print_debug("Running FindXWing...\n");
+            refresh();
+            result = FindXWing();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after FindXWing\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                changes_made = true;
+                continue;  // Start over with basic eliminations
+            }
+            
+            // Try Swordfish
+            print_debug("Running FindSwordFish...\n");
+            refresh();
+            result = FindSwordFish();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after FindSwordFish\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                changes_made = true;
+                continue;  // Start over with basic eliminations
+            }
+            
+            // Try Naked Sets
+            print_debug("Running FindNakedSets...\n");
+            refresh();
+            result = FindNakedSets();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after FindNakedSets\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                changes_made = true;
+                continue;  // Start over with basic eliminations
             }
         }
         
-        if(counter1 != 81) {
-            // Run each solving technique and validate after each
-            print_debug("Running StdElim...                    \n");
-            refresh();
-            StdElim();
-            if(!IsValidSolution()) {
-                print_debug("Invalid solution detected after StdElim\n");
-                refresh();
-                //RestoreBoard(board, original_board);
-                return -1;
-            }
-            
-            print_debug("Running LinElim...                    \n");
-            refresh();
-            LinElim();
-            if(!IsValidSolution()) {
-                print_debug("Invalid solution detected after LinElim\n");
-                refresh();
-                //RestoreBoard(board, original_board);
-                return -1;
-            }
-            
-            print_debug("Running FindHiddenPairs...            \n");
-            refresh();
-            FindHiddenPairs();
-            if(!IsValidSolution()) {
-                print_debug("Invalid solution detected after FindHiddenPairs\n");
-                refresh();
-                //RestoreBoard(board, original_board);
-                return -1;
-            }
-            
-            print_debug("Running FindPointingPairs...            \n");
-            refresh();
-            FindPointingPairs();
-            if(!IsValidSolution()) {
-                print_debug("Invalid solution detected after FindPointingPairs\n");
-                //RestoreBoard(board, original_board);
-                refresh();
-                return -1;
-            }
-
-
-            print_debug("Running FindXWing...                  \n");
-            refresh();
-            FindXWing();
-            if(!IsValidSolution()) {
-                print_debug("Invalid solution detected after FindXWing\n");
-                //RestoreBoard(board, original_board);
-                refresh();
-                return -1;
-            }
-            
-            print_debug("Running FindSwordFish...              \n");
-            refresh();
-            FindSwordFish();
-            if(!IsValidSolution()) {
-                print_debug("Invalid solution detected after FindSwordFish\n");
-                //RestoreBoard(board, original_board);
-                refresh();
-                return -1;
-            }
-            
-            print_debug("Running FindHiddenSingles...          \n");
-            refresh();
-            FindHiddenSingles();
-            if(!IsValidSolution()) {
-                print_debug("Invalid solution detected after FindHiddenSingles\n");
-                //RestoreBoard(board, original_board);
-                refresh();
-                return -1;
-            }
-            
-            print_debug("Running FindNakedSets...              \n");
-            refresh();
-            FindNakedSets();
-            if(!IsValidSolution()) {
-                print_debug("Invalid solution detected after FindNakedSets\n");
-                //RestoreBoard(board, original_board);
-                refresh();
-                return -1;
-            }
-            
-            for(i = 0; i < 9; i++) {
-                for(j = 0; j < 9; j++) {
-                    if(GetValue(i,j) != -1) {
-                        counter2++;
-                    }
-                }
-            }
-        } else {
-            counter2 = 81;
-        }
-    } while(counter1 != counter2);
+    } while (changes_made);
     
     // Final validation check
-    if(!IsValidSolution()) {
+    if (!IsValidSolution()) {
         print_debug("Invalid final solution detected\n");
         refresh();
         return -1;
@@ -614,7 +624,6 @@ int Sudoku::Solve() {
     
     return 0;
 }
-
 int Sudoku::SolveBasic() {
     int stop;
     int counter1, counter2, i, j,k;
