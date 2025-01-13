@@ -74,7 +74,8 @@ int main(void)
     printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets\n");
     printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing\n");
     printw(" q - Quit                           P - Pointing pairs          F - Swordfish\n");
-    printw(" A - Run all techniques             Z - New Game\n\n");
+    printw(" A - Run all techniques
+    printw(" Z - New Game\n\n");
     
     // Draw the grid
     for(y=0;y<9;y++)
