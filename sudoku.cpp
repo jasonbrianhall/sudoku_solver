@@ -399,23 +399,27 @@ void Sudoku::RestoreBoard(int original_board[9][9][9], int board[9][9][9]) {
    }
 } 
 
-void Sudoku::print_debug(const char* format, ...) {
-    // Move to position below grid (header + 19 grid lines + 2 padding)
-    move(29 + debug_line, 0);
-    
-    // Handle variable arguments
+void Sudoku::print_debug(const char *format, ...) {
+    char buffer[256];  // Buffer for formatted string
+    debug_line=0;
+    // Format the string
     va_list args;
     va_start(args, format);
-    vw_printw(stdscr, format, args);
+    vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
     
-    clrtoeol();  // Clear rest of line
-    refresh();
+    // Move to position below grid
+    move(29 + debug_line, 0);
     
-    // Increment line counter, wrap around after 10 lines
-    debug_line = (debug_line + 1) % 10;
+    // Print the formatted string
+    printw("%s", buffer);
+    
+    clrtoeol();  // Clear rest of line
+    //refresh();
+    
+    // Increment line counter, wrap around after 20 lines
+    debug_line = (debug_line + 1) % 20;
 }
-
 
 int Sudoku::Solve() {
     int stop;
@@ -455,7 +459,6 @@ int Sudoku::Solve() {
             refresh();
             LinElim();
             if(!IsValidSolution()) {
-                move(23, 0);
                 print_debug("Invalid solution detected after LinElim\n");
                 refresh();
                 //RestoreBoard(board, original_board);
@@ -472,12 +475,10 @@ int Sudoku::Solve() {
                 return -1;
             }
             
-            move(50, 0);
             print_debug("Running FindPointingPairs...            \n");
             refresh();
             FindPointingPairs();
             if(!IsValidSolution()) {
-                move(23, 0);
                 print_debug("Invalid solution detected after FindPointingPairs\n");
                 //RestoreBoard(board, original_board);
                 refresh();
@@ -489,8 +490,7 @@ int Sudoku::Solve() {
             refresh();
             FindXWing();
             if(!IsValidSolution()) {
-                move(23, 0);
-                printw("Invalid solution detected after FindXWing\n");
+                print_debug("Invalid solution detected after FindXWing\n");
                 //RestoreBoard(board, original_board);
                 refresh();
                 return -1;
@@ -506,25 +506,20 @@ int Sudoku::Solve() {
                 return -1;
             }
             
-            //move(50, 0);
             print_debug("Running FindHiddenSingles...          \n");
             refresh();
             FindHiddenSingles();
             if(!IsValidSolution()) {
-                move(23, 0);
                 print_debug("Invalid solution detected after FindHiddenSingles\n");
                 //RestoreBoard(board, original_board);
                 refresh();
                 return -1;
             }
             
-            //move(50, 0);
             print_debug("Running FindNakedSets...              \n");
             refresh();
             FindNakedSets();
             if(!IsValidSolution()) {
-                //move(23, 0);
-                //printw("Invalid solution detected after FindNakedSets\n");
                 print_debug("Invalid solution detected after FindNakedSets\n");
                 //RestoreBoard(board, original_board);
                 refresh();
@@ -581,8 +576,7 @@ int Sudoku::SolveBasic() {
             refresh();
             StdElim();
             if(!IsValidSolution()) {
-                move(23, 0);
-                printw("Invalid solution detected after StdElim\n");
+                print_debug("Invalid solution detected after StdElim\n");
                 refresh();
                 //RestoreBoard(board, original_board);
                 return -1;
@@ -701,14 +695,13 @@ int Sudoku::FindXWing() {
 
     // Debug helper to print candidate info
     auto printCandidates = [this](int row, int col) {
-        move(52, 0);
-        printw("Candidates at (%d,%d): ", row + 1, col + 1);
+        print_debug("Candidates at (%d,%d): ", row + 1, col + 1);
         for(int val = 0; val < 9; val++) {
             if(board[row][col][val] == val) {
-                printw("%d ", val + 1);
+                print_debug("%d ", val + 1);
             }
         }
-        printw("\n");
+        print_debug("\n");
         refresh();
     };
 
@@ -753,8 +746,7 @@ int Sudoku::FindXWing() {
                     // Verify exact match of row positions
                     if(rows2.size() == 2 && rows1[0] == rows2[0] && rows1[1] == rows2[1]) {
                         // We have a potential X-Wing pattern
-                        move(23, 0);
-                        printw("Found X-Wing pattern for value %d in columns %d,%d at rows %d,%d\n",
+                        print_debug("Found X-Wing pattern for value %d in columns %d,%d at rows %d,%d\n",
                                val + 1, col1 + 1, col2 + 1, rows1[0] + 1, rows1[1] + 1);
                         refresh();
 
@@ -768,8 +760,7 @@ int Sudoku::FindXWing() {
                                 if(isValidXWingCell(row, c, val)) rowPlaces++;
                             }
                             if(rowPlaces <= 2) {
-                                move(24, 0);
-                                printw("Skipping elimination - value %d is too constrained in row %d\n",
+                                print_debug("Skipping elimination - value %d is too constrained in row %d\n",
                                        val + 1, row + 1);
                                 refresh();
                                 goto next_pair;  // Pattern could create unsolvable puzzle
@@ -800,8 +791,7 @@ int Sudoku::FindXWing() {
                                         board[row][col][val] = val;  // Restore
                                         
                                         if(canEliminate) {
-                                            move(26, 0);
-                                            printw("Eliminating %d from (%d,%d)\n",
+                                            print_debug("Eliminating %d from (%d,%d)\n",
                                                    val + 1, row + 1, col + 1);
                                             refresh();
                                             
@@ -810,8 +800,7 @@ int Sudoku::FindXWing() {
                                             
                                             // Verify solution remains valid
                                             if(!IsValidSolution()) {
-                                                move(27, 0);
-                                                printw("Invalid solution after elimination!\n");
+                                                print_debug("Invalid solution after elimination!\n");
                                                 refresh();
                                                 return -1;
                                             }
@@ -861,8 +850,7 @@ int Sudoku::FindSwordFish() {
             }
         }
         if(candidateCount <= 1) {
-            move(24, 0);
-            printw("Cannot eliminate only candidate %d at (%d,%d)\n", 
+            print_debug("Cannot eliminate only candidate %d at (%d,%d)\n", 
                    val + 1, row + 1, col + 1);
             refresh();
             return false;
@@ -910,8 +898,7 @@ int Sudoku::FindSwordFish() {
                         
                         // If exactly 3 columns, we have a Swordfish pattern
                         if(uniqueCols.size() == 3) {
-                            move(23, 0);
-                            printw("Found Swordfish pattern for value %d in rows %d,%d,%d\n",
+                            print_debug("Found Swordfish pattern for value %d in rows %d,%d,%d\n",
                                    val + 1, row1 + 1, row2 + 1, row3 + 1);
                             refresh();
 
@@ -933,8 +920,7 @@ int Sudoku::FindSwordFish() {
                             }
 
                             if(!isSafe) {
-                                move(24, 0);
-                                printw("Skipping unsafe Swordfish pattern\n");
+                                print_debug("Skipping unsafe Swordfish pattern\n");
                                 refresh();
                                 continue;
                             }
@@ -947,13 +933,12 @@ int Sudoku::FindSwordFish() {
                                        GetValue(row, col) == -1 && 
                                        board[row][col][val] == val) {
                                         
-                                        move(25, 0);
-                                        printw("Checking elimination of %d at (%d,%d)\n",
+                                        print_debug("Checking elimination of %d at (%d,%d)\n",
                                                val + 1, row + 1, col + 1);
                                         auto candidates = getCandidates(row, col);
-                                        printw("Current candidates: ");
-                                        for(int c : candidates) printw("%d ", c + 1);
-                                        printw("\n");
+                                        print_debug("Current candidates: ");
+                                        for(int c : candidates) print_debug("%d ", c + 1);
+                                        print_debug("\n");
                                         refresh();
 
                                         if(isSafeElimination(row, col, val)) {
@@ -962,8 +947,7 @@ int Sudoku::FindSwordFish() {
 
                                             // Validate after each elimination
                                             if(!IsValidSolution()) {
-                                                move(26, 0);
-                                                printw("Invalid solution after Swordfish elimination\n");
+                                                print_debug("Invalid solution after Swordfish elimination\n");
                                                 refresh();
                                                 return -1;
                                             }
@@ -1008,8 +992,7 @@ int Sudoku::FindSwordFish() {
                         for(int row : rows3) uniqueRows.insert(row);
                         
                         if(uniqueRows.size() == 3) {
-                            move(23, 0);
-                            printw("Found Swordfish pattern for value %d in columns %d,%d,%d\n",
+                            print_debug("Found Swordfish pattern for value %d in columns %d,%d,%d\n",
                                    val + 1, col1 + 1, col2 + 1, col3 + 1);
                             refresh();
 
@@ -1031,8 +1014,7 @@ int Sudoku::FindSwordFish() {
                             }
 
                             if(!isSafe) {
-                                move(24, 0);
-                                printw("Skipping unsafe Swordfish pattern\n");
+                                print_debug("Skipping unsafe Swordfish pattern\n");
                                 refresh();
                                 continue;
                             }
@@ -1044,13 +1026,12 @@ int Sudoku::FindSwordFish() {
                                        GetValue(row, col) == -1 && 
                                        board[row][col][val] == val) {
                                         
-                                        move(25, 0);
-                                        printw("Checking elimination of %d at (%d,%d)\n",
+                                        print_debug("Checking elimination of %d at (%d,%d)\n",
                                                val + 1, row + 1, col + 1);
                                         auto candidates = getCandidates(row, col);
-                                        printw("Current candidates: ");
-                                        for(int c : candidates) printw("%d ", c + 1);
-                                        printw("\n");
+                                        print_debug("Current candidates: ");
+                                        for(int c : candidates) print_debug("%d ", c + 1);
+                                        print_debug("\n");
                                         refresh();
 
                                         if(isSafeElimination(row, col, val)) {
@@ -1058,8 +1039,7 @@ int Sudoku::FindSwordFish() {
                                             madeChange = true;
 
                                             if(!IsValidSolution()) {
-                                                move(26, 0);
-                                                printw("Invalid solution after Swordfish elimination\n");
+                                                print_debug("Invalid solution after Swordfish elimination\n");
                                                 refresh();
                                                 return -1;
                                             }
@@ -1162,8 +1142,7 @@ int Sudoku::StdElim() {
             if(board[row][col][v] == v) candidateCount++;
         }
         if(candidateCount <= 1) {
-            move(23, 0);
-            printw("Cannot eliminate only candidate %d at (%d,%d)\n", value + 1, row + 1, col + 1);
+            print_debug("Cannot eliminate only candidate %d at (%d,%d)\n", value + 1, row + 1, col + 1);
             refresh();
             return false;
         }
@@ -1175,8 +1154,7 @@ int Sudoku::StdElim() {
         if(!IsValidSolution()) {
             // Restore if invalid
             board[row][col][value] = value;
-            move(23, 0);
-            printw("Eliminating %d from (%d,%d) would create invalid state\n", 
+            print_debug("Eliminating %d from (%d,%d) would create invalid state\n", 
                    value + 1, row + 1, col + 1);
             refresh();
             return false;
@@ -1195,8 +1173,7 @@ int Sudoku::StdElim() {
 
             int value = GetValue(x, y);
             if(value >= 0 && value <= 8) {  // Found a filled cell
-                move(24, 0);
-                printw("Processing filled cell (%d,%d) with value %d\n", x + 1, y + 1, value + 1);
+                print_debug("Processing filled cell (%d,%d) with value %d\n", x + 1, y + 1, value + 1);
                 refresh();
 
                 // Eliminate from row
@@ -1237,8 +1214,7 @@ int Sudoku::StdElim() {
 
                 // Validate the entire board after processing each cell
                 if(!IsValidSolution()) {
-                    move(25, 0);
-                    printw("Invalid board state after processing cell (%d,%d)\n", x + 1, y + 1);
+                    print_debug("Invalid board state after processing cell (%d,%d)\n", x + 1, y + 1);
                     refresh();
                     return -1;
                 }
@@ -1254,9 +1230,9 @@ int Sudoku::FindHiddenSingles() {
     int changed = 0;
     
     // Helper function to log potential moves
-    auto logMove = [](const char* unitType, int unit, int val, int pos) {
-        move(23, 0);
-        printw("Found hidden single: value %d in %s %d at position %d\n", 
+    //auto logMove = [](const char* unitType, int unit, int val, int pos) {
+    auto logMove = [this](const char* unitType, int unit, int val, int pos) {
+        print_debug("Found hidden single: value %d in %s %d at position %d\n", 
                val + 1, unitType, unit + 1, pos + 1);
         refresh();
     };
@@ -1266,8 +1242,7 @@ int Sudoku::FindHiddenSingles() {
         // Check row
         for(int c = 0; c < 9; c++) {
             if(c != col && GetValue(row, c) == val) {
-                move(24, 0);
-                printw("Row conflict: %d already exists in row %d\n", val + 1, row + 1);
+                print_debug("Row conflict: %d already exists in row %d\n", val + 1, row + 1);
                 refresh();
                 return false;
             }
@@ -1276,8 +1251,7 @@ int Sudoku::FindHiddenSingles() {
         // Check column
         for(int r = 0; r < 9; r++) {
             if(r != row && GetValue(r, col) == val) {
-                move(24, 0);
-                printw("Column conflict: %d already exists in column %d\n", val + 1, col + 1);
+                print_debug("Column conflict: %d already exists in column %d\n", val + 1, col + 1);
                 refresh();
                 return false;
             }
@@ -1290,8 +1264,7 @@ int Sudoku::FindHiddenSingles() {
             for(int c = 0; c < 3; c++) {
                 if((boxRow + r != row || boxCol + c != col) && 
                    GetValue(boxRow + r, boxCol + c) == val) {
-                    move(24, 0);
-                    printw("Box conflict: %d already exists in box\n", val + 1);
+                    print_debug("Box conflict: %d already exists in box\n", val + 1);
                     refresh();
                     return false;
                 }
@@ -1322,8 +1295,7 @@ int Sudoku::FindHiddenSingles() {
                 if(validateMove(row, validCol, val)) {
                     SetValue(row, validCol, val);
                     if(!IsValidSolution()) {
-                        move(24, 0);
-                        printw("Invalid solution after setting %d at (%d,%d)\n", 
+                        print_debug("Invalid solution after setting %d at (%d,%d)\n", 
                               val + 1, row + 1, validCol + 1);
                         refresh();
                         return -1;
@@ -1354,7 +1326,7 @@ int Sudoku::FindHiddenSingles() {
                     SetValue(validRow, col, val);
                     if(!IsValidSolution()) {
                         move(24, 0);
-                        printw("Invalid solution after setting %d at (%d,%d)\n", 
+                        print_debug("Invalid solution after setting %d at (%d,%d)\n", 
                               val + 1, validRow + 1, col + 1);
                         refresh();
                         return -1;
@@ -1393,8 +1365,7 @@ int Sudoku::FindHiddenSingles() {
                 if(validateMove(validRow, validCol, val)) {
                     SetValue(validRow, validCol, val);
                     if(!IsValidSolution()) {
-                        move(24, 0);
-                        printw("Invalid solution after setting %d at (%d,%d)\n", 
+                        print_debug("Invalid solution after setting %d at (%d,%d)\n", 
                               val + 1, validRow + 1, validCol + 1);
                         refresh();
                         return -1;
@@ -1567,8 +1538,7 @@ int Sudoku::FindNakedSets() {
             }
         }
         if(candidateCount <= 1) {
-            move(24, 0);
-            printw("Cannot eliminate only remaining candidate at (%d,%d)\n", row + 1, col + 1);
+            print_debug("Cannot eliminate only remaining candidate at (%d,%d)\n", row + 1, col + 1);
             refresh();
             return false;
         }
@@ -1579,8 +1549,7 @@ int Sudoku::FindNakedSets() {
         board[row][col][val] = val; // Restore
         
         if(!isValid) {
-            move(24, 0);
-            printw("Eliminating %d from (%d,%d) would create invalid state\n", 
+            print_debug("Eliminating %d from (%d,%d) would create invalid state\n", 
                    val + 1, row + 1, col + 1);
             refresh();
             return false;
@@ -1599,12 +1568,11 @@ int Sudoku::FindNakedSets() {
                 cells.push_back({col, candidates});
 
                 // Debug output
-                move(25, 0);
-                printw("Row %d Col %d candidates: ", row + 1, col + 1);
+                print_debug("Row %d Col %d candidates: ", row + 1, col + 1);
                 for(int val : candidates) {
-                    printw("%d ", val + 1);
+                    print_debug("%d ", val + 1);
                 }
-                printw("\n");
+                print_debug("\n");
                 refresh();
             }
         }
@@ -1627,13 +1595,12 @@ int Sudoku::FindNakedSets() {
                 }
                 
                 if(isPair) {
-                    move(26, 0);
-                    printw("Found naked pair in row %d at columns %d,%d: ", 
+                    print_debug("Found naked pair in row %d at columns %d,%d: ", 
                            row + 1, cells[i].first + 1, cells[j].first + 1);
                     for(int val : cells[i].second) {
-                        printw("%d ", val + 1);
+                        print_debug("%d ", val + 1);
                     }
-                    printw("\n");
+                    print_debug("\n");
                     refresh();
 
                     // Eliminate these values from other cells
@@ -1645,18 +1612,16 @@ int Sudoku::FindNakedSets() {
                             for(int val : cells[i].second) {
                                 if(board[row][col][val] == val) {
                                     // Debug before elimination
-                                    move(27, 0);
-                                    printw("Candidates at (%d,%d): ", row + 1, col + 1);
+                                    print_debug("Candidates at (%d,%d): ", row + 1, col + 1);
                                     auto beforeCands = getCandidates(row, col);
                                     for(int v : beforeCands) {
-                                        printw("%d ", v + 1);
+                                        print_debug("%d ", v + 1);
                                     }
-                                    printw("\n");
+                                    print_debug("\n");
                                     refresh();
 
                                     if(isSafeElimination(row, col, val)) {
-                                        move(28, 0);
-                                        printw("Eliminating %d from (%d,%d)\n", 
+                                        print_debug("Eliminating %d from (%d,%d)\n", 
                                                val + 1, row + 1, col + 1);
                                         refresh();
                                         
@@ -1664,8 +1629,7 @@ int Sudoku::FindNakedSets() {
                                         madeChange = true;
 
                                         if(!IsValidSolution()) {
-                                            move(29, 0);
-                                            printw("Invalid solution after elimination!\n");
+                                            print_debug("Invalid solution after elimination!\n");
                                             refresh();
                                             return -1;
                                         }
@@ -1691,12 +1655,11 @@ int Sudoku::FindNakedSets() {
                 cells.push_back({row, candidates});
 
                 // Debug output
-                move(25, 0);
-                printw("Col %d Row %d candidates: ", col + 1, row + 1);
+                print_debug("Col %d Row %d candidates: ", col + 1, row + 1);
                 for(int val : candidates) {
-                    printw("%d ", val + 1);
+                    print_debug("%d ", val + 1);
                 }
-                printw("\n");
+                print_debug("\n");
                 refresh();
             }
         }
@@ -1719,13 +1682,12 @@ int Sudoku::FindNakedSets() {
                 }
                 
                 if(isPair) {
-                    move(26, 0);
-                    printw("Found naked pair in col %d at rows %d,%d: ", 
+                    print_debug("Found naked pair in col %d at rows %d,%d: ", 
                            col + 1, cells[i].first + 1, cells[j].first + 1);
                     for(int val : cells[i].second) {
-                        printw("%d ", val + 1);
+                        print_debug("%d ", val + 1);
                     }
-                    printw("\n");
+                    print_debug("\n");
                     refresh();
 
                     // Eliminate these values from other cells
@@ -1737,18 +1699,16 @@ int Sudoku::FindNakedSets() {
                             for(int val : cells[i].second) {
                                 if(board[row][col][val] == val) {
                                     // Debug before elimination
-                                    move(27, 0);
-                                    printw("Candidates at (%d,%d): ", row + 1, col + 1);
+                                    print_debug("Candidates at (%d,%d): ", row + 1, col + 1);
                                     auto beforeCands = getCandidates(row, col);
                                     for(int v : beforeCands) {
-                                        printw("%d ", v + 1);
+                                        print_debug("%d ", v + 1);
                                     }
-                                    printw("\n");
+                                    print_debug("\n");
                                     refresh();
 
                                     if(isSafeElimination(row, col, val)) {
-                                        move(28, 0);
-                                        printw("Eliminating %d from (%d,%d)\n", 
+                                        print_debug("Eliminating %d from (%d,%d)\n", 
                                                val + 1, row + 1, col + 1);
                                         refresh();
                                         
@@ -1756,8 +1716,7 @@ int Sudoku::FindNakedSets() {
                                         madeChange = true;
 
                                         if(!IsValidSolution()) {
-                                            move(29, 0);
-                                            printw("Invalid solution after elimination!\n");
+                                            print_debug("Invalid solution after elimination!\n");
                                             refresh();
                                             return -1;
                                         }
@@ -1788,13 +1747,12 @@ int Sudoku::FindNakedSets() {
                         cells.push_back({{row, col}, candidates});
 
                         // Debug output
-                        move(25, 0);
-                        printw("Box (%d,%d) position (%d,%d) candidates: ", 
+                        print_debug("Box (%d,%d) position (%d,%d) candidates: ", 
                                boxRow + 1, boxCol + 1, row + 1, col + 1);
                         for(int val : candidates) {
-                            printw("%d ", val + 1);
+                            print_debug("%d ", val + 1);
                         }
-                        printw("\n");
+                        print_debug("\n");
                         refresh();
                     }
                 }
@@ -1818,15 +1776,14 @@ int Sudoku::FindNakedSets() {
                     }
                     
                     if(isPair) {
-                        move(26, 0);
-                        printw("Found naked pair in box (%d,%d) at positions (%d,%d),(%d,%d): ", 
+                        print_debug("Found naked pair in box (%d,%d) at positions (%d,%d),(%d,%d): ", 
                                boxRow + 1, boxCol + 1,
                                cells[i].first.first + 1, cells[i].first.second + 1,
                                cells[j].first.first + 1, cells[j].first.second + 1);
                         for(int val : cells[i].second) {
-                            printw("%d ", val + 1);
+                            print_debug("%d ", val + 1);
                         }
-                        printw("\n");
+                        print_debug("\n");
                         refresh();
 
                         // Eliminate these values from other cells in box
@@ -1839,18 +1796,16 @@ int Sudoku::FindNakedSets() {
                                 for(int val : cells[i].second) {
                                     if(board[row][col][val] == val) {
                                         // Debug before elimination
-                                        move(27, 0);
-                                        printw("Candidates at (%d,%d): ", row + 1, col + 1);
+                                        print_debug("Candidates at (%d,%d): ", row + 1, col + 1);
                                         auto beforeCands = getCandidates(row, col);
                                         for(int v : beforeCands) {
-                                            printw("%d ", v + 1);
+                                            print_debug("%d ", v + 1);
                                         }
-                                        printw("\n");
+                                        print_debug("\n");
                                         refresh();
 
                                         if(isSafeElimination(row, col, val)) {
-                                            move(28, 0);
-                                            printw("Eliminating %d from (%d,%d)\n", 
+                                            print_debug("Eliminating %d from (%d,%d)\n", 
                                                    val + 1, row + 1, col + 1);
                                             refresh();
                                             
@@ -1858,8 +1813,7 @@ int Sudoku::FindNakedSets() {
                                             madeChange = true;
 
                                             if(!IsValidSolution()) {
-                                                move(29, 0);
-                                                printw("Invalid solution after elimination!\n");
+                                                print_debug("Invalid solution after elimination!\n");
                                                 refresh();
                                                 return -1;
                                             }
