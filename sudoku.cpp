@@ -72,10 +72,10 @@ int main(void)
     int header_lines = 8;  // Reduced header size with two columns
     
     printw("Welcome to Sudoku Solver\n");
-    printw("Commands:                          Solving techniques:\n");
-    printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles\n");
-    printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets\n");
-    printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing\n");
+    printw("Commands:                          Solving techniques:                                Experimental Techniques\n");
+    printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles     Y - Find XY Wing\n");
+    printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets         ; - Find XYZ Wing\n");  
+    printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing             C - Simple Coloring\n"); 
     printw(" q - Quit                           P - Pointing pairs          F - Swordfish\n");
     printw(" A - Run all techniques             Z - New Game\n\n");
     
@@ -200,12 +200,6 @@ int main(void)
       case 'Q':
         endwin();
         return 0;
-      case 'C':  // Standard elimination
-        NewGame.LogBoard(logfile, "Find Simple Coloring Before");
-        NewGame.FindSimpleColoring();
-        NewGame.LogBoard(logfile, "Find Simple Coloring After");
-        break;
-
       case 'S':  // Standard elimination
         NewGame.LogBoard(logfile, "Standard Elim Before");
         NewGame.StdElim();
@@ -215,6 +209,11 @@ int main(void)
         NewGame.LogBoard(logfile, "Line Elim Before");
         NewGame.LinElim();
         NewGame.LogBoard(logfile, "Line Elim After");
+        break;
+      case 'C':  // Standard elimination
+        NewGame.LogBoard(logfile, "Find Simple Coloring Before");
+        NewGame.FindSimpleColoring();
+        NewGame.LogBoard(logfile, "Find Simple Coloring After");
         break;
       case 'H':  // Hidden pairs
         NewGame.LogBoard(logfile, "Find Hidden Pairs Before");
