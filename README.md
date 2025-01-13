@@ -84,7 +84,7 @@ The solver implements several Sudoku solving techniques of increasing complexity
    - X-Wing (X): Locates rectangle patterns that eliminate candidates
    - Swordfish (F): Advanced triple-line elimination strategy
    - Naked Sets (K): Identifies groups of cells with confined candidates
-   - XY-Wing (Y): Identifies XY Wing Patter
+   - XY-Wing (Y):  XY-Wing is a solving technique that looks for three cells forming a Y pattern, where two cells (the "wings") share a candidate with a pivot cell, and eliminations can be made from cells that see both wings.
 
 ### Recommended Solving Strategy
 
