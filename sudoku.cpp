@@ -27,6 +27,7 @@ class Sudoku
     int FindHiddenPairs();
     int FindXWing();
     int FindXYWing();
+    int FindXYZWing();
     int FindPointingPairs();
     int FindSwordFish();
     int StdElim();
@@ -71,7 +72,7 @@ int main(void)
     
     printw("Welcome to Sudoku Solver\n");
     printw("Commands:                          Solving techniques:\n");
-    printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles\n");
+    printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles     ; - XYZ Wing\n");
     printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets\n");
     printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing\n");
     printw(" q - Quit                           P - Pointing pairs          F - Swordfish\n");
@@ -228,6 +229,12 @@ int main(void)
         NewGame.FindXYWing();
         NewGame.LogBoard(logfile, "Find XYWING After");
         break;
+      case ';':  // X-Wing
+        NewGame.LogBoard(logfile, "Find XYZWING Before");
+        NewGame.FindXYZWing();
+        NewGame.LogBoard(logfile, "Find XYZWING After");
+        break;
+
 
       case 'F':  // Swordfish
         NewGame.LogBoard(logfile, "Find Swordfish Before");
@@ -641,6 +648,21 @@ int Sudoku::Solve() {
                 changes_made = true;
                 continue;  // Start over with basic eliminations
             }
+
+            // Try Find XYZ Wing
+            print_debug("Running Find XYZ Wing...\n");
+            refresh();
+            result = FindXYZWing();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after FindXYZWing\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                changes_made = true;
+                continue;  // Start over with basic eliminations
+            }
+
 
         }
         
@@ -1996,6 +2018,145 @@ int Sudoku::FindXYWing() {
                                             return -1;
                                         }
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return changed;
+}
+
+int Sudoku::FindXYZWing() {
+    int changed = 0;
+
+    // Helper to get candidates for a cell
+    auto getCandidates = [this](int row, int col) -> std::vector<int> {
+        std::vector<int> candidates;
+        if(GetValue(row, col) == -1) {
+            for(int val = 0; val < 9; val++) {
+                if(board[row][col][val] == val) {
+                    candidates.push_back(val);
+                }
+            }
+        }
+        return candidates;
+    };
+
+    // Helper to check if cells can see each other
+    auto canSee = [](int row1, int col1, int row2, int col2) -> bool {
+        return row1 == row2 ||  // Same row
+               col1 == col2 ||  // Same column
+               (row1/3 == row2/3 && col1/3 == col2/3);  // Same box
+    };
+
+    // Helper to validate elimination
+    auto isSafeElimination = [this](int row, int col, int val) -> bool {
+        if(GetValue(row, col) != -1) return false;
+        if(board[row][col][val] != val) return false;
+        
+        int candidateCount = 0;
+        for(int v = 0; v < 9; v++) {
+            if(board[row][col][v] == v) candidateCount++;
+        }
+        return candidateCount > 1;
+    };
+
+    // For each potential pivot cell (must have exactly 3 candidates)
+    for(int pivotRow = 0; pivotRow < 9; pivotRow++) {
+        for(int pivotCol = 0; pivotCol < 9; pivotCol++) {
+            auto pivotCands = getCandidates(pivotRow, pivotCol);
+            if(pivotCands.size() != 3) continue;  // Must have exactly 3 candidates
+
+            // For each potential first wing
+            for(int wing1Row = 0; wing1Row < 9; wing1Row++) {
+                for(int wing1Col = 0; wing1Col < 9; wing1Col++) {
+                    if(wing1Row == pivotRow && wing1Col == pivotCol) continue;
+                    if(!canSee(pivotRow, pivotCol, wing1Row, wing1Col)) continue;
+
+                    auto wing1Cands = getCandidates(wing1Row, wing1Col);
+                    if(wing1Cands.size() != 2) continue;  // Must have exactly 2 candidates
+
+                    // Verify wing1 shares exactly 2 candidates with pivot
+                    std::vector<int> sharedWithWing1;
+                    for(int val : wing1Cands) {
+                        if(std::find(pivotCands.begin(), pivotCands.end(), val) != pivotCands.end()) {
+                            sharedWithWing1.push_back(val);
+                        }
+                    }
+                    if(sharedWithWing1.size() != 2) continue;
+
+                    // For each potential second wing
+                    for(int wing2Row = 0; wing2Row < 9; wing2Row++) {
+                        for(int wing2Col = 0; wing2Col < 9; wing2Col++) {
+                            if((wing2Row == pivotRow && wing2Col == pivotCol) ||
+                               (wing2Row == wing1Row && wing2Col == wing1Col)) continue;
+                            if(!canSee(pivotRow, pivotCol, wing2Row, wing2Col)) continue;
+
+                            auto wing2Cands = getCandidates(wing2Row, wing2Col);
+                            if(wing2Cands.size() != 2) continue;
+
+                            // Verify wing2 shares exactly 2 candidates with pivot
+                            std::vector<int> sharedWithWing2;
+                            for(int val : wing2Cands) {
+                                if(std::find(pivotCands.begin(), pivotCands.end(), val) != pivotCands.end()) {
+                                    sharedWithWing2.push_back(val);
+                                }
+                            }
+                            if(sharedWithWing2.size() != 2) continue;
+
+                            // Find the common candidate Z (present in all three cells)
+                            int Z = -1;
+                            for(int val : pivotCands) {
+                                if(std::find(wing1Cands.begin(), wing1Cands.end(), val) != wing1Cands.end() &&
+                                   std::find(wing2Cands.begin(), wing2Cands.end(), val) != wing2Cands.end()) {
+                                    Z = val;
+                                    break;
+                                }
+                            }
+                            if(Z == -1) continue;
+
+                            // Found XYZ-Wing pattern! Look for cells that see all three cells
+                            print_debug("Found XYZ-Wing: pivot(%d,%d) wings(%d,%d)(%d,%d) Z=%d\n",
+                                      pivotRow + 1, pivotCol + 1, 
+                                      wing1Row + 1, wing1Col + 1,
+                                      wing2Row + 1, wing2Col + 1,
+                                      Z + 1);
+                            refresh();
+
+                            bool madeChange = false;
+                            for(int row = 0; row < 9; row++) {
+                                for(int col = 0; col < 9; col++) {
+                                    // Skip the cells in the pattern
+                                    if((row == pivotRow && col == pivotCol) ||
+                                       (row == wing1Row && col == wing1Col) ||
+                                       (row == wing2Row && col == wing2Col)) continue;
+
+                                    // Must see all three cells
+                                    if(canSee(row, col, pivotRow, pivotCol) &&
+                                       canSee(row, col, wing1Row, wing1Col) &&
+                                       canSee(row, col, wing2Row, wing2Col) &&
+                                       isSafeElimination(row, col, Z)) {
+                                        
+                                        board[row][col][Z] = -1;
+                                        madeChange = true;
+                                        print_debug("Eliminated %d from (%d,%d)\n", 
+                                                  Z + 1, row + 1, col + 1);
+                                        refresh();
+                                    }
+                                }
+                            }
+
+                            if(madeChange) {
+                                changed++;
+                                // Validate after changes
+                                if(!IsValidSolution()) {
+                                    print_debug("Invalid solution after XYZ-Wing elimination\n");
+                                    refresh();
+                                    return -1;
                                 }
                             }
                         }
