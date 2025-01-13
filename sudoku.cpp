@@ -32,6 +32,8 @@ class Sudoku
     int FindHiddenSingles();
     int FindNakedSets();
     int Clean();
+    void LogBoard(std::ofstream& file, const char* algorithm_name);
+
 
     
   private:
@@ -46,13 +48,14 @@ class Sudoku
     void RestoreBoard(int original_board[9][9][9], int board[9][9][9]);
     void print_debug(const char* format, ...);
     static int debug_line;  // Keep track of current debug line
-    void LogBoard(std::ofstream& file, const char* algorithm_name);
 };
 
 int main(void)
 {
   int i, x, y, temp, input, x_pos=0, y_pos=0;
   Sudoku NewGame;
+  std::ofstream logfile("sudoku_progress.txt", std::ios::app);
+
 
   initscr();
   keypad(stdscr, true);
@@ -195,33 +198,54 @@ int main(void)
         endwin();
         return 0;
       case 'S':  // Standard elimination
+        NewGame.LogBoard(logfile, "Standard Elim Before");
         NewGame.StdElim();
+        NewGame.LogBoard(logfile, "Standard Elim After");
         break;
       case 'L':  // Line elimination
+        NewGame.LogBoard(logfile, "Line Elim Before");
         NewGame.LinElim();
+        NewGame.LogBoard(logfile, "Line Elim After");
         break;
       case 'H':  // Hidden pairs
+        NewGame.LogBoard(logfile, "Find Hidden Pairs Before");
         NewGame.FindHiddenPairs();
+        NewGame.LogBoard(logfile, "Find Hidden Pairs After");
         break;
       case 'P':  // Pointing pairs
+        NewGame.LogBoard(logfile, "Find Pointing Pairs Before");
         NewGame.FindPointingPairs();
+        NewGame.LogBoard(logfile, "Find Pointing Pairs After");
         break;
       case 'X':  // X-Wing
+        NewGame.LogBoard(logfile, "Find XWING Before");
         NewGame.FindXWing();
+        NewGame.LogBoard(logfile, "Find XWING After");
         break;
       case 'F':  // Swordfish
+        NewGame.LogBoard(logfile, "Find Swordfish Before");
         NewGame.FindSwordFish();
+        NewGame.LogBoard(logfile, "Find Swordfish After");
         break;
       case 'N':  // Hidden singles
+        NewGame.LogBoard(logfile, "Find Hidden Singles Before");
         NewGame.FindHiddenSingles();
+        NewGame.LogBoard(logfile, "Find Hidden Singles After");
+
         break;
       case 'K':  // Naked sets
+        NewGame.LogBoard(logfile, "Find Naked Sets Before");
         NewGame.FindNakedSets();
+        NewGame.LogBoard(logfile, "Find Naked Sets After");
+
         break;
       case 'A':  // Run all techniques
         for(i=0;i<2;i++) {
+            NewGame.LogBoard(logfile, "Run All Techniques Before");
             NewGame.SolveBasic();
             NewGame.Solve();
+            NewGame.LogBoard(logfile, "Run All Techniques After");
+            
         }
         break;
     }
