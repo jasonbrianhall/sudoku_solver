@@ -136,3 +136,39 @@ This project is open source and available under the MIT License.
 - Special thanks to the ncurses library developers
 - Inspired by classic Sudoku solving techniques
 - Built with love for puzzle enthusiasts and developers alike
+
+---
+
+## Keywords and Topics
+
+### Puzzle Types & Applications
+sudoku | sudoku solver | logic puzzle | puzzle game | puzzle solver | brain teaser | number puzzle
+
+### Core Technologies
+c++ | cpp | python | ncurses | terminal ui | tui | command line interface | cli | cross-platform
+
+### Technical Features
+- Algorithms: backtracking | constraint programming | optimization | elimination algorithm
+- Interface: terminal-based | command-line | ncurses-interface | interactive-ui
+- Architecture: object-oriented | modular design | clean code
+
+### Development
+- Languages: C++ | Python3 | Modern C++
+- Type: Open Source | FOSS | Free Software
+- Platform: Linux | Unix | macOS | Cross-Platform
+- Category: Game Development | Developer Tools | Educational
+
+### Academic & Concepts
+- Mathematics: combinatorics | constraint satisfaction | logic programming
+- Techniques: pattern recognition | logical deduction | systematic solving
+- Education: programming examples | algorithm implementation | data structures
+
+### Repository Information
+Author: Jason Hall jasonbrianhall@gmail.com
+License: MIT  
+Version: 1.0  
+Last Updated: 2025-01
+
+---
+
+_This is an open-source Sudoku solver implementing advanced solving techniques through a terminal-based interface, available in both C++ and Python. Perfect for puzzle enthusiasts, developers learning algorithm implementation, or anyone interested in logic puzzle solving techniques._
