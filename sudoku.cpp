@@ -28,6 +28,7 @@ class Sudoku
     int FindXWing();
     int FindXYWing();
     int FindXYZWing();
+    int FindSimpleColoring();
     int FindPointingPairs();
     int FindSwordFish();
     int StdElim();
@@ -72,11 +73,11 @@ int main(void)
     
     printw("Welcome to Sudoku Solver\n");
     printw("Commands:                          Solving techniques:\n");
-    printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles     ; - XYZ Wing\n");
+    printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles\n");
     printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets\n");
     printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing\n");
     printw(" q - Quit                           P - Pointing pairs          F - Swordfish\n");
-    printw(" A - Run all techniques             Y - XY Wing                 Z - New Game\n\n");
+    printw(" A - Run all techniques             Z - New Game\n\n");
     
     // Draw the grid
     for(y=0;y<9;y++)
@@ -199,6 +200,12 @@ int main(void)
       case 'Q':
         endwin();
         return 0;
+      case 'C':  // Standard elimination
+        NewGame.LogBoard(logfile, "Find Simple Coloring Before");
+        NewGame.FindSimpleColoring();
+        NewGame.LogBoard(logfile, "Find Simple Coloring After");
+        break;
+
       case 'S':  // Standard elimination
         NewGame.LogBoard(logfile, "Standard Elim Before");
         NewGame.StdElim();
@@ -224,18 +231,16 @@ int main(void)
         NewGame.FindXWing();
         NewGame.LogBoard(logfile, "Find XWING After");
         break;
-      case 'Y':  // X-Wing
+      case 'Y':  // XY-Wing (Broken)
         NewGame.LogBoard(logfile, "Find XYWING Before");
         NewGame.FindXYWing();
         NewGame.LogBoard(logfile, "Find XYWING After");
         break;
-      case ';':  // X-Wing
+      case ';':  // XYZ-Wing (Broken)
         NewGame.LogBoard(logfile, "Find XYZWING Before");
         NewGame.FindXYZWing();
         NewGame.LogBoard(logfile, "Find XYZWING After");
         break;
-
-
       case 'F':  // Swordfish
         NewGame.LogBoard(logfile, "Find Swordfish Before");
         NewGame.FindSwordFish();
@@ -634,6 +639,20 @@ int Sudoku::Solve() {
                 changes_made = true;
                 continue;  // Start over with basic eliminations
             }
+
+            /*print_debug("Running FindSimpleColoring...\n");
+            refresh();
+            result = FindSimpleColoring();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after FindSimpleColoring\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                changes_made = true;
+                continue;  // Start over with basic eliminations
+            }*/
+
 
             // Try Find XY Wing
             /*print_debug("Running Find XY Wing...\n");
@@ -2158,3 +2177,150 @@ int Sudoku::FindXYZWing() {
     
     return changed;
 }
+
+int Sudoku::FindSimpleColoring() {
+    int changed = 0;
+    
+    // Helper to get candidates for a cell
+    auto getCandidates = [this](int row, int col) -> std::vector<int> {
+        std::vector<int> candidates;
+        if(GetValue(row, col) != -1) return candidates;
+        for(int val = 0; val < 9; val++) {
+            if(board[row][col][val] == val && LegalValue(row, col, val)) {
+                candidates.push_back(val);
+            }
+        }
+        return candidates;
+    };
+
+    // Helper to check if cells can see each other (same row, column, or box)
+    auto canSee = [](int row1, int col1, int row2, int col2) -> bool {
+        return row1 == row2 ||  // Same row
+               col1 == col2 ||  // Same column
+               (row1/3 == row2/3 && col1/3 == col2/3);  // Same box
+    };
+
+    // Structure to represent a cell in the coloring chain
+    struct ColoredCell {
+        int row, col;
+        bool color;  // true for color1, false for color2
+        ColoredCell(int r, int c, bool clr) : row(r), col(c), color(clr) {}
+    };
+
+    // For each candidate value
+    for(int val = 0; val < 9; val++) {
+        // Find all cells that have this candidate
+        std::vector<std::pair<int, int>> candidateCells;
+        for(int row = 0; row < 9; row++) {
+            for(int col = 0; col < 9; col++) {
+                auto candidates = getCandidates(row, col);
+                if(std::find(candidates.begin(), candidates.end(), val) != candidates.end()) {
+                    candidateCells.push_back({row, col});
+                }
+            }
+        }
+
+        // For each starting cell, try to build a chain
+        for(const auto& start : candidateCells) {
+            std::vector<ColoredCell> chain;
+            std::vector<std::vector<bool>> visited(9, std::vector<bool>(9, false));
+            
+            // Start with the first cell colored as true
+            chain.emplace_back(start.first, start.second, true);
+            visited[start.first][start.second] = true;
+
+            bool chainChanged;
+            do {
+                chainChanged = false;
+                
+                // Look for cells that can extend the chain
+                for(const auto& cell : chain) {
+                    for(const auto& candidate : candidateCells) {
+                        int row = candidate.first;
+                        int col = candidate.second;
+                        
+                        if(!visited[row][col] && canSee(cell.row, cell.col, row, col)) {
+                            // Add cell with opposite color
+                            chain.emplace_back(row, col, !cell.color);
+                            visited[row][col] = true;
+                            chainChanged = true;
+                        }
+                    }
+                }
+            } while(chainChanged);
+
+            // Check for chain-based eliminations
+            if(chain.size() >= 2) {
+                // Check for same-colored cells that can see each other
+                for(size_t i = 0; i < chain.size(); i++) {
+                    for(size_t j = i + 1; j < chain.size(); j++) {
+                        if(chain[i].color == chain[j].color && 
+                           canSee(chain[i].row, chain[i].col, chain[j].row, chain[j].col)) {
+                            // Invalid coloring - can eliminate this candidate from all cells of the opposite color
+                            bool madeChange = false;
+                            int backup[9][9][9];
+                            memcpy(backup, board, sizeof(backup));
+
+                            for(const auto& cell : chain) {
+                                if(cell.color != chain[i].color) {
+                                    board[cell.row][cell.col][val] = -1;
+                                    madeChange = true;
+                                }
+                            }
+
+                            // Validate changes
+                            if(madeChange) {
+                                if(!IsValidSolution()) {
+                                    memcpy(board, backup, sizeof(backup));
+                                } else {
+                                    changed++;
+                                    print_debug("Simple Coloring: eliminated %d from opposite colored cells\n", 
+                                              val + 1);
+                                    refresh();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Check for cells that can see both colors
+                for(int row = 0; row < 9; row++) {
+                    for(int col = 0; col < 9; col++) {
+                        if(visited[row][col]) continue;
+
+                        bool seesColor1 = false;
+                        bool seesColor2 = false;
+
+                        for(const auto& cell : chain) {
+                            if(canSee(row, col, cell.row, cell.col)) {
+                                if(cell.color) seesColor1 = true;
+                                else seesColor2 = true;
+                            }
+                        }
+
+                        // If cell sees both colors, we can eliminate the candidate
+                        if(seesColor1 && seesColor2 && board[row][col][val] == val) {
+                            int backup[9][9][9];
+                            memcpy(backup, board, sizeof(backup));
+
+                            board[row][col][val] = -1;
+
+                            // Validate change
+                            if(!IsValidSolution()) {
+                                memcpy(board, backup, sizeof(backup));
+                            } else {
+                                changed++;
+                                print_debug("Simple Coloring: eliminated %d from (%d,%d) - sees both colors\n", 
+                                          val + 1, row + 1, col + 1);
+                                refresh();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return changed;
+}
+
