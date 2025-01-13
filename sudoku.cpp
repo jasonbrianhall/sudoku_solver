@@ -363,16 +363,20 @@ int Sudoku::ClearValue(int x, int y)
 
 bool Sudoku::IsValidUnit(std::vector<int>& values) {
     std::vector<bool> used(9, false);
+    // First pass: only look at filled cells
     for(int val : values) {
-        if(val != -1) {  // Skip empty cells
+        if(val != -1) {  // Only check actual filled numbers
             if(used[val]) {
-                return false;  // Duplicate found
+                return false;  // Real duplicate found
             }
             used[val] = true;
         }
     }
+    // Don't check candidates - a partially filled valid unit is OK
     return true;
 }
+
+
 
 bool Sudoku::IsValidSolution() {
     // Check rows
