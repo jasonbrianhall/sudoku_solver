@@ -421,7 +421,7 @@ int Sudoku::Solve() {
     int stop;
     int counter1, counter2, i, j,k;
     move(22, 0);
-    printw("Starting Solve() - Cleaning board...\n");
+    printw("Starting Solve ...\n");
     refresh();
     //Clean();
     int original_board[9][9][9];
@@ -441,57 +441,51 @@ int Sudoku::Solve() {
         
         if(counter1 != 81) {
             // Run each solving technique and validate after each
-            move(50, 0);
-            printw("Running StdElim...                    \n");
+            print_debug("Running StdElim...                    \n");
             refresh();
             StdElim();
             if(!IsValidSolution()) {
-                move(50, 0);
-                printw("Invalid solution detected after StdElim\n");
+                print_debug("Invalid solution detected after StdElim\n");
                 refresh();
                 //RestoreBoard(board, original_board);
                 return -1;
             }
             
-            move(50, 0);
-            printw("Running LinElim...                    \n");
+            print_debug("Running LinElim...                    \n");
             refresh();
             LinElim();
             if(!IsValidSolution()) {
                 move(23, 0);
-                printw("Invalid solution detected after LinElim\n");
+                print_debug("Invalid solution detected after LinElim\n");
                 refresh();
                 //RestoreBoard(board, original_board);
                 return -1;
             }
             
-            move(50, 0);
-            printw("Running FindHiddenPairs...            \n");
+            print_debug("Running FindHiddenPairs...            \n");
             refresh();
             FindHiddenPairs();
             if(!IsValidSolution()) {
-                move(23, 0);
-                printw("Invalid solution detected after FindHiddenPairs\n");
+                print_debug("Invalid solution detected after FindHiddenPairs\n");
                 refresh();
                 //RestoreBoard(board, original_board);
                 return -1;
             }
             
             move(50, 0);
-            printw("Running FindPointingPairs...            \n");
+            print_debug("Running FindPointingPairs...            \n");
             refresh();
             FindPointingPairs();
             if(!IsValidSolution()) {
                 move(23, 0);
-                printw("Invalid solution detected after FindPointingPairs\n");
+                print_debug("Invalid solution detected after FindPointingPairs\n");
                 //RestoreBoard(board, original_board);
                 refresh();
                 return -1;
             }
 
 
-            move(50, 0);
-            printw("Running FindXWing...                  \n");
+            print_debug("Running FindXWing...                  \n");
             refresh();
             FindXWing();
             if(!IsValidSolution()) {
@@ -502,13 +496,11 @@ int Sudoku::Solve() {
                 return -1;
             }
             
-            move(50, 0);
-            printw("Running FindSwordFish...              \n");
+            print_debug("Running FindSwordFish...              \n");
             refresh();
             FindSwordFish();
             if(!IsValidSolution()) {
-                move(23, 0);
-                printw("Invalid solution detected after FindSwordFish\n");
+                print_debug("Invalid solution detected after FindSwordFish\n");
                 //RestoreBoard(board, original_board);
                 refresh();
                 return -1;
@@ -553,8 +545,7 @@ int Sudoku::Solve() {
     
     // Final validation check
     if(!IsValidSolution()) {
-        move(23, 0);
-        printw("Invalid final solution detected\n");
+        print_debug("Invalid final solution detected\n");
         refresh();
         return -1;
     }
