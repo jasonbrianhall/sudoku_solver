@@ -60,7 +60,6 @@ void print_usage() {
     cout << "Usage:" << endl;
     cout << "  sudoku                     - Run in interactive mode" << endl;
     cout << "  sudoku -f <input_file>     - Load and solve puzzle from file" << endl;
-    cout << "  sudoku -f <input_file> -o <output_file>  - Load, solve, and save to file" << endl;
 }
 
 int main(int argc, char* argv[]) {
