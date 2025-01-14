@@ -647,15 +647,15 @@ void Sudoku::print_debug(const char *format, ...) {
   int x, y, k;
   for(x=0;x<9;x++)
   {
-    file  << "|\n";
     for(y=0;y<9;y++)
     {
       file << "|";
       for(k=0;k<9;k++)
       {
-        file << board[x][y][k]+1;
+        file << board[y][x][k]+1;
       }
     }
+    file  << "|\n";
   }
 
 }
@@ -1549,102 +1549,219 @@ int Sudoku::FindHiddenSingles() {
     return changed;
 }
 
-int Sudoku::LinElim()
-{
-  int v, w, x, y, k, xpos, ypos, counter;
-  int changed = 0;
-  
-  for(k=0;k<9;k++)
-  {
-    // Check boxes
-    for(v=0;v<9;v=v+3)
-    {
-      for(w=0;w<9;w=w+3)
-      {
-        xpos=-1;
-        ypos=-1;
-        counter=0;
-        for(x=v;x<v+3;x++)
-        {
-          for(y=w;y<w+3;y++)
-          {
-            // Only consider empty cells and verify legal placement
-            if(GetValue(x,y) == -1 && board[x][y][k]==k && LegalValue(x,y,k))
-            {
-              xpos=x;
-              ypos=y;
-              counter++;
-            }
-          }
-        }
-        if(counter==1 && xpos != -1 && ypos != -1)
-        {
-          if(LegalValue(xpos, ypos, k)) {
-            SetValue(xpos, ypos, k);
-            changed++;
-          }
-        }
-      }
-    }
-  }
-
-  // Check rows
-  for(k=0;k<9;k++)
-  {
-    for(x=0;x<9;x++)
-    {
-      xpos=-1;
-      ypos=-1;
-      counter=0;
+int Sudoku::LinElim() {
+    int changed = 0;
     
-      for(y=0;y<9;y++)
-      {
-        if(GetValue(x,y) == -1 && board[x][y][k]==k && LegalValue(x,y,k))
-        {
-          xpos=x;
-          ypos=y;
-          counter++;
+    // Helper to safely eliminate a candidate and track changes
+    auto eliminateCandidate = [this](int x, int y, int val, const char* reason) -> bool {
+        if(GetValue(x, y) == -1 && board[x][y][val] == val) {
+            // Count remaining candidates before elimination
+            int candidateCount = 0;
+            for(int v = 0; v < 9; v++) {
+                if(board[x][y][v] == v) candidateCount++;
+            }
+            if(candidateCount <= 1) return false; // Don't eliminate last candidate
+            
+            board[x][y][val] = -1;
+            print_debug("Eliminated %d from (%d,%d) - %s\n", 
+                       val + 1, x + 1, y + 1, reason);
+            refresh();
+            return true;
         }
-      }
-      if(counter==1 && xpos != -1 && ypos != -1)
-      {
-        if(LegalValue(xpos, ypos, k)) {
-          SetValue(xpos, ypos, k);
-          changed++;
-        }
-      }
-    }
-  }
+        return false;
+    };
 
-  // Check columns
-  for(k=0;k<9;k++)
-  {
-    for(y=0;y<9;y++)
-    {
-      xpos=-1;
-      ypos=-1;
-      counter=0;
-  
-      for(x=0;x<9;x++)
-      {
-        if(GetValue(x,y) == -1 && board[x][y][k]==k && LegalValue(x,y,k))
-        {
-          xpos=x;
-          ypos=y;
-          counter++;
-        }
-      }
-      if(counter==1 && xpos != -1 && ypos != -1)
-      {
-        if(LegalValue(xpos, ypos, k)) {
-          SetValue(xpos, ypos, k);
-          changed++;
-        }
-      }
-    }
-  }
+    // Process each value 1-9
+    for(int val = 0; val < 9; val++) {
+        // Check 3x3 boxes
+        for(int boxRow = 0; boxRow < 9; boxRow += 3) {
+            for(int boxCol = 0; boxCol < 9; boxCol += 3) {
+                // First pass: find if value appears in box or is constrained to a line
+                bool valueInBox = false;
+                bool allInRow = -1;   // Track if all candidates are in same row
+                bool allInCol = -1;   // Track if all candidates are in same col
+                std::vector<std::pair<int,int>> candidates;
+                
+                for(int i = 0; i < 3; i++) {
+                    for(int j = 0; j < 3; j++) {
+                        int x = boxCol + j;
+                        int y = boxRow + i;
+                        if(GetValue(x, y) == val) {
+                            valueInBox = true;
+                            break;
+                        }
+                        if(GetValue(x, y) == -1 && board[x][y][val] == val && LegalValue(x, y, val)) {
+                            candidates.push_back({x, y});
+                        }
+                    }
+                }
 
-  return changed;
+                // Check if all candidates are in same row or column
+                if(!valueInBox && candidates.size() >= 2) {
+                    bool sameRow = true;
+                    bool sameCol = true;
+                    int firstRow = candidates[0].second;
+                    int firstCol = candidates[0].first;
+                    
+                    for(const auto& pos : candidates) {
+                        if(pos.second != firstRow) sameRow = false;
+                        if(pos.first != firstCol) sameCol = false;
+                    }
+                    
+                    // If confined to a line, eliminate from rest of line outside box
+                    if(sameRow) {
+                        for(int col = 0; col < 9; col++) {
+                            if(col < boxCol || col >= boxCol + 3) {  // Outside box
+                                if(eliminateCandidate(col, firstRow, val, 
+                                   "value confined to box row")) {
+                                    changed++;
+                                }
+                            }
+                        }
+                    }
+                    if(sameCol) {
+                        for(int row = 0; row < 9; row++) {
+                            if(row < boxRow || row >= boxRow + 3) {  // Outside box
+                                if(eliminateCandidate(firstCol, row, val,
+                                   "value confined to box column")) {
+                                    changed++;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Look for single candidate in box
+                if(!valueInBox && candidates.size() == 1) {
+                    int x = candidates[0].first;
+                    int y = candidates[0].second;
+                    if(LegalValue(x, y, val)) {
+                        print_debug("Box at (%d,%d): Only cell (%d,%d) can be %d\n",
+                                  boxCol/3 + 1, boxRow/3 + 1, x + 1, y + 1, val + 1);
+                        refresh();
+                        SetValue(x, y, val);
+                        changed++;
+                    }
+                }
+            }
+        }
+
+        // Check rows for line elimination
+        for(int row = 0; row < 9; row++) {
+            std::vector<int> possibilities;
+            bool valueInRow = false;
+            
+            // Find all possible positions in row
+            for(int col = 0; col < 9; col++) {
+                if(GetValue(col, row) == val) {
+                    valueInRow = true;
+                    break;
+                }
+                if(GetValue(col, row) == -1 && board[col][row][val] == val && LegalValue(col, row, val)) {
+                    possibilities.push_back(col);
+                }
+            }
+
+            // If value confined to one box in row, eliminate from rest of that box
+            if(!valueInRow && possibilities.size() >= 2) {
+                bool allInOneBox = true;
+                int boxStart = possibilities[0] / 3;
+                for(int col : possibilities) {
+                    if(col / 3 != boxStart) {
+                        allInOneBox = false;
+                        break;
+                    }
+                }
+                
+                if(allInOneBox) {
+                    int boxCol = boxStart * 3;
+                    for(int i = 0; i < 3; i++) {
+                        for(int rowInBox = row/3*3; rowInBox < row/3*3 + 3; rowInBox++) {
+                            if(rowInBox != row) {
+                                if(eliminateCandidate(boxCol + i, rowInBox, val,
+                                   "value confined to row in box")) {
+                                    changed++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Place single candidate in row
+            if(!valueInRow && possibilities.size() == 1) {
+                int col = possibilities[0];
+                print_debug("Row %d: Only cell (%d,%d) can be %d\n",
+                          row + 1, col + 1, row + 1, val + 1);
+                refresh();
+                SetValue(col, row, val);
+                changed++;
+            }
+        }
+
+        // Check columns similarly
+        for(int col = 0; col < 9; col++) {
+            std::vector<int> possibilities;
+            bool valueInCol = false;
+            
+            for(int row = 0; row < 9; row++) {
+                if(GetValue(col, row) == val) {
+                    valueInCol = true;
+                    break;
+                }
+                if(GetValue(col, row) == -1 && board[col][row][val] == val && LegalValue(col, row, val)) {
+                    possibilities.push_back(row);
+                }
+            }
+
+            // If value confined to one box in column, eliminate from rest of that box
+            if(!valueInCol && possibilities.size() >= 2) {
+                bool allInOneBox = true;
+                int boxStart = possibilities[0] / 3;
+                for(int row : possibilities) {
+                    if(row / 3 != boxStart) {
+                        allInOneBox = false;
+                        break;
+                    }
+                }
+                
+                if(allInOneBox) {
+                    int boxRow = boxStart * 3;
+                    for(int i = 0; i < 3; i++) {
+                        for(int colInBox = col/3*3; colInBox < col/3*3 + 3; colInBox++) {
+                            if(colInBox != col) {
+                                if(eliminateCandidate(colInBox, boxRow + i, val,
+                                   "value confined to column in box")) {
+                                    changed++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Place single candidate in column
+            if(!valueInCol && possibilities.size() == 1) {
+                int row = possibilities[0];
+                print_debug("Column %d: Only cell (%d,%d) can be %d\n",
+                          col + 1, col + 1, row + 1, val + 1);
+                refresh();
+                SetValue(col, row, val);
+                changed++;
+            }
+        }
+    }
+    
+    if(!IsValidSolution()) {
+        print_debug("Invalid solution after line elimination\n");
+        refresh();
+        return -1;
+    }
+    
+    print_debug("Line elimination completed: %d changes made\n", changed);
+    refresh();
+    
+    return changed;
 }
 
 std::vector<int> Sudoku::GetCellCandidates(int x, int y) {
