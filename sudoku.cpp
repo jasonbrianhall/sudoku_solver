@@ -789,22 +789,8 @@ int Sudoku::Solve() {
                 continue;  // Start over with basic eliminations
             }
 
-            /*print_debug("Running FindSimpleColoring...\n");
-            refresh();
-            result = FindSimpleColoring();
-            if (!IsValidSolution()) {
-                print_debug("Invalid solution detected after FindSimpleColoring\n");
-                refresh();
-                return -1;
-            }
-            if (result > 0) {
-                changes_made = true;
-                continue;  // Start over with basic eliminations
-            }*/
-
-
             // Try Find XY Wing
-            /*print_debug("Running Find XY Wing...\n");
+            print_debug("Running Find XY Wing...\n");
             refresh();
             result = FindXYWing();
             if (!IsValidSolution()) {
@@ -815,10 +801,10 @@ int Sudoku::Solve() {
             if (result > 0) {
                 changes_made = true;
                 continue;  // Start over with basic eliminations
-            }*/
+            }
 
             // Try Find XYZ Wing
-            /*print_debug("Running Find XYZ Wing...\n");
+            print_debug("Running Find XYZ Wing...\n");
             refresh();
             result = FindXYZWing();
             if (!IsValidSolution()) {
@@ -829,7 +815,20 @@ int Sudoku::Solve() {
             if (result > 0) {
                 changes_made = true;
                 continue;  // Start over with basic eliminations
-            }*/
+            }
+
+            print_debug("Running FindSimpleColoring...\n");
+            refresh();
+            result = FindSimpleColoring();
+            if (!IsValidSolution()) {
+                print_debug("Invalid solution detected after FindSimpleColoring\n");
+                refresh();
+                return -1;
+            }
+            if (result > 0) {
+                changes_made = true;
+                continue;  // Start over with basic eliminations
+            }
 
 
         }
