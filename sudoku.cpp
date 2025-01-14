@@ -232,6 +232,7 @@ int main(int argc, char* argv[]) {
       case '7':
       case '8':
       case '9':
+        NewGame.Clean();
         NewGame.SetValue(x_pos, y_pos, input - '1');
         break;
       case 'Q':
