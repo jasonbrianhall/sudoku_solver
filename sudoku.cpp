@@ -38,6 +38,10 @@ class Sudoku
     int Clean();
     void LogBoard(std::ofstream& file, const char* algorithm_name);
     void NewGame();
+    bool LoadFromFile(const string& filename);
+    void SaveToFile(const string& filename);
+    void print_debug(const char* format, ...);
+
     
   private:
 
@@ -49,17 +53,51 @@ class Sudoku
     bool IsValidUnit(std::vector<int>& values);
     bool IsValidSolution();
     void RestoreBoard(int original_board[9][9][9], int board[9][9][9]);
-    void print_debug(const char* format, ...);
     static int debug_line;  // Keep track of current debug line
 };
 
-int main(void)
-{
-  int i, x, y, temp, input, x_pos=0, y_pos=0;
-  Sudoku NewGame;
-  std::ofstream logfile("sudoku_progress.txt", std::ios::app);
+void print_usage() {
+    cout << "Usage:" << endl;
+    cout << "  sudoku                     - Run in interactive mode" << endl;
+    cout << "  sudoku -f <input_file>     - Load and solve puzzle from file" << endl;
+    cout << "  sudoku -f <input_file> -o <output_file>  - Load, solve, and save to file" << endl;
+}
 
-
+int main(int argc, char* argv[]) {
+ 
+    int i, x, y, temp, input, x_pos=0, y_pos=0;
+    Sudoku NewGame;
+    std::ofstream logfile("sudoku_progress.txt", std::ios::app);
+   
+    // Parse command line arguments
+    string input_file = "";
+    string output_file = "";
+    bool has_output = false;
+    
+    for (int i = 1; i < argc; i++) {
+        string arg = argv[i];
+        if (arg == "-h" || arg == "--help") {
+            print_usage();
+            return 0;
+        }
+        else if (arg == "-f" && i + 1 < argc) {
+            input_file = argv[++i];
+        }
+        else if (arg == "-o" && i + 1 < argc) {
+            output_file = argv[++i];
+            has_output = true;
+        }
+    }
+    
+    // If input file specified, run in command line mode
+    if (!input_file.empty()) {
+        if (!NewGame.LoadFromFile(input_file)) {
+            cerr << "Failed to load puzzle from " << input_file << endl;
+            return 1;
+        }
+        
+    }
+ 
   initscr();
   keypad(stdscr, true);
   start_color();
@@ -77,7 +115,7 @@ int main(void)
     printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets         ; - Find XYZ Wing\n");  
     printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing             C - Simple Coloring\n"); 
     printw(" q - Quit                           P - Pointing pairs          F - Swordfish\n");
-    printw(" A - Run all techniques             Z - New Game\n\n");
+    printw(" A - Run all techniques             Z - New Game                F(5-8) - Save Game     Shift F(5-8) - Load Game\n\n");
     
     // Draw the grid
     for(y=0;y<9;y++)
@@ -265,11 +303,110 @@ int main(void)
       case 'Z':  // New Game
         NewGame.NewGame();
         break;
+      case KEY_F(5):  // F5
+        NewGame.SaveToFile("sudoku_1.txt");
+        NewGame.print_debug("Game saved to sudoku_1.txt");
+        break;
+      case KEY_F(6):  // F6
+        NewGame.SaveToFile("sudoku_2.txt");
+        NewGame.print_debug("Game saved to sudoku_2.txt");
+        break;
+      case KEY_F(7):  // F7 
+        NewGame.SaveToFile("sudoku_3.txt");
+        NewGame.print_debug("Game saved to sudoku_3.txt");
+        break;
+      case KEY_F(8):  // F8
+        NewGame.SaveToFile("sudoku_4.txt");
+        NewGame.print_debug("Game saved to sudoku_4.txt");
+        break;
+      case KEY_F(17):  // Shift-F5 (KEY_F(5) + 12)
+        if (NewGame.LoadFromFile("sudoku_1.txt")) {
+            NewGame.print_debug("Game loaded from sudoku_1.txt");
+        } else {
+            NewGame.print_debug("Failed to load sudoku_1.txt");
+        }
+        break;
+      case KEY_F(18):  // Shift-F6
+        if (NewGame.LoadFromFile("sudoku_2.txt")) {
+            NewGame.print_debug("Game loaded from sudoku_2.txt");
+        } else {
+            NewGame.print_debug("Failed to load sudoku_2.txt");
+        }
+        break;
+      case KEY_F(19):  // Shift-F7
+        if (NewGame.LoadFromFile("sudoku_3.txt")) {
+            NewGame.print_debug("Game loaded from sudoku_3.txt");
+        } else {
+            NewGame.print_debug("Failed to load sudoku_3.txt");
+        }
+        break;
+      case KEY_F(20):  // Shift-F8
+        if (NewGame.LoadFromFile("sudoku_4.txt")) {
+            NewGame.print_debug("Game loaded from sudoku_4.txt");
+        } else {
+            NewGame.print_debug("Failed to load sudoku_4.txt");
+        }
+        break;
     }
     move(0,0);
   }
   return 0;
 }
+
+// Implementation of new file loading functions
+bool Sudoku::LoadFromFile(const string& filename) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error: Could not open file " << filename << endl;
+        return false;
+    }
+
+    // Clear the current board
+    NewGame();
+    
+    string line;
+    int row = 0;
+    
+    while (getline(file, line) && row < 9) {
+        if (line.length() < 9) continue;  // Skip short lines
+        
+        for (int col = 0; col < 9; col++) {
+            char c = line[col];
+            if (c >= '1' && c <= '9') {
+                SetValue(col, row, c - '1');
+            }
+            // Skip spaces, dots, and zeros
+        }
+        row++;
+    }
+    
+    file.close();
+    return row == 9;  // Return true if we read all 9 rows
+}
+
+void Sudoku::SaveToFile(const string& filename) {
+    ofstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error: Could not create file " << filename << endl;
+        return;
+    }
+    
+    for (int row = 0; row < 9; row++) {
+        for (int col = 0; col < 9; col++) {
+            int val = GetValue(col, row);
+            if (val >= 0 && val <= 8) {
+                file << (val + 1);
+            } else {
+                file << '.';
+            }
+        }
+        file << endl;
+    }
+    
+    file.close();
+}
+
+
 
 Sudoku::Sudoku()
 {
