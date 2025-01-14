@@ -644,7 +644,21 @@ void Sudoku::print_debug(const char *format, ...) {
             }
         }
         file << "\n";
+  int x, y, k;
+  for(x=0;x<9;x++)
+  {
+    file  << "|\n";
+    for(y=0;y<9;y++)
+    {
+      file << "|";
+      for(k=0;k<9;k++)
+      {
+        file << board[x][y][k]+1;
+      }
     }
+  }
+
+}
 
 
 int Sudoku::Solve() {
@@ -1320,97 +1334,65 @@ int Sudoku::FindHiddenPairs() {
 int Sudoku::StdElim() {
     int eliminated = 0;
 
-    // Helper to validate elimination
-    auto safeEliminate = [this](int row, int col, int value) -> bool {
-        if(board[row][col][value] != value) return false;  // Already eliminated
-
-        // Count remaining candidates before elimination
-        int candidateCount = 0;
-        for(int v = 0; v < 9; v++) {
-            if(board[row][col][v] == v) candidateCount++;
-        }
-        if(candidateCount <= 1) {
-            print_debug("Cannot eliminate only candidate %d at (%d,%d)\n", value + 1, row + 1, col + 1);
-            refresh();
-            return false;
-        }
-
-        // Make the elimination
-        board[row][col][value] = -1;
-
-        // Validate resulting state
-        if(!IsValidSolution()) {
-            // Restore if invalid
-            board[row][col][value] = value;
-            print_debug("Eliminating %d from (%d,%d) would create invalid state\n", 
-                   value + 1, row + 1, col + 1);
-            refresh();
-            return false;
-        }
-
-        return true;
-    };
-
-    // Process each cell once
-    std::vector<bool> processed(81, false);
-
+    // Process each cell
     for(int y = 0; y < 9; y++) {
         for(int x = 0; x < 9; x++) {
-            int cellIndex = y * 9 + x;
-            if(processed[cellIndex]) continue;
-
+            // Skip if cell is empty
+            if(GetValue(x, y) == -1) continue;
+            
             int value = GetValue(x, y);
-            if(value >= 0 && value <= 8) {  // Found a filled cell
-                print_debug("Processing filled cell (%d,%d) with value %d\n", x + 1, y + 1, value + 1);
-                refresh();
-
-                // Eliminate from row
-                for(int i = 0; i < 9; i++) {
-                    if(i != x && GetValue(i, y) == -1) {
-                        if(safeEliminate(i, y, value)) {
+            
+            // Eliminate from row
+            for(int col = 0; col < 9; col++) {
+                if(col != x && GetValue(col, y) == -1) {
+                    if(board[col][y][value] == value) {
+                        board[col][y][value] = -1;  // Eliminate the possibility
+                        eliminated++;
+                        print_debug("Eliminated %d from (%d,%d) - same row as (%d,%d)\n", 
+                                  value + 1, col + 1, y + 1, x + 1, y + 1);
+                    }
+                }
+            }
+            
+            // Eliminate from column
+            for(int row = 0; row < 9; row++) {
+                if(row != y && GetValue(x, row) == -1) {
+                    if(board[x][row][value] == value) {
+                        board[x][row][value] = -1;  // Eliminate the possibility
+                        eliminated++;
+                        print_debug("Eliminated %d from (%d,%d) - same column as (%d,%d)\n", 
+                                  value + 1, x + 1, row + 1, x + 1, y + 1);
+                    }
+                }
+            }
+            
+            // Eliminate from 3x3 box
+            int box_x = (x / 3) * 3;
+            int box_y = (y / 3) * 3;
+            for(int i = 0; i < 3; i++) {
+                for(int j = 0; j < 3; j++) {
+                    int cur_x = box_x + j;
+                    int cur_y = box_y + i;
+                    if((cur_x != x || cur_y != y) && GetValue(cur_x, cur_y) == -1) {
+                        if(board[cur_x][cur_y][value] == value) {
+                            board[cur_x][cur_y][value] = -1;  // Eliminate the possibility
                             eliminated++;
+                            print_debug("Eliminated %d from (%d,%d) - same box as (%d,%d)\n", 
+                                      value + 1, cur_x + 1, cur_y + 1, x + 1, y + 1);
                         }
                     }
-                }
-                
-                // Eliminate from column
-                for(int i = 0; i < 9; i++) {
-                    if(i != y && GetValue(x, i) == -1) {
-                        if(safeEliminate(x, i, value)) {
-                            eliminated++;
-                        }
-                    }
-                }
-                
-                // Eliminate from 3x3 box
-                int box_x = (x / 3) * 3;
-                int box_y = (y / 3) * 3;
-                for(int i = 0; i < 3; i++) {
-                    for(int j = 0; j < 3; j++) {
-                        int cur_x = box_x + j;
-                        int cur_y = box_y + i;
-                        if((cur_x != x || cur_y != y) && GetValue(cur_x, cur_y) == -1) {
-                            if(safeEliminate(cur_x, cur_y, value)) {
-                                eliminated++;
-                            }
-                        }
-                    }
-                }
-
-                // Mark cell as processed
-                processed[cellIndex] = true;
-
-                // Validate the entire board after processing each cell
-                if(!IsValidSolution()) {
-                    print_debug("Invalid board state after processing cell (%d,%d)\n", x + 1, y + 1);
-                    refresh();
-                    return -1;
                 }
             }
         }
     }
     
-    // Return -1 if no eliminations were made
+    // After each pass, verify the board is still valid
+    if(!IsValidSolution()) {
+        print_debug("Invalid board state after standard elimination\n");
+        return -1;
+    }
+
+    print_debug("Standard elimination completed: %d candidates eliminated\n", eliminated);
     return eliminated > 0 ? eliminated : -1;
 }
 
