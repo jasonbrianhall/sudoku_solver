@@ -1552,8 +1552,6 @@ int Sudoku::LinElim() {
             for(int boxCol = 0; boxCol < 9; boxCol += 3) {
                 // First pass: find if value appears in box or is constrained to a line
                 bool valueInBox = false;
-                bool allInRow = -1;   // Track if all candidates are in same row
-                bool allInCol = -1;   // Track if all candidates are in same col
                 std::vector<std::pair<int,int>> candidates;
                 
                 for(int i = 0; i < 3; i++) {
