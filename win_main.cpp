@@ -427,8 +427,8 @@ namespace SudokuGame {
 	    
 	    if (openFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
 		sudoku->LoadFromFile(openFileDialog->FileName);  // Pass String^ directly
-		UpdateBoard();
 		UpdateStatus("Game loaded successfully");
+		UpdateGrid();
 	    }
 	}
 
