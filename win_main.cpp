@@ -313,7 +313,8 @@ namespace SudokuGame {
 }
 
 [STAThread]
-int main(array<String^>^ args) {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
     Application::EnableVisualStyles();
     Application::SetCompatibleTextRenderingDefault(false);
     Application::Run(gcnew SudokuGame::MainForm());
