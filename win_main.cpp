@@ -35,6 +35,7 @@ namespace SudokuGame {
         void Solve() { nativeSudoku->Solve(); }
         void ClearValue(int x, int y) { nativeSudoku->ClearValue(x, y); }
         void Clean() { nativeSudoku->Clean(); }
+        bool IsValidSoluton() { return nativeSudoku->IsValidSolution(); }
         
         // File operations
 	bool LoadFromFile(String^ filename) {
