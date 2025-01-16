@@ -425,24 +425,14 @@ namespace SudokuGame {
         }
 
 	void Load_Click(Object^ sender, EventArgs^ e) {
-	    OpenFileDialog^ openFileDialog = gcnew OpenFileDialog();
-	    openFileDialog->Filter = "Sudoku files (*.txt)|*.txt|All files (*.*)|*.*";
-	    
-	    if (openFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-		sudoku->LoadFromFile(openFileDialog->FileName);  // Pass String^ directly
-		UpdateStatus("Game loaded successfully");
-		UpdateGrid();
-	    }
+            sudoku->LoadFromFile("sudoku_1.txt")
+	    UpdateStatus("Game loaded successfully (sudoku_1.txt)");
+	    UpdateGrid();
 	}
 
 	void Save_Click(Object^ sender, EventArgs^ e) {
-	    SaveFileDialog^ saveFileDialog = gcnew SaveFileDialog();
-	    saveFileDialog->Filter = "Sudoku files (*.txt)|*.txt|All files (*.*)|*.*";
-	    
-	    if (saveFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-		sudoku->SaveToFile(saveFileDialog->FileName);  // Pass String^ directly
-		UpdateStatus("Game saved successfully");
-	    }
+             sudoku->SaveToFile("sudoku_1.txt");
+	     UpdateStatus("Game saved successfully (sudoku_1.txt)");
 	}
 
         void Exit_Click(Object^ sender, EventArgs^ e) {
