@@ -1,7 +1,7 @@
 #define _HAS_STD_BYTE 0
 #define NOMINMAX
 #include "sudoku.h"
-#include "resources.h"
+#include "resource.h"
 #include <msclr/marshal_cppstd.h>
 
 using namespace System;
