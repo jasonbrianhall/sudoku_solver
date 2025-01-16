@@ -56,8 +56,7 @@ public:
     int FindXYZWing();         // XYZ-Wing pattern
     int FindSimpleColoring();  // Simple coloring technique
     int Clean();
-
-
+    bool IsValidSolution();
 
 private:
     // Internal Board State
@@ -70,7 +69,6 @@ private:
 
     // Validation Functions
     bool IsValidUnit(std::vector<int>& values);
-    bool IsValidSolution();
 
     // Candidate Management
     std::vector<int> GetCellCandidates(int x, int y);
