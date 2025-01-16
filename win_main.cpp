@@ -87,11 +87,6 @@ namespace SudokuGame {
             ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
             fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("New Game", nullptr, 
                 gcnew EventHandler(this, &MainForm::NewGame_Click)));
-            fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("Load", nullptr,
-                gcnew EventHandler(this, &MainForm::Load_Click)));
-            fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("Save", nullptr,
-                gcnew EventHandler(this, &MainForm::Save_Click)));
-            fileMenu->DropDownItems->Add(gcnew ToolStripSeparator());
             fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("Exit", nullptr,
                 gcnew EventHandler(this, &MainForm::Exit_Click)));
             menuStrip->Items->Add(fileMenu);
