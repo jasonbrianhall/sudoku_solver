@@ -497,7 +497,7 @@ namespace SudokuGame {
                 sudoku->StdElim();
                 UpdateGrid();
                 UpdateStatus("Standard elimination completed");
-            else {
+            } else {
                 UpdateStatus("Current board is invalid");
             }
 
@@ -508,7 +508,7 @@ namespace SudokuGame {
                 sudoku->LinElim();
                 UpdateGrid();
                 UpdateStatus("Line elimination completed");
-            else {
+            } else {
                 UpdateStatus("Current board is invalid");
             }
 
@@ -519,7 +519,7 @@ namespace SudokuGame {
                 sudoku->FindHiddenSingles();
                 UpdateGrid();
                 UpdateStatus("Hidden singles technique completed");
-            else {
+            } else {
                 UpdateStatus("Current board is invalid");
             }
 
@@ -530,7 +530,7 @@ namespace SudokuGame {
                 sudoku->FindHiddenPairs();
                 UpdateGrid();
                 UpdateStatus("Hidden pairs technique completed");
-            else {
+            } else {
                 UpdateStatus("Current board is invalid");
             }
 
@@ -541,7 +541,7 @@ namespace SudokuGame {
                 sudoku->FindPointingPairs();
                 UpdateGrid();
                 UpdateStatus("Pointing pairs technique completed");
-            else {
+            } else {
                 UpdateStatus("Current board is invalid");
             }
 
@@ -552,7 +552,7 @@ namespace SudokuGame {
                 sudoku->FindNakedSets();
                 UpdateGrid();
                 UpdateStatus("Naked sets technique completed");
-            else {
+            } else {
                 UpdateStatus("Current board is invalid");
             }
 
@@ -563,7 +563,7 @@ namespace SudokuGame {
                 sudoku->FindXWing();
                 UpdateGrid();
                 UpdateStatus("X-Wing technique completed");
-            else {
+            } else {
                 UpdateStatus("Current board is invalid");
             }
 
@@ -574,7 +574,7 @@ namespace SudokuGame {
                 sudoku->FindSwordFish();
                 UpdateGrid();
                 UpdateStatus("Swordfish technique completed");
-            else {
+            } else {
                 UpdateStatus("Current board is invalid");
             }
 
@@ -585,7 +585,7 @@ namespace SudokuGame {
                 sudoku->FindXYWing();
                 UpdateGrid();
                 UpdateStatus("XY-Wing technique completed");
-            else {
+            } else {
                 UpdateStatus("Current board is invalid");
             }
 
@@ -596,7 +596,7 @@ namespace SudokuGame {
                 sudoku->FindXYZWing();
                 UpdateGrid();
                 UpdateStatus("XYZ-Wing technique completed");
-            else {
+            } else {
                 UpdateStatus("Current board is invalid");
             }
 
