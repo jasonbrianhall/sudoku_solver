@@ -424,16 +424,26 @@ namespace SudokuGame {
             UpdateStatus("New game started");
         }
 
-	void Load_Click(Object^ sender, EventArgs^ e) {
-            sudoku->LoadFromFile("sudoku_1.txt")
-	    UpdateStatus("Game loaded successfully (sudoku_1.txt)");
-	    UpdateGrid();
-	}
-
-	void Save_Click(Object^ sender, EventArgs^ e) {
-             sudoku->SaveToFile("sudoku_1.txt");
-	     UpdateStatus("Game saved successfully (sudoku_1.txt)");
-	}
+	void Load_Click(Object^ sender, EventArgs^ e) { 
+		OpenFileDialog^ openFileDialog = gcnew OpenFileDialog(); 
+		openFileDialog->Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*"; 
+		openFileDialog->Title = "Open Sudoku File"; 
+		if (openFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) { 
+			String^ filePath = openFileDialog->FileName; 
+			sudoku->LoadFromFile(filePath); 
+			UpdateStatus("Game loaded successfully (" + filePath + ")"); UpdateGrid(); 
+		} 
+	} 
+	
+	void Save_Click(Object^ sender, EventArgs^ e) { 
+		SaveFileDialog^ saveFileDialog = gcnew SaveFileDialog();
+		saveFileDialog->Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*"; 
+		saveFileDialog->Title = "Save Sudoku File"; 
+		if (saveFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) { 
+			String^ filePath = saveFileDialog->FileName; 
+			sudoku->SaveToFile(filePath); UpdateStatus("Game saved successfully (" + filePath + ")"); 
+		}
+	}	
 
         void Exit_Click(Object^ sender, EventArgs^ e) {
             Application::Exit();
