@@ -1,5 +1,11 @@
-#ifndef SUDOKU_H
-#define SUDOKU_H
+#ifndef SUDOKU_DISPLAY_H
+#define SUDOKU_DISPLAY_H
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <ncurses.h>
+#endif
 
 #include <iostream>
 #include <vector>

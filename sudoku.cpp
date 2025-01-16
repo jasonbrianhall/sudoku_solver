@@ -251,6 +251,13 @@ void Sudoku::RestoreBoard(int original_board[9][9][9], int board[9][9][9]) {
    }
 } 
 
+#ifdef _WIN32
+void Sudoku::print_debug(const char *format, ...) {
+/* To do, implement print_debug for Windows */
+
+
+}
+#else
 void Sudoku::print_debug(const char *format, ...) {
     char buffer[256];  // Buffer for formatted string
     debug_line=0;
@@ -319,7 +326,7 @@ void Sudoku::print_debug(const char *format, ...) {
   }
 
 }
-
+#endif
 
 int Sudoku::Solve() {
     bool changes_made;
@@ -1128,7 +1135,6 @@ int Sudoku::FindHiddenSingles() {
                 if(validateMove(validRow, col, val)) {
                     SetValue(validRow, col, val);
                     if(!IsValidSolution()) {
-                        move(24, 0);
                         print_debug("Invalid solution after setting %d at (%d,%d)\n", 
                               val + 1, validRow + 1, col + 1);
                         refresh();
