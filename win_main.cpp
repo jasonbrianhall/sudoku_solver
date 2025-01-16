@@ -150,22 +150,22 @@ namespace SudokuGame {
                 }
             }
 
-            // Draw grid lines
-            for (int i = 0; i <= 9; i++) {
-                Panel^ vline = gcnew Panel();
-                vline->BorderStyle = BorderStyle::FixedSingle;
-                vline->Location = Point(48 + i * 45, gridTop - 2);
-                vline->Size = System::Drawing::Size(2, 410);
-                vline->BackColor = (i % 3 == 0) ? Color::Black : Color::Gray;
-                this->Controls->Add(vline);
+	    // Draw grid lines
+	    for (int i = 0; i <= 9; i++) {
+		Panel^ vline = gcnew Panel();
+		vline->BorderStyle = BorderStyle::None;
+		vline->Location = Point(i * 45, 0);
+		vline->Size = System::Drawing::Size((i % 3 == 0) ? 3 : 1, gridContainer->Height);
+		vline->BackColor = (i % 3 == 0) ? Color::Black : Color::LightGray;
+		gridContainer->Controls->Add(vline);
 
-                Panel^ hline = gcnew Panel();
-                hline->BorderStyle = BorderStyle::FixedSingle;
-                hline->Location = Point(48, gridTop - 2 + i * 45);
-                hline->Size = System::Drawing::Size(410, 2);
-                hline->BackColor = (i % 3 == 0) ? Color::Black : Color::Gray;
-                this->Controls->Add(hline);
-            }
+		Panel^ hline = gcnew Panel();
+		hline->BorderStyle = BorderStyle::None;
+		hline->Location = Point(0, i * 45);
+		hline->Size = System::Drawing::Size(gridContainer->Width, (i % 3 == 0) ? 3 : 1);
+		hline->BackColor = (i % 3 == 0) ? Color::Black : Color::LightGray;
+		gridContainer->Controls->Add(hline);
+	    }
         }
 
         void UpdateGrid() {
