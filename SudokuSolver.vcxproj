@@ -10,19 +10,15 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <ProjectGuid>{12345678-1234-1234-1234-123456789ABC}</ProjectGuid>
-    <TargetFramework>net7.0-windows</TargetFramework>
     <Keyword>ManagedCProj</Keyword>
     <RootNamespace>SudokuSolver</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <EnableManagedPackageReferenceSupport>true</EnableManagedPackageReferenceSupport>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
   </PropertyGroup>
-  
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  
   <PropertyGroup Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -30,9 +26,7 @@
     <CLRSupport>true</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
-  
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -43,23 +37,18 @@
       <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
-  
-  <ItemGroup>
-    <ClCompile Include="win_main.cpp" />
-    <ClCompile Include="sudoku.cpp" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <ClInclude Include="sudoku.h" />
-  </ItemGroup>
-  
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
-  
+  <ItemGroup>
+    <ClCompile Include="win_main.cpp" />
+    <ClCompile Include="sudoku.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="sudoku.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
