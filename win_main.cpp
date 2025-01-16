@@ -169,14 +169,14 @@ namespace SudokuGame {
                 Panel^ vline = gcnew Panel();
                 vline->BorderStyle = BorderStyle::None;
                 vline->Location = Point(i * 45, 0);
-                vline->Size = System::Drawing::Size(i % 3 == 0 ? 3 : 1, gridContainer->Height);
+                vline->Size = System::Drawing::Size(i % 3 == 0 ? 3 : 1, 405);
                 vline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
                 gridContainer->Controls->Add(vline);
 
                 Panel^ hline = gcnew Panel();
                 hline->BorderStyle = BorderStyle::None;
                 hline->Location = Point(0, i * 45);
-                hline->Size = System::Drawing::Size(gridContainer->Width, i % 3 == 0 ? 3 : 1);
+                hline->Size = System::Drawing::Size(405, i % 3 == 0 ? 3 : 1);
                 hline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
                 gridContainer->Controls->Add(hline);
             }
