@@ -258,9 +258,11 @@ void Sudoku::RestoreBoard(int original_board[9][9][9], int board[9][9][9]) {
 
 #ifdef _WIN32
 void Sudoku::print_debug(const char *format, ...) {
-/* To do, implement print_debug for Windows */
-
-
+    char buffer[256];
+    va_list args;
+    va_start(args, format);
+    vsprintf_s(buffer, sizeof(buffer), format, args);
+    va_end(args);
 }
 #endif
 
