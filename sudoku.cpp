@@ -281,8 +281,7 @@ void Sudoku::print_debug(const char *format, ...) {
     printw("%s", buffer);
     
     clrtoeol();  // Clear rest of line
-    //refresh();
-    
+        
     // Increment line counter, wrap around after 20 lines
     debug_line = (debug_line + 1) % 20;
 }
@@ -349,11 +348,9 @@ int Sudoku::Solve() {
             
             // Run Standard elimination
             print_debug("Running StdElim...\n");
-            refresh();
             result = StdElim();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after StdElim\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -363,11 +360,9 @@ int Sudoku::Solve() {
             
             // Run Line elimination
             print_debug("Running LinElim...\n");
-            refresh();
             result = LinElim();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after LinElim\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -381,11 +376,9 @@ int Sudoku::Solve() {
         if (!changes_made) {
             // Try Hidden Singles
             print_debug("Running FindHiddenSingles...\n");
-            refresh();
             result = FindHiddenSingles();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after FindHiddenSingles\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -395,11 +388,9 @@ int Sudoku::Solve() {
             
             // Try Hidden Pairs
             print_debug("Running FindHiddenPairs...\n");
-            refresh();
             result = FindHiddenPairs();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after FindHiddenPairs\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -409,11 +400,9 @@ int Sudoku::Solve() {
             
             // Try Pointing Pairs
             print_debug("Running FindPointingPairs...\n");
-            refresh();
             result = FindPointingPairs();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after FindPointingPairs\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -423,11 +412,9 @@ int Sudoku::Solve() {
             
             // Try X-Wing
             print_debug("Running FindXWing...\n");
-            refresh();
             result = FindXWing();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after FindXWing\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -437,11 +424,9 @@ int Sudoku::Solve() {
             
             // Try Swordfish
             print_debug("Running FindSwordFish...\n");
-            refresh();
             result = FindSwordFish();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after FindSwordFish\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -451,11 +436,9 @@ int Sudoku::Solve() {
             
             // Try Naked Sets
             print_debug("Running FindNakedSets...\n");
-            refresh();
             result = FindNakedSets();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after FindNakedSets\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -465,11 +448,9 @@ int Sudoku::Solve() {
 
             // Try Find XY Wing
             print_debug("Running Find XY Wing...\n");
-            refresh();
             result = FindXYWing();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after FindXYWing\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -479,11 +460,9 @@ int Sudoku::Solve() {
 
             // Try Find XYZ Wing
             print_debug("Running Find XYZ Wing...\n");
-            refresh();
             result = FindXYZWing();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after FindXYZWing\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -492,11 +471,9 @@ int Sudoku::Solve() {
             }
 
             /*print_debug("Running FindSimpleColoring...\n");
-            refresh();
             result = FindSimpleColoring();
             if (!IsValidSolution()) {
                 print_debug("Invalid solution detected after FindSimpleColoring\n");
-                refresh();
                 return -1;
             }
             if (result > 0) {
@@ -514,7 +491,6 @@ int Sudoku::Solve() {
         print_debug("Invalid final solution detected\n");
         return -1;
     }
-    refresh();
     
     return 0;
 }
@@ -523,7 +499,6 @@ int Sudoku::SolveBasic() {
     #ifdef _NCURSES
     move(22, 0);
     printw("Starting Solve() - Cleaning board...\n");
-    refresh();
     #endif
     //Clean();
     int original_board[9][9][9];
