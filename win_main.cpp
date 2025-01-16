@@ -61,7 +61,7 @@ namespace SudokuGame {
         void FindSwordFish() { nativeSudoku->FindSwordFish(); }
         void FindXYWing() { nativeSudoku->FindXYWing(); }
         void FindXYZWing() { nativeSudoku->FindXYZWing(); }
-        void FindSimpleColoring() { nativeSudoku->FindSimpleColoring(); }
+        void FindSimpleColoring() { nativeSudoku->FindSimpleColoring(); } // This seems broken right now
     };
 
     public ref class MainForm : public System::Windows::Forms::Form {
@@ -482,69 +482,124 @@ namespace SudokuGame {
 
         // Solving technique handlers
         void Solve_Click(Object^ sender, EventArgs^ e) {
-            sudoku->Solve();
-            UpdateGrid();
-            UpdateStatus("Full solve completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->Solve();
+                UpdateGrid();
+                UpdateStatus("Full solve completed");
+            }
+            else {
+                UpdateStatus("Current board is invalid");
+            }
         }
 
         void StdElim_Click(Object^ sender, EventArgs^ e) {
-            sudoku->StdElim();
-            UpdateGrid();
-            UpdateStatus("Standard elimination completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->StdElim();
+                UpdateGrid();
+                UpdateStatus("Standard elimination completed");
+            else {
+                UpdateStatus("Current board is invalid");
+            }
+
         }
 
         void LineElim_Click(Object^ sender, EventArgs^ e) {
-            sudoku->LinElim();
-            UpdateGrid();
-            UpdateStatus("Line elimination completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->LinElim();
+                UpdateGrid();
+                UpdateStatus("Line elimination completed");
+            else {
+                UpdateStatus("Current board is invalid");
+            }
+
         }
 
         void HiddenSingles_Click(Object^ sender, EventArgs^ e) {
-            sudoku->FindHiddenSingles();
-            UpdateGrid();
-            UpdateStatus("Hidden singles technique completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->FindHiddenSingles();
+                UpdateGrid();
+                UpdateStatus("Hidden singles technique completed");
+            else {
+                UpdateStatus("Current board is invalid");
+            }
+
         }
 
         void HiddenPairs_Click(Object^ sender, EventArgs^ e) {
-            sudoku->FindHiddenPairs();
-            UpdateGrid();
-            UpdateStatus("Hidden pairs technique completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->FindHiddenPairs();
+                UpdateGrid();
+                UpdateStatus("Hidden pairs technique completed");
+            else {
+                UpdateStatus("Current board is invalid");
+            }
+
         }
 
         void PointingPairs_Click(Object^ sender, EventArgs^ e) {
-            sudoku->FindPointingPairs();
-            UpdateGrid();
-            UpdateStatus("Pointing pairs technique completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->FindPointingPairs();
+                UpdateGrid();
+                UpdateStatus("Pointing pairs technique completed");
+            else {
+                UpdateStatus("Current board is invalid");
+            }
+
         }
 
         void NakedSets_Click(Object^ sender, EventArgs^ e) {
-            sudoku->FindNakedSets();
-            UpdateGrid();
-            UpdateStatus("Naked sets technique completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->FindNakedSets();
+                UpdateGrid();
+                UpdateStatus("Naked sets technique completed");
+            else {
+                UpdateStatus("Current board is invalid");
+            }
+
         }
 
         void XWing_Click(Object^ sender, EventArgs^ e) {
-            sudoku->FindXWing();
-            UpdateGrid();
-            UpdateStatus("X-Wing technique completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->FindXWing();
+                UpdateGrid();
+                UpdateStatus("X-Wing technique completed");
+            else {
+                UpdateStatus("Current board is invalid");
+            }
+
         }
 
         void Swordfish_Click(Object^ sender, EventArgs^ e) {
-            sudoku->FindSwordFish();
-            UpdateGrid();
-            UpdateStatus("Swordfish technique completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->FindSwordFish();
+                UpdateGrid();
+                UpdateStatus("Swordfish technique completed");
+            else {
+                UpdateStatus("Current board is invalid");
+            }
+
         }
 
         void XYWing_Click(Object^ sender, EventArgs^ e) {
-            sudoku->FindXYWing();
-            UpdateGrid();
-            UpdateStatus("XY-Wing technique completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->FindXYWing();
+                UpdateGrid();
+                UpdateStatus("XY-Wing technique completed");
+            else {
+                UpdateStatus("Current board is invalid");
+            }
+
         }
 
         void XYZWing_Click(Object^ sender, EventArgs^ e) {
-            sudoku->FindXYZWing();
-            UpdateGrid();
-            UpdateStatus("XYZ-Wing technique completed");
+            if (sudoku->IsValidSolution()) {
+                sudoku->FindXYZWing();
+                UpdateGrid();
+                UpdateStatus("XYZ-Wing technique completed");
+            else {
+                UpdateStatus("Current board is invalid");
+            }
+
         }
 
     public:
