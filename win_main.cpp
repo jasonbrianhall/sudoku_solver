@@ -96,12 +96,12 @@ namespace SudokuGame {
 
             // Initialize ToolStrip
             toolStrip = gcnew ToolStrip();
-            toolStrip->Items->Add(gcnew ToolStripButton("Solve All (A)", nullptr,
+            toolStrip->Items->Add(gcnew ToolStripButton("Complete Auto-Solve (A)", nullptr,
                 gcnew EventHandler(this, &MainForm::Solve_Click)));
             toolStrip->Items->Add(gcnew ToolStripSeparator());
 
             // Basic techniques group
-            toolStrip->Items->Add(gcnew ToolStripLabel("Basic: "));
+            toolStrip->Items->Add(gcnew ToolStripLabel("Basic Algorithms: "));
             toolStrip->Items->Add(gcnew ToolStripButton("Standard Elim (S)", nullptr,
                 gcnew EventHandler(this, &MainForm::StdElim_Click)));
             toolStrip->Items->Add(gcnew ToolStripButton("Line Elim (L)", nullptr,
@@ -111,7 +111,7 @@ namespace SudokuGame {
             toolStrip->Items->Add(gcnew ToolStripSeparator());
 
             // Advanced techniques group
-            toolStrip->Items->Add(gcnew ToolStripLabel("Advanced: "));
+            toolStrip->Items->Add(gcnew ToolStripLabel("Advanced Algorithms: "));
             toolStrip->Items->Add(gcnew ToolStripButton("Hidden Pairs (H)", nullptr,
                 gcnew EventHandler(this, &MainForm::HiddenPairs_Click)));
             toolStrip->Items->Add(gcnew ToolStripButton("Pointing Pairs (P)", nullptr,
@@ -121,7 +121,7 @@ namespace SudokuGame {
             toolStrip->Items->Add(gcnew ToolStripSeparator());
 
             // Expert techniques group
-            toolStrip->Items->Add(gcnew ToolStripLabel("Expert: "));
+            toolStrip->Items->Add(gcnew ToolStripLabel("Expert Algorithms: "));
             toolStrip->Items->Add(gcnew ToolStripButton("X-Wing (X)", nullptr,
                 gcnew EventHandler(this, &MainForm::XWing_Click)));
             toolStrip->Items->Add(gcnew ToolStripButton("Swordfish (F)", nullptr,
