@@ -54,7 +54,7 @@ namespace SudokuGame {
         void FindSwordFish() { nativeSudoku->FindSwordFish(); }
         void FindXYWing() { nativeSudoku->FindXYWing(); }
         void FindXYZWing() { nativeSudoku->FindXYZWing(); }
-        void FindSimpleColoring() { nativeSudoku->FindSimpleColoring(); }
+        /*void FindSimpleColoring() { nativeSudoku->FindSimpleColoring(); } */
     };
 
     public ref class MainForm : public System::Windows::Forms::Form {
@@ -128,8 +128,8 @@ namespace SudokuGame {
                 gcnew EventHandler(this, &MainForm::XYWing_Click)));
             toolStrip->Items->Add(gcnew ToolStripButton("XYZ-Wing", nullptr,
                 gcnew EventHandler(this, &MainForm::XYZWing_Click)));
-            toolStrip->Items->Add(gcnew ToolStripButton("Simple Coloring", nullptr,
-                gcnew EventHandler(this, &MainForm::SimpleColoring_Click)));
+            /*toolStrip->Items->Add(gcnew ToolStripButton("Simple Coloring", nullptr,
+                gcnew EventHandler(this, &MainForm::SimpleColoring_Click))); */
 
             this->Controls->Add(toolStrip);
 
@@ -298,11 +298,11 @@ namespace SudokuGame {
             UpdateStatus("XYZ-Wing technique completed");
         }
 
-        void SimpleColoring_Click(Object^ sender, EventArgs^ e) {
+        /*void SimpleColoring_Click(Object^ sender, EventArgs^ e) {
             sudoku->FindSimpleColoring();
             UpdateGrid();
             UpdateStatus("Simple coloring technique completed");
-        }
+        }*/
 
     public:
         MainForm() {
