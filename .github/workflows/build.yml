@@ -25,7 +25,7 @@ jobs:
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
 
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: SudokuSolver
         path: x64/Release/SudokuSolver.exe
