@@ -41,8 +41,13 @@ chmod +x compile.sh
 
 Or manually compile:
 ```bash
-g++ sudoku.cpp -lncurses -o sudoku_solver
+g++ main.cpp sudoku.cpp -lncurses -o sudoku_solver
 ```
+Or with Make Script:
+```bash
+make
+```
+
 
 The Python version is a prototype with limited functionality and doesn't require compilation. For the best solving experience, use the C++ implementation.
 
