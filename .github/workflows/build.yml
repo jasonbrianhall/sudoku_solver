@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write # Required for creating releases
     
     steps:
     - uses: actions/checkout@v4
@@ -24,8 +26,18 @@ jobs:
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
 
-    - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v4
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      id: create_release
+      uses: softprops/action-gh-release@v1
       with:
-        name: SudokuSolver
-        path: x64/Release/SudokuSolver.exe
+        files: x64/Release/SudokuSolver.exe
+        tag_name: v${{ github.run_number }}
+        name: Release ${{ github.run_number }}
+        draft: false
+        prerelease: false
+        token: ${{ secrets.GITHUB_TOKEN }}
+        body: |
+          Automated release from CI build
+          Commit: ${{ github.sha }}
+          Build number: ${{ github.run_number }}
