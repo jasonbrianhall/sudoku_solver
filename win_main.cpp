@@ -424,26 +424,9 @@ namespace SudokuGame {
             UpdateStatus("New game started");
         }
 
-	void Load_Click(Object^ sender, EventArgs^ e) { 
-		OpenFileDialog^ openFileDialog = gcnew OpenFileDialog(); 
-		openFileDialog->Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*"; 
-		openFileDialog->Title = "Open Sudoku File"; 
-		if (openFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) { 
-			String^ filePath = openFileDialog->FileName; 
-			sudoku->LoadFromFile(filePath); 
-			UpdateStatus("Game loaded successfully (" + filePath + ")"); UpdateGrid(); 
-		} 
-	} 
+	void Load_Click(Object^ sender, EventArgs^ e) { try { OpenFileDialog^ openFileDialog = gcnew OpenFileDialog(); openFileDialog->Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*"; openFileDialog->Title = "Open Sudoku File"; if (openFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) { String^ filePath = openFileDialog->FileName; sudoku->LoadFromFile(filePath); UpdateStatus("Game loaded successfully (" + filePath + ")"); UpdateGrid(); } } catch (Exception^ ex) { UpdateStatus("Failed to load file: " + ex->Message); } } 
 	
-	void Save_Click(Object^ sender, EventArgs^ e) { 
-		SaveFileDialog^ saveFileDialog = gcnew SaveFileDialog();
-		saveFileDialog->Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*"; 
-		saveFileDialog->Title = "Save Sudoku File"; 
-		if (saveFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) { 
-			String^ filePath = saveFileDialog->FileName; 
-			sudoku->SaveToFile(filePath); UpdateStatus("Game saved successfully (" + filePath + ")"); 
-		}
-	}	
+	void Save_Click(Object^ sender, EventArgs^ e) { try { SaveFileDialog^ saveFileDialog = gcnew SaveFileDialog(); saveFileDialog->Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*"; saveFileDialog->Title = "Save Sudoku File"; if (saveFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) { String^ filePath = saveFileDialog->FileName; sudoku->SaveToFile(filePath); UpdateStatus("Game saved successfully (" + filePath + ")"); } } catch (Exception^ ex) { UpdateStatus("Failed to save file: " + ex->Message); }
 
         void Exit_Click(Object^ sender, EventArgs^ e) {
             Application::Exit();
