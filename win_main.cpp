@@ -1,5 +1,6 @@
 #pragma once
 #include "sudoku.h"
+#include <msclr/marshal_cppstd.h>
 
 using namespace System;
 using namespace System::ComponentModel;
@@ -12,7 +13,7 @@ namespace SudokuGame {
 
     // Wrapper to handle interop between .NET and native code
     public ref class SudokuWrapper {
-    private:
+    protected:
         Sudoku* nativeSudoku;
 
     public:
@@ -47,6 +48,19 @@ namespace SudokuGame {
         void SaveToFile(String^ filename) {
             nativeSudoku->SaveToFile(msclr::interop::marshal_as<std::string>(filename));
         }
+
+        // Add methods for all solving techniques
+        void StdElim() { nativeSudoku->StdElim(); }
+        void LinElim() { nativeSudoku->LinElim(); }
+        void FindHiddenSingles() { nativeSudoku->FindHiddenSingles(); }
+        void FindHiddenPairs() { nativeSudoku->FindHiddenPairs(); }
+        void FindPointingPairs() { nativeSudoku->FindPointingPairs(); }
+        void FindNakedSets() { nativeSudoku->FindNakedSets(); }
+        void FindXWing() { nativeSudoku->FindXWing(); }
+        void FindSwordFish() { nativeSudoku->FindSwordFish(); }
+        void FindXYWing() { nativeSudoku->FindXYWing(); }
+        void FindXYZWing() { nativeSudoku->FindXYZWing(); }
+        void FindSimpleColoring() { nativeSudoku->FindSimpleColoring(); }
     };
 
     public ref class MainForm : public System::Windows::Forms::Form {
