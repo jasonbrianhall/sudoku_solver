@@ -36,12 +36,15 @@ namespace SudokuGame {
         void Clean() { nativeSudoku->Clean(); }
         
         // File operations
-        bool LoadFromFile(String^ filename) {
-            return nativeSudoku->LoadFromFile(msclr::interop::marshal_as<std::string>(filename));
-        }
-        void SaveToFile(String^ filename) {
-            nativeSudoku->SaveToFile(msclr::interop::marshal_as<std::string>(filename));
-        }
+	bool LoadFromFile(String^ filename) {
+	    std::wstring wstr = msclr::interop::marshal_as<std::wstring>(filename);
+	    return nativeSudoku->LoadFromFile(std::string(wstr.begin(), wstr.end()));
+	}
+
+	void SaveToFile(String^ filename) {
+	    std::wstring wstr = msclr::interop::marshal_as<std::wstring>(filename);
+	    nativeSudoku->SaveToFile(std::string(wstr.begin(), wstr.end()));
+	}
 
         // Basic solving techniques
         void StdElim() { nativeSudoku->StdElim(); }
