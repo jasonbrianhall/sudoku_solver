@@ -312,8 +312,7 @@ namespace SudokuGame {
     };
 }
 
-[STAThreadAttribute]
-int main(array<System::String ^> ^args)
+int main(array<String^>^ args)
 {
     Application::EnableVisualStyles();
     Application::SetCompatibleTextRenderingDefault(false);
