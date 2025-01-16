@@ -5,6 +5,7 @@
 #include <windows.h>
 #else
 #include <ncurses.h>
+#define _NCURSES
 #endif
 
 #include <iostream>

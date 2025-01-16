@@ -7,6 +7,7 @@ using namespace std;
 #else
 #include <ncurses.h>
 #endif
+
 #include <vector>
 #include <set>
 #include <algorithm>
@@ -261,7 +262,9 @@ void Sudoku::print_debug(const char *format, ...) {
 
 
 }
-#else
+#endif
+
+#ifdef _NCURSES
 void Sudoku::print_debug(const char *format, ...) {
     char buffer[256];  // Buffer for formatted string
     debug_line=0;
@@ -328,7 +331,7 @@ void Sudoku::print_debug(const char *format, ...) {
     }
     file  << "|\n";
   }
-
+  refresh();
 }
 #endif
 
@@ -488,7 +491,7 @@ int Sudoku::Solve() {
                 continue;  // Start over with basic eliminations
             }
 
-            print_debug("Running FindSimpleColoring...\n");
+            /*print_debug("Running FindSimpleColoring...\n");
             refresh();
             result = FindSimpleColoring();
             if (!IsValidSolution()) {
@@ -499,7 +502,7 @@ int Sudoku::Solve() {
             if (result > 0) {
                 changes_made = true;
                 continue;  // Start over with basic eliminations
-            }
+            }*/
 
 
         }
@@ -509,17 +512,19 @@ int Sudoku::Solve() {
     // Final validation check
     if (!IsValidSolution()) {
         print_debug("Invalid final solution detected\n");
-        refresh();
         return -1;
     }
+    refresh();
     
     return 0;
 }
 int Sudoku::SolveBasic() {
     int counter1, counter2, i, j;
+    #ifdef _NCURSES
     move(22, 0);
     printw("Starting Solve() - Cleaning board...\n");
     refresh();
+    #endif
     //Clean();
     int original_board[9][9][9];
     
@@ -539,21 +544,17 @@ int Sudoku::SolveBasic() {
         if(counter1 != 81) {
             // Run each solving technique and validate after each
             print_debug("Running StdElim...                    \n");
-            refresh();
             StdElim();
             if(!IsValidSolution()) {
                 print_debug("Invalid solution detected after StdElim\n");
-                refresh();
                 //RestoreBoard(board, original_board);
                 return -1;
             }
             
             print_debug("Running LinElim...                    \n");
-            refresh();
             LinElim();
             if(!IsValidSolution()) {
                 print_debug("Invalid solution detected after LinElim\n");
-                refresh();
                 //RestoreBoard(board, original_board);
                 return -1;
             }
@@ -573,7 +574,6 @@ int Sudoku::SolveBasic() {
     // Final validation check
     if(!IsValidSolution()) {
         print_debug("Invalid final solution detected\n");
-        refresh();
         return -1;
     }
     
@@ -695,7 +695,6 @@ int Sudoku::FindXWing() {
                 if(cols1[0] == cols2[0] && cols1[1] == cols2[1]) {
                     print_debug("Found X-Wing pattern for value %d in rows %d and %d at columns %d,%d\n",
                               val + 1, row1 + 1, row2 + 1, cols1[0] + 1, cols1[1] + 1);
-                    refresh();
 
                     // Found X-Wing pattern - eliminate val from other cells in these columns
                     bool madeChange = false;
@@ -708,7 +707,6 @@ int Sudoku::FindXWing() {
                                 madeChange = true;
                                 print_debug("X-Wing: eliminated %d from (%d,%d)\n",
                                           val + 1, row + 1, col + 1);
-                                refresh();
                             }
                         }
                     }
@@ -730,7 +728,6 @@ int Sudoku::FindXWing() {
                 if(rows1[0] == rows2[0] && rows1[1] == rows2[1]) {
                     print_debug("Found X-Wing pattern for value %d in columns %d and %d at rows %d,%d\n",
                               val + 1, col1 + 1, col2 + 1, rows1[0] + 1, rows1[1] + 1);
-                    refresh();
 
                     // Found X-Wing pattern - eliminate val from other cells in these rows
                     bool madeChange = false;
@@ -743,7 +740,6 @@ int Sudoku::FindXWing() {
                                 madeChange = true;
                                 print_debug("X-Wing: eliminated %d from (%d,%d)\n",
                                           val + 1, row + 1, col + 1);
-                                refresh();
                             }
                         }
                     }
@@ -1048,7 +1044,6 @@ int Sudoku::FindHiddenSingles() {
     auto logMove = [this](const char* unitType, int unit, int val, int pos) {
         print_debug("Found hidden single: value %d in %s %d at position %d\n", 
                val + 1, unitType, unit + 1, pos + 1);
-        refresh();
     };
 
     // Helper function to validate before setting
@@ -1057,7 +1052,6 @@ int Sudoku::FindHiddenSingles() {
         for(int c = 0; c < 9; c++) {
             if(c != col && GetValue(row, c) == val) {
                 print_debug("Row conflict: %d already exists in row %d\n", val + 1, row + 1);
-                refresh();
                 return false;
             }
         }
@@ -1066,7 +1060,6 @@ int Sudoku::FindHiddenSingles() {
         for(int r = 0; r < 9; r++) {
             if(r != row && GetValue(r, col) == val) {
                 print_debug("Column conflict: %d already exists in column %d\n", val + 1, col + 1);
-                refresh();
                 return false;
             }
         }
@@ -1079,7 +1072,6 @@ int Sudoku::FindHiddenSingles() {
                 if((boxRow + r != row || boxCol + c != col) && 
                    GetValue(boxRow + r, boxCol + c) == val) {
                     print_debug("Box conflict: %d already exists in box\n", val + 1);
-                    refresh();
                     return false;
                 }
             }
@@ -1111,7 +1103,6 @@ int Sudoku::FindHiddenSingles() {
                     if(!IsValidSolution()) {
                         print_debug("Invalid solution after setting %d at (%d,%d)\n", 
                               val + 1, row + 1, validCol + 1);
-                        refresh();
                         return -1;
                     }
                     changed++;
@@ -1141,7 +1132,6 @@ int Sudoku::FindHiddenSingles() {
                     if(!IsValidSolution()) {
                         print_debug("Invalid solution after setting %d at (%d,%d)\n", 
                               val + 1, validRow + 1, col + 1);
-                        refresh();
                         return -1;
                     }
                     changed++;
@@ -1180,7 +1170,6 @@ int Sudoku::FindHiddenSingles() {
                     if(!IsValidSolution()) {
                         print_debug("Invalid solution after setting %d at (%d,%d)\n", 
                               val + 1, validRow + 1, validCol + 1);
-                        refresh();
                         return -1;
                     }
                     changed++;
@@ -1208,7 +1197,6 @@ int Sudoku::LinElim() {
             board[x][y][val] = -1;
             print_debug("Eliminated %d from (%d,%d) - %s\n", 
                        val + 1, x + 1, y + 1, reason);
-            refresh();
             return true;
         }
         return false;
@@ -1279,7 +1267,6 @@ int Sudoku::LinElim() {
                     if(LegalValue(x, y, val)) {
                         print_debug("Box at (%d,%d): Only cell (%d,%d) can be %d\n",
                                   boxCol/3 + 1, boxRow/3 + 1, x + 1, y + 1, val + 1);
-                        refresh();
                         SetValue(x, y, val);
                         changed++;
                     }
@@ -1334,7 +1321,6 @@ int Sudoku::LinElim() {
                 int col = possibilities[0];
                 print_debug("Row %d: Only cell (%d,%d) can be %d\n",
                           row + 1, col + 1, row + 1, val + 1);
-                refresh();
                 SetValue(col, row, val);
                 changed++;
             }
@@ -1386,7 +1372,6 @@ int Sudoku::LinElim() {
                 int row = possibilities[0];
                 print_debug("Column %d: Only cell (%d,%d) can be %d\n",
                           col + 1, col + 1, row + 1, val + 1);
-                refresh();
                 SetValue(col, row, val);
                 changed++;
             }
@@ -1395,12 +1380,10 @@ int Sudoku::LinElim() {
     
     if(!IsValidSolution()) {
         print_debug("Invalid solution after line elimination\n");
-        refresh();
         return -1;
     }
     
     print_debug("Line elimination completed: %d changes made\n", changed);
-    refresh();
     
     return changed;
 }
@@ -1894,7 +1877,6 @@ int Sudoku::FindXYWing() {
         // Try this single elimination
         print_debug("Trying to eliminate %d from (%d,%d)\n", 
                    elim.val + 1, elim.row + 1, elim.col + 1);
-        refresh();
 
         board[elim.row][elim.col][elim.val] = -1;
 
@@ -1902,7 +1884,6 @@ int Sudoku::FindXYWing() {
         if(IsValidSolution()) {
             print_debug("Successfully eliminated %d from (%d,%d)\n", 
                        elim.val + 1, elim.row + 1, elim.col + 1);
-            refresh();
             return 1; // Return after one successful change
         }
 
@@ -2009,7 +1990,6 @@ int Sudoku::FindXYZWing() {
                                       wing1Row + 1, wing1Col + 1,
                                       wing2Row + 1, wing2Col + 1,
                                       Z + 1);
-                            refresh();
 
                             bool madeChange = false;
                             for(int row = 0; row < 9; row++) {
@@ -2029,7 +2009,6 @@ int Sudoku::FindXYZWing() {
                                         madeChange = true;
                                         print_debug("Eliminated %d from (%d,%d)\n", 
                                                   Z + 1, row + 1, col + 1);
-                                        refresh();
                                     }
                                 }
                             }
@@ -2039,7 +2018,6 @@ int Sudoku::FindXYZWing() {
                                 // Validate after changes
                                 if(!IsValidSolution()) {
                                     print_debug("Invalid solution after XYZ-Wing elimination\n");
-                                    refresh();
                                     return -1;
                                 }
                             }
@@ -2151,7 +2129,6 @@ int Sudoku::FindSimpleColoring() {
                                     changed++;
                                     print_debug("Simple Coloring: eliminated %d from opposite colored cells\n", 
                                               val + 1);
-                                    refresh();
                                 }
                             }
                         }
@@ -2187,7 +2164,6 @@ int Sudoku::FindSimpleColoring() {
                                 changed++;
                                 print_debug("Simple Coloring: eliminated %d from (%d,%d) - sees both colors\n", 
                                           val + 1, row + 1, col + 1);
-                                refresh();
                             }
                         }
                     }

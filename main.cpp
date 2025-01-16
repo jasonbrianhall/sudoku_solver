@@ -305,6 +305,7 @@ int main(int argc, char* argv[]) {
         break;
     }
     move(0,0);
+    refresh();
   }
   return 0;
 }
