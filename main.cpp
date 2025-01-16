@@ -28,7 +28,6 @@ int main(int argc, char* argv[]) {
     // Parse command line arguments
     string input_file = "";
     string output_file = "";
-    bool has_output = false;
     
     for (int i = 1; i < argc; i++) {
         string arg = argv[i];
@@ -41,7 +40,6 @@ int main(int argc, char* argv[]) {
         }
         else if (arg == "-o" && i + 1 < argc) {
             output_file = argv[++i];
-            has_output = true;
         }
     }
     
