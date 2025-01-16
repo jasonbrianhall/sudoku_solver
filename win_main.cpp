@@ -426,14 +426,9 @@ namespace SudokuGame {
 	    openFileDialog->Filter = "Sudoku files (*.txt)|*.txt|All files (*.*)|*.*";
 	    
 	    if (openFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-		// Convert managed String^ to unmanaged string
-		msclr::interop::marshal_context context;
-		std::string filename = context.marshal_as<std::string>(openFileDialog->FileName);
-		
-		sudoku->LoadFromFile(filename);
+		sudoku->LoadFromFile(openFileDialog->FileName);  // Pass String^ directly
+		UpdateBoard();
 		UpdateStatus("Game loaded successfully");
-		UpdateGrid();
-
 	    }
 	}
 
@@ -442,11 +437,7 @@ namespace SudokuGame {
 	    saveFileDialog->Filter = "Sudoku files (*.txt)|*.txt|All files (*.*)|*.*";
 	    
 	    if (saveFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-		// Convert managed String^ to unmanaged string
-		msclr::interop::marshal_context context;
-		std::string filename = context.marshal_as<std::string>(saveFileDialog->FileName);
-		
-		sudoku->SaveToFile(filename);
+		sudoku->SaveToFile(saveFileDialog->FileName);  // Pass String^ directly
 		UpdateStatus("Game saved successfully");
 	    }
 	}
