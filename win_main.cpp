@@ -281,71 +281,115 @@ namespace SudokuGame {
                     
                 // Solving techniques
                 case Keys::S:
-                    sudoku->StdElim();
-                    UpdateGrid();
-                    UpdateStatus("Standard elimination completed");
+                    if (sudoku->IsValidSolution()) {
+                        sudoku->StdElim();
+                        UpdateGrid();
+                        UpdateStatus("Standard elimination completed");
+                    } else {
+                        UpdateStatus("Current Board is Invalid");
+                    }
                     e->Handled = true;
                     break;
                 case Keys::L:
-                    sudoku->LinElim();
-                    UpdateGrid();
-                    UpdateStatus("Line elimination completed");
+                    if (sudoku->IsValidSolution()) {
+                        sudoku->LinElim();
+                        UpdateGrid();
+                        UpdateStatus("Line elimination completed");
+                    } else {
+                        UpdateStatus("Current Board is Invalid");
+                    }
                     e->Handled = true;
                     break;
                 case Keys::H:
-                    sudoku->FindHiddenPairs();
-                    UpdateGrid();
-                    UpdateStatus("Hidden pairs completed");
+                    if (sudoku->IsValidSolution()) {
+                        sudoku->FindHiddenPairs();
+                        UpdateGrid();
+                        UpdateStatus("Hidden pairs completed");
+                    } else {
+                        UpdateStatus("Current Board is Invalid");
+                    }
                     e->Handled = true;
                     break;
                 case Keys::P:
-                    sudoku->FindPointingPairs();
-                    UpdateGrid();
-                    UpdateStatus("Pointing pairs completed");
+                    if (sudoku->IsValidSolution()) {
+                        sudoku->FindPointingPairs();
+                        UpdateGrid();
+                        UpdateStatus("Pointing pairs completed");
+                    } else {
+                        UpdateStatus("Current Board is Invalid");
+                    }
                     e->Handled = true;
                     break;
                 case Keys::N:
-                    sudoku->FindHiddenSingles();
-                    UpdateGrid();
-                    UpdateStatus("Hidden singles completed");
-                    e->Handled = true;
+                    if (sudoku->IsValidSolution()) {
+                        sudoku->FindHiddenSingles();
+                        UpdateGrid();
+                        UpdateStatus("Hidden singles completed");
+                        e->Handled = true;
+                    } else {
+                        UpdateStatus("Current Board is Invalid");
+                    }
                     break;
                 case Keys::K:
-                    sudoku->FindNakedSets();
-                    UpdateGrid();
-                    UpdateStatus("Naked sets completed");
+                    if (sudoku->IsValidSolution()) {
+                        sudoku->FindNakedSets();
+                        UpdateGrid();
+                        UpdateStatus("Naked sets completed");
+                    } else {
+                        UpdateStatus("Current Board is Invalid");
+                    }
                     e->Handled = true;
                     break;
                 case Keys::X:
-                    sudoku->FindXWing();
-                    UpdateGrid();
-                    UpdateStatus("X-Wing technique completed");
+                    if (sudoku->IsValidSolution()) {
+                        sudoku->FindXWing();
+                        UpdateGrid();
+                        UpdateStatus("X-Wing technique completed");
+                    } else {
+                        UpdateStatus("Current Board is Invalid");
+                    }
                     e->Handled = true;
                     break;
                 case Keys::F:
-                    sudoku->FindSwordFish();
-                    UpdateGrid();
-                    UpdateStatus("Swordfish technique completed");
+                    if (sudoku->IsValidSolution()) {
+                        sudoku->FindSwordFish();
+                        UpdateGrid();
+                        UpdateStatus("Swordfish technique completed");
+                    } else {
+                        UpdateStatus("Current Board is Invalid");
+                    }
                     e->Handled = true;
                     break;
                 case Keys::Y:
-                    sudoku->FindXYWing();
-                    UpdateGrid();
-                    UpdateStatus("XY-Wing technique completed");
+                    if (sudoku->IsValidSolution()) {
+                        sudoku->FindXYWing();
+                       UpdateGrid();
+                        UpdateStatus("XY-Wing technique completed");
+                    } else {
+                        UpdateStatus("Current Board is Invalid");
+                    }
                     e->Handled = true;
                     break;
                 case Keys::OemSemicolon:  // For XYZ-Wing (;)
                     if (!e->Shift) {
-                        sudoku->FindXYZWing();
-                        UpdateGrid();
-                        UpdateStatus("XYZ-Wing technique completed");
+                        if (sudoku->IsValidSolution()) {
+                            sudoku->FindXYZWing();
+                            UpdateGrid();
+                            UpdateStatus("XYZ-Wing technique completed");
+                        } else {
+                            UpdateStatus("Current Board is Invalid");
+                        }
                         e->Handled = true;
                     }
                     break;
                 case Keys::A:
-                    sudoku->Solve();
-                    UpdateGrid();
-                    UpdateStatus("Full solve completed");
+                    if (sudoku->IsValidSolution()) {
+                        sudoku->Solve();
+                        UpdateGrid();
+                        UpdateStatus("Full solve completed");
+                    } else {
+                        UpdateStatus("Current Board is Invalid");
+                    }
                     e->Handled = true;
                     break;
                 case Keys::Z:
