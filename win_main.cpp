@@ -421,29 +421,35 @@ namespace SudokuGame {
             UpdateStatus("New game started");
         }
 
-        void Load_Click(Object^ sender, EventArgs^ e) {
-            OpenFileDialog^ openFileDialog = gcnew OpenFileDialog();
-            openFileDialog->Filter = "Sudoku files (*.txt)|*.txt|All files (*.*)|*.*";
-            
-            if (openFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-                if (sudoku->LoadFromFile(openFileDialog->FileName)) {
-                    UpdateGrid();
-                    UpdateStatus("Game loaded successfully");
-                } else {
-                    UpdateStatus("Failed to load game");
-                }
-            }
-        }
+	void Load_Click(Object^ sender, EventArgs^ e) {
+	    OpenFileDialog^ openFileDialog = gcnew OpenFileDialog();
+	    openFileDialog->Filter = "Sudoku files (*.txt)|*.txt|All files (*.*)|*.*";
+	    
+	    if (openFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+		// Convert managed String^ to unmanaged string
+		msclr::interop::marshal_context context;
+		std::string filename = context.marshal_as<std::string>(openFileDialog->FileName);
+		
+		sudoku->LoadFromFile(filename);
+		UpdateStatus("Game loaded successfully");
+		UpdateGrid();
 
-        void Save_Click(Object^ sender, EventArgs^ e) {
-            SaveFileDialog^ saveFileDialog = gcnew SaveFileDialog();
-            saveFileDialog->Filter = "Sudoku files (*.txt)|*.txt|All files (*.*)|*.*";
-            
-            if (saveFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-                sudoku->SaveToFile(saveFileDialog->FileName);
-                UpdateStatus("Game saved successfully");
-            }
-        }
+	    }
+	}
+
+	void Save_Click(Object^ sender, EventArgs^ e) {
+	    SaveFileDialog^ saveFileDialog = gcnew SaveFileDialog();
+	    saveFileDialog->Filter = "Sudoku files (*.txt)|*.txt|All files (*.*)|*.*";
+	    
+	    if (saveFileDialog->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
+		// Convert managed String^ to unmanaged string
+		msclr::interop::marshal_context context;
+		std::string filename = context.marshal_as<std::string>(saveFileDialog->FileName);
+		
+		sudoku->SaveToFile(filename);
+		UpdateStatus("Game saved successfully");
+	    }
+	}
 
         void Exit_Click(Object^ sender, EventArgs^ e) {
             Application::Exit();
