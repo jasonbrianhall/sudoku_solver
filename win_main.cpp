@@ -220,24 +220,41 @@ namespace SudokuGame {
                         grid[row, col - 1]->Focus();
                         e->Handled = true;
                     }
+                    else {
+                        grid[row, 8]->Focus();
+                        e->Handled = true;
+                    }                                        
                     break;
                 case Keys::Right:
                     if (col < 8) {
                         grid[row, col + 1]->Focus();
                         e->Handled = true;
                     }
+                    else {
+                        grid[row, 0]->Focus();
+                        e->Handled = true;
+                    }                    
                     break;
                 case Keys::Up:
                     if (row > 0) {
                         grid[row - 1, col]->Focus();
                         e->Handled = true;
                     }
+                    else {
+                        grid[8, col]->Focus();
+                        e->Handled = true;
+                    }                    
+                    
                     break;
                 case Keys::Down:
                     if (row < 8) {
                         grid[row + 1, col]->Focus();
                         e->Handled = true;
                     }
+                    else {
+                        grid[0, col]->Focus();
+                        e->Handled = true;
+                    }                    
                     break;
                 
                 // Number input (1-9)
