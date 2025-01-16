@@ -152,7 +152,7 @@ namespace SudokuGame {
                 for (int j = 0; j < 9; j++) {
                     grid[i, j] = gcnew TextBox();
                     grid[i, j]->Size = System::Drawing::Size(40, 40);
-                    grid[i, j]->Location = System::Drawing::Point(3 + j * 45, 3 + i * 45);
+                    grid[i, j]->Location = System::Drawing::Point(j * 45, i * 45);
                     grid[i, j]->MaxLength = 1;
                     grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 20);
                     grid[i, j]->TextAlign = HorizontalAlignment::Center;
