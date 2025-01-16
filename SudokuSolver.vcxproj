@@ -55,6 +55,9 @@
   <ItemGroup>
     <ClCompile Include="win_main.cpp" />
     <ClCompile Include="sudoku.cpp" />
+    <ClInclude Include="resource.h" />
+    <ResourceCompile Include="app.rc" />
+    <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sudoku.h" />

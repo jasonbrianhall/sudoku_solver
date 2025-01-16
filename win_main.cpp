@@ -1,6 +1,7 @@
 #define _HAS_STD_BYTE 0
 #define NOMINMAX
 #include "sudoku.h"
+#include "resources.h"
 #include <msclr/marshal_cppstd.h>
 
 using namespace System;
@@ -505,7 +506,18 @@ namespace SudokuGame {
         MainForm() {
             sudoku = gcnew SudokuWrapper();
             InitializeComponent();
+        
+            // Set the form icon
+            try {
+                System::Drawing::Icon^ icon = gcnew System::Drawing::Icon(System::Reflection::Assembly::GetExecutingAssembly()->GetManifestResourceStream("app.ico"));
+                this->Icon = icon;
+            }
+            catch (Exception^ ex) {
+                // Icon loading failed, will use default icon
+                System::Diagnostics::Debug::WriteLine("Failed to load icon: " + ex->Message);
+            }
         }
+
     };
 }
 
