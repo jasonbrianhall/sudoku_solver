@@ -66,107 +66,118 @@ namespace SudokuGame {
         StatusStrip^ statusStrip;
         ToolStripStatusLabel^ statusLabel;
 
-        void InitializeComponent() {
-            this->Size = System::Drawing::Size(800, 600);
-            this->Text = L"Sudoku Solver";
-            this->StartPosition = FormStartPosition::CenterScreen;
+	void InitializeComponent() {
+	    this->Size = System::Drawing::Size(800, 600);
+	    this->Text = L"Sudoku Solver";
+	    this->StartPosition = FormStartPosition::CenterScreen;
 
-            // Initialize StatusStrip
-            statusStrip = gcnew StatusStrip();
-            statusLabel = gcnew ToolStripStatusLabel("Ready");
-            statusStrip->Items->Add(statusLabel);
-            this->Controls->Add(statusStrip);
+	    // Initialize StatusStrip
+	    statusStrip = gcnew StatusStrip();
+	    statusLabel = gcnew ToolStripStatusLabel("Ready");
+	    statusStrip->Items->Add(statusLabel);
+	    this->Controls->Add(statusStrip);
 
-            // Initialize MenuStrip
-            menuStrip = gcnew MenuStrip();
-            ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
-            fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("New Game", nullptr, 
-                gcnew EventHandler(this, &MainForm::NewGame_Click)));
-            fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("Load", nullptr,
-                gcnew EventHandler(this, &MainForm::Load_Click)));
-            fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("Save", nullptr,
-                gcnew EventHandler(this, &MainForm::Save_Click)));
-            fileMenu->DropDownItems->Add(gcnew ToolStripSeparator());
-            fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("Exit", nullptr,
-                gcnew EventHandler(this, &MainForm::Exit_Click)));
-            menuStrip->Items->Add(fileMenu);
-            this->Controls->Add(menuStrip);
+	    // Initialize MenuStrip
+	    menuStrip = gcnew MenuStrip();
+	    ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
+	    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("New Game", nullptr, 
+		gcnew EventHandler(this, &MainForm::NewGame_Click)));
+	    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("Load", nullptr,
+		gcnew EventHandler(this, &MainForm::Load_Click)));
+	    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("Save", nullptr,
+		gcnew EventHandler(this, &MainForm::Save_Click)));
+	    fileMenu->DropDownItems->Add(gcnew ToolStripSeparator());
+	    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem("Exit", nullptr,
+		gcnew EventHandler(this, &MainForm::Exit_Click)));
+	    menuStrip->Items->Add(fileMenu);
+	    this->Controls->Add(menuStrip);
 
-            // Initialize ToolStrip
-            toolStrip = gcnew ToolStrip();
-            toolStrip->Items->Add(gcnew ToolStripButton("Solve All", nullptr,
-                gcnew EventHandler(this, &MainForm::Solve_Click)));
-            toolStrip->Items->Add(gcnew ToolStripSeparator());
+	    // Initialize ToolStrip
+	    toolStrip = gcnew ToolStrip();
+	    toolStrip->Items->Add(gcnew ToolStripButton("Solve All", nullptr,
+		gcnew EventHandler(this, &MainForm::Solve_Click)));
+	    toolStrip->Items->Add(gcnew ToolStripSeparator());
 
-            // Basic techniques group
-            toolStrip->Items->Add(gcnew ToolStripLabel("Basic: "));
-            toolStrip->Items->Add(gcnew ToolStripButton("Standard Elim", nullptr,
-                gcnew EventHandler(this, &MainForm::StdElim_Click)));
-            toolStrip->Items->Add(gcnew ToolStripButton("Line Elim", nullptr,
-                gcnew EventHandler(this, &MainForm::LineElim_Click)));
-            toolStrip->Items->Add(gcnew ToolStripButton("Hidden Singles", nullptr,
-                gcnew EventHandler(this, &MainForm::HiddenSingles_Click)));
-            toolStrip->Items->Add(gcnew ToolStripSeparator());
+	    // Basic techniques group
+	    toolStrip->Items->Add(gcnew ToolStripLabel("Basic: "));
+	    toolStrip->Items->Add(gcnew ToolStripButton("Standard Elim", nullptr,
+		gcnew EventHandler(this, &MainForm::StdElim_Click)));
+	    toolStrip->Items->Add(gcnew ToolStripButton("Line Elim", nullptr,
+		gcnew EventHandler(this, &MainForm::LineElim_Click)));
+	    toolStrip->Items->Add(gcnew ToolStripButton("Hidden Singles", nullptr,
+		gcnew EventHandler(this, &MainForm::HiddenSingles_Click)));
+	    toolStrip->Items->Add(gcnew ToolStripSeparator());
 
-            // Advanced techniques group
-            toolStrip->Items->Add(gcnew ToolStripLabel("Advanced: "));
-            toolStrip->Items->Add(gcnew ToolStripButton("Hidden Pairs", nullptr,
-                gcnew EventHandler(this, &MainForm::HiddenPairs_Click)));
-            toolStrip->Items->Add(gcnew ToolStripButton("Pointing Pairs", nullptr,
-                gcnew EventHandler(this, &MainForm::PointingPairs_Click)));
-            toolStrip->Items->Add(gcnew ToolStripButton("Naked Sets", nullptr,
-                gcnew EventHandler(this, &MainForm::NakedSets_Click)));
-            toolStrip->Items->Add(gcnew ToolStripSeparator());
+	    // Advanced techniques group
+	    toolStrip->Items->Add(gcnew ToolStripLabel("Advanced: "));
+	    toolStrip->Items->Add(gcnew ToolStripButton("Hidden Pairs", nullptr,
+		gcnew EventHandler(this, &MainForm::HiddenPairs_Click)));
+	    toolStrip->Items->Add(gcnew ToolStripButton("Pointing Pairs", nullptr,
+		gcnew EventHandler(this, &MainForm::PointingPairs_Click)));
+	    toolStrip->Items->Add(gcnew ToolStripButton("Naked Sets", nullptr,
+		gcnew EventHandler(this, &MainForm::NakedSets_Click)));
+	    toolStrip->Items->Add(gcnew ToolStripSeparator());
 
-            // Expert techniques group
-            toolStrip->Items->Add(gcnew ToolStripLabel("Expert: "));
-            toolStrip->Items->Add(gcnew ToolStripButton("X-Wing", nullptr,
-                gcnew EventHandler(this, &MainForm::XWing_Click)));
-            toolStrip->Items->Add(gcnew ToolStripButton("Swordfish", nullptr,
-                gcnew EventHandler(this, &MainForm::Swordfish_Click)));
-            toolStrip->Items->Add(gcnew ToolStripButton("XY-Wing", nullptr,
-                gcnew EventHandler(this, &MainForm::XYWing_Click)));
-            toolStrip->Items->Add(gcnew ToolStripButton("XYZ-Wing", nullptr,
-                gcnew EventHandler(this, &MainForm::XYZWing_Click)));
-            /*toolStrip->Items->Add(gcnew ToolStripButton("Simple Coloring", nullptr,
-                gcnew EventHandler(this, &MainForm::SimpleColoring_Click))); */
+	    // Expert techniques group
+	    toolStrip->Items->Add(gcnew ToolStripLabel("Expert: "));
+	    toolStrip->Items->Add(gcnew ToolStripButton("X-Wing", nullptr,
+		gcnew EventHandler(this, &MainForm::XWing_Click)));
+	    toolStrip->Items->Add(gcnew ToolStripButton("Swordfish", nullptr,
+		gcnew EventHandler(this, &MainForm::Swordfish_Click)));
+	    toolStrip->Items->Add(gcnew ToolStripButton("XY-Wing", nullptr,
+		gcnew EventHandler(this, &MainForm::XYWing_Click)));
+	    toolStrip->Items->Add(gcnew ToolStripButton("XYZ-Wing", nullptr,
+		gcnew EventHandler(this, &MainForm::XYZWing_Click)));
+	    /*toolStrip->Items->Add(gcnew ToolStripButton("Simple Coloring", nullptr,
+		gcnew EventHandler(this, &MainForm::SimpleColoring_Click))); */
 
-            this->Controls->Add(toolStrip);
+	    this->Controls->Add(toolStrip);
 
-            // Initialize grid
-            grid = gcnew array<TextBox^, 2>(9, 9);
-            int gridTop = menuStrip->Height + toolStrip->Height + 20;
-            for (int i = 0; i < 9; i++) {
-                for (int j = 0; j < 9; j++) {
-                    grid[i, j] = gcnew TextBox();
-                    grid[i, j]->Size = System::Drawing::Size(40, 40);
-                    grid[i, j]->Location = System::Drawing::Point(50 + j * 45, gridTop + i * 45);
-                    grid[i, j]->MaxLength = 1;
-                    grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 20);
-                    grid[i, j]->TextAlign = HorizontalAlignment::Center;
-                    grid[i, j]->Tag = gcnew array<int> { i, j };
-                    grid[i, j]->TextChanged += gcnew EventHandler(this, &MainForm::Cell_TextChanged);
-                    this->Controls->Add(grid[i, j]);
-                }
-            }
+	    // Initialize grid
+	    grid = gcnew array<TextBox^, 2>(9, 9);
+	    int gridTop = menuStrip->Height + toolStrip->Height + 20;
 
-            // Draw grid lines
-            for (int i = 0; i <= 9; i++) {
-                Panel^ vline = gcnew Panel();
-                vline->BorderStyle = BorderStyle::FixedSingle;
-                vline->Location = Point(48 + i * 45, gridTop - 2);
-                vline->Size = System::Drawing::Size(2, 410);
-                vline->BackColor = (i % 3 == 0) ? Color::Black : Color::Gray;
-                this->Controls->Add(vline);
+	    // Create a container panel for the Sudoku grid
+	    Panel^ gridContainer = gcnew Panel();
+	    gridContainer->Location = Point(50, gridTop);
+	    gridContainer->Size = System::Drawing::Size(405, 405);
+	    gridContainer->BackColor = Color::Black;
+	    this->Controls->Add(gridContainer);
 
-                Panel^ hline = gcnew Panel();
-                hline->BorderStyle = BorderStyle::FixedSingle;
-                hline->Location = Point(48, gridTop - 2 + i * 45);
-                hline->Size = System::Drawing::Size(410, 2);
-                hline->BackColor = (i % 3 == 0) ? Color::Black : Color::Gray;
-                this->Controls->Add(hline);
-            }
-        }
+	    // Initialize grid cells
+	    for (int i = 0; i < 9; i++) {
+		for (int j = 0; j < 9; j++) {
+		    grid[i, j] = gcnew TextBox();
+		    grid[i, j]->Size = System::Drawing::Size(40, 40);
+		    grid[i, j]->Location = System::Drawing::Point(3 + j * 45, 3 + i * 45);
+		    grid[i, j]->MaxLength = 1;
+		    grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 20);
+		    grid[i, j]->TextAlign = HorizontalAlignment::Center;
+		    grid[i, j]->Tag = gcnew array<int> { i, j };
+		    grid[i, j]->TextChanged += gcnew EventHandler(this, &MainForm::Cell_TextChanged);
+		    grid[i, j]->BackColor = Color::White;
+		    gridContainer->Controls->Add(grid[i, j]);
+		}
+	    }
+
+	    // Draw grid lines
+	    for (int i = 0; i <= 9; i++) {
+		Panel^ vline = gcnew Panel();
+		vline->BorderStyle = BorderStyle::None;
+		vline->Location = Point(i * 45, 0);
+		vline->Size = System::Drawing::Size((i % 3 == 0) ? 3 : 1, gridContainer->Height);
+		vline->BackColor = (i % 3 == 0) ? Color::Black : Color::LightGray;
+		gridContainer->Controls->Add(vline);
+
+		Panel^ hline = gcnew Panel();
+		hline->BorderStyle = BorderStyle::None;
+		hline->Location = Point(0, i * 45);
+		hline->Size = System::Drawing::Size(gridContainer->Width, (i % 3 == 0) ? 3 : 1);
+		hline->BackColor = (i % 3 == 0) ? Color::Black : Color::LightGray;
+		gridContainer->Controls->Add(hline);
+	    }
+	}
+
 
         void UpdateGrid() {
             for (int i = 0; i < 9; i++) {
