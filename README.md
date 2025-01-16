@@ -11,15 +11,20 @@ An interactive command-line Sudoku solver implemented in both C++ and Python, fe
 - Cross-platform compatibility (Linux, macOS, Unix-like systems)
 - Comprehensive logging of solving steps
 - Available in both C++ (full version) and Python (prototype)
+- MS Windows version available (compile instructions not included here since it's compiled via github actions)
 
 ## Getting Started
 
 ### Prerequisites
 
-- For C++ version (recommended):
+- For C++/Ncurses version:
   - G++ compiler
   - ncurses library
   - Make (optional, for compilation)
+
+- For C++/Windows version:
+  - Visual Studio with CMD support
+  - msbuild
 
 - For Python version (prototype):
   - Python 3.x
@@ -48,8 +53,12 @@ Or with Make Script:
 make
 ```
 
+Windows Version:
+```
+msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
+```
 
-The Python version is a prototype with limited functionality and doesn't require compilation. For the best solving experience, use the C++ implementation.
+The Python version is a prototype with limited functionality and doesn't require compilation. For the best solving experience, use the C++ implementation.  The python version only has very basic algorithms implmeneted while the C++ versions (Windows and UNIX) can solve extreme puzzles due to the use of advanced algorithms.
 
 ## Usage
 
