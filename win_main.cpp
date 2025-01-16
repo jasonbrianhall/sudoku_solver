@@ -96,7 +96,7 @@ namespace SudokuGame {
 
             // Initialize ToolStrip
             toolStrip = gcnew ToolStrip();
-            toolStrip->Items->Add(gcnew ToolStripButton("Solve All", nullptr,
+            toolStrip->Items->Add(gcnew ToolStripButton("Solve All (A)", nullptr,
                 gcnew EventHandler(this, &MainForm::Solve_Click)));
             toolStrip->Items->Add(gcnew ToolStripSeparator());
 
