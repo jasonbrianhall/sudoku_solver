@@ -5,6 +5,7 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,39 +17,80 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.3.1
       
-    - name: Create Solution and Project
-      shell: powershell
+    - name: Setup Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1
+      
+    - name: Create Solution Structure
+      shell: cmd
       run: |
-        # Create solution directory
         mkdir SudokuSolver
         cd SudokuSolver
+        echo Creating C++/CLI Windows Forms Project...
         
-        # Create Visual Studio solution
-        dotnet new sln --name SudokuSolver
-        
-        # Create Windows Forms project
-        dotnet new winforms --name SudokuSolver --framework net7.0
-        dotnet sln add SudokuSolver/SudokuSolver.csproj
+        # Create solution file
+        echo Microsoft Visual Studio Solution File, Format Version 12.00 > SudokuSolver.sln
+        echo # Visual Studio Version 17 >> SudokuSolver.sln
+        echo VisualStudioVersion = 17.0.31903.59 >> SudokuSolver.sln
+        echo MinimumVisualStudioVersion = 10.0.40219.1 >> SudokuSolver.sln
         
         # Copy source files
-        copy ../sudoku.cpp SudokuSolver/
-        copy ../sudoku.h SudokuSolver/
-        copy ../win_main.cpp SudokuSolver/
-
-    - name: Setup Visual Studio Command Prompt
-      uses: TheMrMilchmann/setup-msvc-dev@v3
-      with:
-        arch: x64
+        copy ..\sudoku.cpp .
+        copy ..\sudoku.h .
+        copy ..\win_main.cpp .
+        
+        # Create vcxproj file
+        echo ^<?xml version="1.0" encoding="utf-8"?^> > SudokuSolver.vcxproj
+        echo ^<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"^> >> SudokuSolver.vcxproj
+        echo   ^<ItemGroup Label="ProjectConfigurations"^> >> SudokuSolver.vcxproj
+        echo     ^<ProjectConfiguration Include="Debug|x64"^> >> SudokuSolver.vcxproj
+        echo       ^<Configuration^>Debug^</Configuration^> >> SudokuSolver.vcxproj
+        echo       ^<Platform^>x64^</Platform^> >> SudokuSolver.vcxproj
+        echo     ^</ProjectConfiguration^> >> SudokuSolver.vcxproj
+        echo     ^<ProjectConfiguration Include="Release|x64"^> >> SudokuSolver.vcxproj
+        echo       ^<Configuration^>Release^</Configuration^> >> SudokuSolver.vcxproj
+        echo       ^<Platform^>x64^</Platform^> >> SudokuSolver.vcxproj
+        echo     ^</ProjectConfiguration^> >> SudokuSolver.vcxproj
+        echo   ^</ItemGroup^> >> SudokuSolver.vcxproj
+        echo   ^<PropertyGroup Label="Globals"^> >> SudokuSolver.vcxproj
+        echo     ^<VCProjectVersion^>17.0^</VCProjectVersion^> >> SudokuSolver.vcxproj
+        echo     ^<ProjectGuid^>{12345678-1234-1234-1234-123456789ABC}^</ProjectGuid^> >> SudokuSolver.vcxproj
+        echo     ^<Keyword^>ManagedCProj^</Keyword^> >> SudokuSolver.vcxproj
+        echo     ^<RootNamespace^>SudokuSolver^</RootNamespace^> >> SudokuSolver.vcxproj
+        echo     ^<WindowsTargetPlatformVersion^>10.0^</WindowsTargetPlatformVersion^> >> SudokuSolver.vcxproj
+        echo     ^<TargetFrameworkVersion^>v4.7.2^</TargetFrameworkVersion^> >> SudokuSolver.vcxproj
+        echo   ^</PropertyGroup^> >> SudokuSolver.vcxproj
+        echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" /^> >> SudokuSolver.vcxproj
+        echo   ^<PropertyGroup Label="Configuration"^> >> SudokuSolver.vcxproj
+        echo     ^<ConfigurationType^>Application^</ConfigurationType^> >> SudokuSolver.vcxproj
+        echo     ^<UseDebugLibraries^>false^</UseDebugLibraries^> >> SudokuSolver.vcxproj
+        echo     ^<PlatformToolset^>v143^</PlatformToolset^> >> SudokuSolver.vcxproj
+        echo     ^<CLRSupport^>true^</CLRSupport^> >> SudokuSolver.vcxproj
+        echo     ^<CharacterSet^>Unicode^</CharacterSet^> >> SudokuSolver.vcxproj
+        echo   ^</PropertyGroup^> >> SudokuSolver.vcxproj
+        echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" /^> >> SudokuSolver.vcxproj
+        echo   ^<ItemGroup^> >> SudokuSolver.vcxproj
+        echo     ^<Reference Include="System" /^> >> SudokuSolver.vcxproj
+        echo     ^<Reference Include="System.Data" /^> >> SudokuSolver.vcxproj
+        echo     ^<Reference Include="System.Drawing" /^> >> SudokuSolver.vcxproj
+        echo     ^<Reference Include="System.Windows.Forms" /^> >> SudokuSolver.vcxproj
+        echo   ^</ItemGroup^> >> SudokuSolver.vcxproj
+        echo   ^<ItemGroup^> >> SudokuSolver.vcxproj
+        echo     ^<ClCompile Include="win_main.cpp" /^> >> SudokuSolver.vcxproj
+        echo     ^<ClCompile Include="sudoku.cpp" /^> >> SudokuSolver.vcxproj
+        echo   ^</ItemGroup^> >> SudokuSolver.vcxproj
+        echo   ^<ItemGroup^> >> SudokuSolver.vcxproj
+        echo     ^<ClInclude Include="sudoku.h" /^> >> SudokuSolver.vcxproj
+        echo   ^</ItemGroup^> >> SudokuSolver.vcxproj
+        echo   ^<Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" /^> >> SudokuSolver.vcxproj
+        echo ^</Project^> >> SudokuSolver.vcxproj
 
     - name: Build Solution
-      working-directory: SudokuSolver
       run: |
-        msbuild /p:Configuration=Release /p:Platform=x64 /p:CLRSupport=true
+        cd SudokuSolver
+        msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v3
       with:
         name: SudokuSolver
-        path: |
-          SudokuSolver/SudokuSolver/bin/Release/net7.0-windows/
-          !SudokuSolver/SudokuSolver/bin/Release/net7.0-windows/*.pdb
+        path: SudokuSolver/x64/Release/SudokuSolver.exe
