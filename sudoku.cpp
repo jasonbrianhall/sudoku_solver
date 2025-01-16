@@ -1,8 +1,12 @@
 #include <iostream>
 using namespace std;
 #include <stdlib.h>
-#include <ncurses.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <ncurses.h>
+#endif
 #include <vector>
 #include <set>
 #include <algorithm>
