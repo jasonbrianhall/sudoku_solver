@@ -312,8 +312,8 @@ namespace SudokuGame {
     };
 }
 
-[STAThread]
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+[STAThreadAttribute]
+int main(array<System::String ^> ^args)
 {
     Application::EnableVisualStyles();
     Application::SetCompatibleTextRenderingDefault(false);
