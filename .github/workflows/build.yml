@@ -1,0 +1,54 @@
+name: Build Sudoku
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.3.1
+      
+    - name: Create Solution and Project
+      shell: powershell
+      run: |
+        # Create solution directory
+        mkdir SudokuSolver
+        cd SudokuSolver
+        
+        # Create Visual Studio solution
+        dotnet new sln --name SudokuSolver
+        
+        # Create Windows Forms project
+        dotnet new winforms --name SudokuSolver --framework net7.0
+        dotnet sln add SudokuSolver/SudokuSolver.csproj
+        
+        # Copy source files
+        copy ../sudoku.cpp SudokuSolver/
+        copy ../sudoku.h SudokuSolver/
+        copy ../win_main.cpp SudokuSolver/
+
+    - name: Setup Visual Studio Command Prompt
+      uses: TheMrMilchmann/setup-msvc-dev@v3
+      with:
+        arch: x64
+
+    - name: Build Solution
+      working-directory: SudokuSolver
+      run: |
+        msbuild /p:Configuration=Release /p:Platform=x64 /p:CLRSupport=true
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: SudokuSolver
+        path: |
+          SudokuSolver/SudokuSolver/bin/Release/net7.0-windows/
+          !SudokuSolver/SudokuSolver/bin/Release/net7.0-windows/*.pdb
