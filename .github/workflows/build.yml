@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: write # Required for creating releases
+      contents: write
     
     steps:
     - uses: actions/checkout@v4
@@ -27,23 +27,21 @@ jobs:
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
         
-    # MinGW Build Steps
-    - name: Setup MinGW
-      uses: egor-tensin/setup-mingw@v2
-      with:
-        platform: x64
-        
-    - name: Install MSYS2 and ncurses
+    # MSYS2/MinGW Build Steps
+    - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
         msystem: mingw64
         update: true
-        install: mingw-w64-x86_64-ncurses
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-ncurses
+          make
         
-    - name: Build CLI Version with MinGW
+    - name: Build CLI Version
       shell: msys2 {0}
       run: |
-        mingw32-make CXXFLAGS="-DNCURSES_STATIC" LDFLAGS="-static -lncurses"
+        make CXXFLAGS="-DNCURSES_STATIC" LDFLAGS="-static -lncurses"
         mv sudoku.exe sudoku-cli.exe
         
     - name: Create Release
