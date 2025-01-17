@@ -37,6 +37,7 @@ jobs:
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-make
           git
+          base-devel
           
     - name: Setup PDCurses
       shell: msys2 {0}
