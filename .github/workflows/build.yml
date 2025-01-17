@@ -35,7 +35,7 @@ jobs:
         update: true
         install: >-
           mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-make
+          make
           git
           base-devel
           
@@ -50,7 +50,7 @@ jobs:
     - name: Build CLI Version
       shell: msys2 {0}
       run: |
-        make CXXFLAGS="-IPDCurses" LDFLAGS="-LPDCurses/wincon -lpdcurses"
+        make CXXFLAGS="-I./PDCurses" LDFLAGS="-L./PDCurses/wincon -lpdcurses -static"
         mv sudoku.exe sudoku-cli.exe
         
     - name: Create Release
