@@ -11,49 +11,27 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: write
+      contents: write # Required for creating releases
     
     steps:
     - uses: actions/checkout@v4
     
-    # MSVC Build Steps
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.3.1
       
     - name: Setup Developer Command Prompt
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Build MSVC Solution
+    - name: Build Solution
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
-        
-    # MSYS2/MinGW Build Steps
-    - name: Setup MSYS2
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: mingw64
-        update: true
-        install: >-
-          mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-gcc-libs
-          mingw-w64-x86_64-ncurses
-          make
-          base-devel
-        
-    - name: Build CLI Version
-      shell: msys2 {0}
-      run: |
-        make CXXFLAGS="-DNCURSES_STATIC -D_NO_W32_PSEUDO_MODIFIERS -I/mingw64/include/ncursesw -I/mingw64/include" LDFLAGS="-static -L/mingw64/lib -lncursesw"
-        mv sudoku.exe sudoku-cli.exe
-        
+
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          x64/Release/SudokuSolver.exe
-          sudoku-cli.exe
+        files: x64/Release/SudokuSolver.exe
         tag_name: v${{ github.run_number }}
         name: Release ${{ github.run_number }}
         draft: false
@@ -61,7 +39,6 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           Automated release from CI build
-          - MSVC GUI Build: SudokuSolver.exe
-          - MinGW CLI Build: sudoku-cli.exe
           Commit: ${{ github.sha }}
           Build number: ${{ github.run_number }}
+
