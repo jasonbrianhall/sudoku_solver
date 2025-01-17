@@ -37,7 +37,6 @@ jobs:
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-gcc-libs
           mingw-w64-x86_64-ncurses
-          mingw-w64-x86_64-ncurses-devel
           make
           base-devel
         
