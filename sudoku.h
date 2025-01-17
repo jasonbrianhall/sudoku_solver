@@ -2,10 +2,10 @@
 #define SUDOKU_DISPLAY_H
 
 #ifdef _WIN32
-#include <windows.h>
+    #include <windows.h>
 #else
-#include <ncurses.h>
-#define _NCURSES
+    #include <ncurses.h>
+    #define _NCURSES
 #endif
 
 #include <iostream>

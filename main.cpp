@@ -8,6 +8,8 @@ using namespace std;
     #include <curses.h>
 #endif
 
+#define _NCURSES
+
 #include <vector>
 #include <set>
 #include <algorithm>

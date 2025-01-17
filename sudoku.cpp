@@ -2,16 +2,6 @@
 using namespace std;
 #include <stdlib.h>
 
-#ifdef _WIN32
-    #ifdef _NCURSES
-        #include <curses.h>
-    #else
-        #include <windows.h>
-    #endif
-#else
-    #include <ncurses.h>
-#endif
-
 #include <vector>
 #include <set>
 #include <algorithm>
