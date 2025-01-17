@@ -282,6 +282,8 @@ void Sudoku::print_debug(const char *format, ...) {
     debug_line = (debug_line + 1) % 20;
 }
 
+#endif
+
     void Sudoku::LogBoard(std::ofstream& file, const char* algorithm_name) {
         file << "\n=== " << algorithm_name << " ===\n";
         
@@ -326,9 +328,7 @@ void Sudoku::print_debug(const char *format, ...) {
     }
     file  << "|\n";
   }
-  refresh();
 }
-#endif
 
 int Sudoku::Solve() {
     bool changes_made;
