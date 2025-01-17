@@ -43,7 +43,7 @@ jobs:
     - name: Build CLI Version
       shell: msys2 {0}
       run: |
-        make CXXFLAGS="-DNCURSES_STATIC -D_NO_W32_PSEUDO_MODIFIERS" LDFLAGS="-static -lncurses"
+        make CXXFLAGS="-DNCURSES_STATIC -D_NO_W32_PSEUDO_MODIFIERS -I/mingw64/include/ncursesw -I/mingw64/include" LDFLAGS="-static -L/mingw64/lib -lncursesw"
         mv sudoku.exe sudoku-cli.exe
         
     - name: Create Release
