@@ -37,11 +37,14 @@ jobs:
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-ncurses
           make
+          base-devel
         
     - name: Build CLI Version
       shell: msys2 {0}
       run: |
-        make CXXFLAGS="-DNCURSES_STATIC" LDFLAGS="-static -lncurses"
+        export CPATH=/mingw64/include
+        export LIBRARY_PATH=/mingw64/lib
+        make CXXFLAGS="-DNCURSES_STATIC" LDFLAGS="-static -L/mingw64/lib -lncurses"
         mv sudoku.exe sudoku-cli.exe
         
     - name: Create Release
