@@ -3,9 +3,13 @@ using namespace std;
 #include <stdlib.h>
 
 #ifdef _WIN32
-#include <windows.h>
+    #ifdef _NCURSES
+        #include <curses.h>
+    #else
+        #include <windows.h>
+    #endif
 #else
-#include <ncurses.h>
+    #include <ncurses.h>
 #endif
 
 #include <vector>
