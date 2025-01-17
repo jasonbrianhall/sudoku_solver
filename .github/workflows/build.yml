@@ -27,22 +27,28 @@ jobs:
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
         
-    # MinGW/PDCurses Build Steps
-    - name: Setup MinGW
-      uses: egor-tensin/setup-mingw@v2
+    # MSYS2/PDCurses Build Steps
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
       with:
-        platform: x64
-        
+        msystem: mingw64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-make
+          
     - name: Setup PDCurses
+      shell: msys2 {0}
       run: |
         git clone https://github.com/wmcbrine/PDCurses.git
         cd PDCurses/wincon
-        mingw32-make -f Makefile WIDE=Y UTF8=Y
+        make -f Makefile WIDE=Y UTF8=Y
         cd ../..
         
     - name: Build CLI Version
+      shell: msys2 {0}
       run: |
-        mingw32-make CXXFLAGS="-IPDCurses" LDFLAGS="-LPDCurses/wincon -lpdcurses"
+        make CXXFLAGS="-IPDCurses" LDFLAGS="-LPDCurses/wincon -lpdcurses"
         mv sudoku.exe sudoku-cli.exe
         
     - name: Create Release
