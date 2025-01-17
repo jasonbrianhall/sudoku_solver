@@ -16,22 +16,44 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    # MSVC Build Steps
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.3.1
       
     - name: Setup Developer Command Prompt
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Build Solution
+    - name: Build MSVC Solution
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
-
+        
+    # MinGW Build Steps
+    - name: Setup MinGW
+      uses: egor-tensin/setup-mingw@v2
+      with:
+        platform: x64
+        
+    - name: Install MSYS2 and ncurses
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: mingw64
+        update: true
+        install: mingw-w64-x86_64-ncurses
+        
+    - name: Build CLI Version with MinGW
+      shell: msys2 {0}
+      run: |
+        mingw32-make CXXFLAGS="-DNCURSES_STATIC" LDFLAGS="-static -lncurses"
+        mv sudoku.exe sudoku-cli.exe
+        
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        files: x64/Release/SudokuSolver.exe
+        files: |
+          x64/Release/SudokuSolver.exe
+          sudoku-cli.exe
         tag_name: v${{ github.run_number }}
         name: Release ${{ github.run_number }}
         draft: false
@@ -39,5 +61,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           Automated release from CI build
+          - MSVC GUI Build: SudokuSolver.exe
+          - MinGW CLI Build: sudoku-cli.exe
           Commit: ${{ github.sha }}
           Build number: ${{ github.run_number }}
