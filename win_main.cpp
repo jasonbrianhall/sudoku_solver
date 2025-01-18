@@ -186,12 +186,12 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->Size = System::Drawing::Size(700, 150);
 
     instructionsBox->Text = L"Welcome to Sudoku Solver\n\n"
-        L"Instructions:\n"
-        L"- Use the mouse cursor to move around the board.\n"
-        L"- Use the keypad to enter numbers (0 to clear the current cell).\n"
-        L"- Press 'A' to solve the puzzle (clicked inside a cell).\n"
-        L"- Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles (clicked inside a cell).\n"
-        L"- Press F5-F8 to save, and Shift+F5-F8 to load.\n";
+        L"Instructions:\n\n"
+        L"  - Use the mouse cursor to move around the board.\n"
+        L"  - Use the keypad to enter numbers (0 to clear the current cell).\n"
+        L"  - Press 'A' to solve the puzzle (clicked inside a cell).\n"
+        L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles (clicked inside a cell).\n"
+        L"  - Press F5-F8 to save, and Shift+F5-F8 to load.\n";
 
     instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9); // Consistent fixed-width font
     this->Controls->Add(instructionsBox);
