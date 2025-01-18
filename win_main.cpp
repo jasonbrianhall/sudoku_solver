@@ -208,7 +208,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         "Master F(4)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateMaster_Click)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Expert F(5)", nullptr,
+        "Expert Shift F(1)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateExpert_Click)));
 
     // Add Menus to MenuStrip
