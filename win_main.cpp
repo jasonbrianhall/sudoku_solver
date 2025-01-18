@@ -232,7 +232,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->BackColor = System::Drawing::Color::LightBlue; // Soothing background
     instructionsBox->BorderStyle = BorderStyle::FixedSingle; // Clean border
     instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
-    instructionsBox->Size = System::Drawing::Size(700, 120);
+    instructionsBox->Size = System::Drawing::Size(700, 110);
 
     instructionsBox->Text = L"Instructions:\r\n\r\n"
         L"  - Use the mouse cursor to move around the board.\r\n"
