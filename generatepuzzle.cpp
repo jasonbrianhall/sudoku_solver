@@ -17,24 +17,47 @@ PuzzleGenerator::PuzzleGenerator(Sudoku& s) : sudoku(s),
 bool PuzzleGenerator::generateValidSolution() {
     sudoku.NewGame();
     
-    // Fill in diagonal boxes first (these can be filled independently)
-    for (int box = 0; box < 9; box += 4) {
-        std::vector<int> values{0,1,2,3,4,5,6,7,8};
-        std::shuffle(values.begin(), values.end(), rng);
+    // Create list of all possible positions
+    std::vector<std::pair<int, int>> positions;
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            positions.emplace_back(i, j);
+        }
+    }
+    
+    // Shuffle positions
+    std::shuffle(positions.begin(), positions.end(), rng);
+    
+    // Take first 50 positions and fill with random numbers 1-9
+    for (int i = 0; i < 50; i++) {
+        int row = positions[i].first;
+        int col = positions[i].second;
         
-        int boxRow = (box / 3) * 3;
-        int boxCol = (box % 3) * 3;
-        int idx = 0;
-        
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                sudoku.SetValue(boxRow + i, boxCol + j, values[idx++]);
+        // Pick a random value 1-9
+        int val = (rng() % 9) + 1;
+        sudoku.SetValue(row, col, val);
+    }
+    
+    // Try to solve the grid
+    if (sudoku.Solve() != 0) {
+        return false;
+    }
+    
+    // Verify solution is valid and complete
+    if (!sudoku.IsValidSolution()) {
+        return false;
+    }
+    
+    // Check for any unfilled cells
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            if (sudoku.GetValue(i, j) == -1) {
+                return false;
             }
         }
     }
     
-    // Solve the rest of the grid to get a complete valid solution
-    return sudoku.Solve() == 0;
+    return true;
 }
 
 int PuzzleGenerator::countClues() {
@@ -53,7 +76,8 @@ bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
         return false;
     }
     const DifficultySettings& settings = diffIt->second;
-
+    generateValidSolution();
+    return true;
     const int maxAttempts = 50;
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
         // Generate initial solution
