@@ -54,10 +54,9 @@ bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
     }
     const DifficultySettings& settings = diffIt->second;
 
-    // Try to generate a valid puzzle
     const int maxAttempts = 50;
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
-        // Generate a complete valid solution
+        // Generate initial solution
         if (!generateValidSolution()) {
             continue;
         }
@@ -75,57 +74,38 @@ bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
         }
         std::shuffle(positions.begin(), positions.end(), rng);
 
-        // Target number of clues for this difficulty
         int targetClues = settings.minClues + 
             (rng() % (settings.maxClues - settings.minClues + 1));
 
-        int currentState[9][9][9];
-        bool validPuzzleFound = false;
-
+        int backup[9][9][9];  // Moved to outer scope
+        
         while (countClues() > targetClues && !positions.empty()) {
-            // Try removing a number
             auto pos = positions.back();
             positions.pop_back();
 
-            int backup[9][9][9];
+            // Backup current state before removing number
             memcpy(backup, sudoku.board, sizeof(backup));
             
             sudoku.ClearValue(pos.first, pos.second);
-
-            // Save the current unsolved state
-            memcpy(currentState, sudoku.board, sizeof(currentState));
-
-            // Run solver
+            
+            // Test if puzzle is still solvable
             sudoku.Clean();
-            if (sudoku.Solve() == 0) {
-                // Verify all positions are filled
-                bool allFilled = true;
-                for (int i = 0; i < 9 && allFilled; i++) {
+            bool valid = (sudoku.Solve() == 0);
+            
+            if (valid) {
+                // Check if all positions were filled
+                for (int i = 0; i < 9 && valid; i++) {
                     for (int j = 0; j < 9; j++) {
                         if (sudoku.GetValue(i, j) == -1) {
-                            allFilled = false;
+                            valid = false;
                             break;
                         }
                     }
                 }
-
-                if (allFilled) {
-                    // Restore to unsolved state and continue
-                    memcpy(sudoku.board, currentState, sizeof(currentState));
-                } else {
-                    // Not completely solvable - restore and skip
-                    memcpy(sudoku.board, backup, sizeof(backup));
-                    continue;
-                }
-            } else {
-                // Not solvable - restore and skip
-                memcpy(sudoku.board, backup, sizeof(backup));
-                continue;
             }
 
-            // For harder difficulties, verify required techniques
-            bool valid = true;
-            if (settings.allowXWing) {
+            // For harder difficulties, check if required techniques are needed
+            if (valid && settings.allowXWing) {
                 valid = requiresAdvancedTechnique("x-wing");
             }
             if (valid && settings.allowSwordfish) {
@@ -139,29 +119,33 @@ bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
             }
 
             if (!valid) {
-                // Doesn't meet difficulty requirements - restore
+                // Invalid removal - restore previous state
                 memcpy(sudoku.board, backup, sizeof(backup));
+                continue;
             }
+
+            // Valid removal - restore to unsolved state
+            memcpy(sudoku.board, backup, sizeof(backup));
+            sudoku.ClearValue(pos.first, pos.second);
         }
 
-        // Final verification
-        memcpy(currentState, sudoku.board, sizeof(currentState));
+        // Final verification that puzzle is solvable
+        memcpy(backup, sudoku.board, sizeof(backup));  // Save the unsolved state
         sudoku.Clean();
         if (sudoku.Solve() == 0) {
-            // Verify all positions are filled
-            bool allFilled = true;
-            for (int i = 0; i < 9 && allFilled; i++) {
+            bool complete = true;
+            for (int i = 0; i < 9 && complete; i++) {
                 for (int j = 0; j < 9; j++) {
                     if (sudoku.GetValue(i, j) == -1) {
-                        allFilled = false;
+                        complete = false;
                         break;
                     }
                 }
             }
-
-            if (allFilled) {
-                // Valid puzzle found - restore to unsolved state
-                memcpy(sudoku.board, currentState, sizeof(currentState));
+            
+            if (complete && countClues() >= settings.minClues && countClues() <= settings.maxClues) {
+                // Restore to unsolved state and return
+                memcpy(sudoku.board, backup, sizeof(backup));
                 return true;
             }
         }
