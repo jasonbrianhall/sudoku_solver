@@ -96,6 +96,7 @@ bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
             memcpy(currentState, sudoku.board, sizeof(currentState));
 
             // Run solver
+            sudoku.Clean();
             if (sudoku.Solve() == 0) {
                 // Verify all positions are filled
                 bool allFilled = true;
@@ -145,6 +146,7 @@ bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
 
         // Final verification
         memcpy(currentState, sudoku.board, sizeof(currentState));
+        sudoku.Clean();
         if (sudoku.Solve() == 0) {
             // Verify all positions are filled
             bool allFilled = true;
