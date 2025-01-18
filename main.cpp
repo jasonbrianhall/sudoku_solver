@@ -274,6 +274,7 @@ int main(int argc, char* argv[]) {
                 NewGame.print_debug("Generated new easy puzzle");
             } else {
                 NewGame.print_debug("Failed to generate easy puzzle");
+                NewGame.NewGame();
             }
             NewGame.Clean();
         }
@@ -285,6 +286,7 @@ int main(int argc, char* argv[]) {
                 NewGame.print_debug("Generated new medium puzzle");
             } else {
                 NewGame.print_debug("Failed to generate medium puzzle");
+                NewGame.NewGame();
             }
             NewGame.Clean();
 
@@ -297,6 +299,7 @@ int main(int argc, char* argv[]) {
                 NewGame.print_debug("Generated new hard puzzle");
             } else {
                 NewGame.print_debug("Failed to generate hard puzzle");
+                NewGame.NewGame();
             }
             NewGame.Clean();
         }
@@ -308,6 +311,7 @@ int main(int argc, char* argv[]) {
                 NewGame.print_debug("Generated new expert puzzle");
             } else {
                 NewGame.print_debug("Failed to generate expert puzzle");
+                NewGame.NewGame();
             }
             NewGame.Clean();
         }
@@ -319,6 +323,7 @@ int main(int argc, char* argv[]) {
                 NewGame.print_debug("Generated new extreme puzzle");
             } else {
                 NewGame.print_debug("Failed to generate extreme puzzle");
+                NewGame.NewGame();
             }
             NewGame.Clean();
         }
