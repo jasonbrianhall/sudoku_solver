@@ -5,7 +5,9 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <chrono>
 #include "sudoku.h"
+
 
 class PuzzleGenerator {
 private:
