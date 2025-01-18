@@ -182,8 +182,8 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->ReadOnly = true;
     instructionsBox->BackColor = System::Drawing::Color::LightYellow;
     instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
-    instructionsBox->Size = System::Drawing::Size(1400, 80);
-    instructionsBox->Text = L"Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasing difficulty)\r\n\r\n"
+    instructionsBox->Size = System::Drawing::Size(700, 160);
+    instructionsBox->Text = L"Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasing difficulty; must be clicked inside a cell)\r\n\r\n"
         L"Commands:                                     Solving techniques:          Advanced techniques   Expert Techiques\r\n"
         L"Arrow keys - Move cursor                     S - Standard elimination    N - Hidden singles     Y - Find XY Wing\r\n"
         L"1-9 - Fill number    0 - Clear cell          L - Line elimination        K - Naked sets         ; - Find XYZ Wing\r\n"
