@@ -168,7 +168,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         "New Game", nullptr,
         gcnew EventHandler(this, &MainForm::NewGame_Click)));
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Exit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
+        "Quit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
 
 
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
