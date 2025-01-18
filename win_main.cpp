@@ -193,6 +193,33 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     this->Controls->Add(menuStrip);
 
+    // Initialize ToolStrip
+    toolStrip = gcnew ToolStrip();
+    toolStrip->Items->Add(gcnew ToolStripButton(
+        "Complete Auto-Solve (A)", nullptr,
+        gcnew EventHandler(this, &MainForm::Solve_Click)));
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
+
+    instructionsBox = gcnew TextBox();
+    instructionsBox->Multiline = true;
+    instructionsBox->ReadOnly = true;
+    instructionsBox->BackColor = System::Drawing::Color::LightBlue; // Soothing background
+    instructionsBox->BorderStyle = BorderStyle::FixedSingle; // Clean border
+    instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
+    instructionsBox->Size = System::Drawing::Size(700, 120);
+
+    instructionsBox->Text = L"Welcome to Sudoku Solver\r\n\r\n"
+        L"Instructions:\r\n\r\n"
+        L"  - Use the mouse cursor to move around the board.\r\n"
+        L"  - Use the keypad to enter numbers (0 to clear the current cell).\r\n"
+        L"  - Press 'A' to solve the puzzle (clicked inside a cell).\r\n"
+        L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles (clicked inside a cell).\r\n"
+        L"  - Press F5-F8 to save, and Shift+F5-F8 to load.";
+
+    instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9); // Consistent fixed-width font
+    this->Controls->Add(instructionsBox);
+
+
     // Basic techniques group
     toolStrip->Items->Add(gcnew ToolStripLabel("Basic Algorithms: "));
     toolStrip->Items->Add(gcnew ToolStripButton(
@@ -235,32 +262,6 @@ ref class MainForm : public System::Windows::Forms::Form {
         gcnew EventHandler(this, &MainForm::XYZWing_Click)));
 
     this->Controls->Add(toolStrip);
-
-    // Initialize ToolStrip
-    toolStrip = gcnew ToolStrip();
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Complete Auto-Solve (A)", nullptr,
-        gcnew EventHandler(this, &MainForm::Solve_Click)));
-    toolStrip->Items->Add(gcnew ToolStripSeparator());
-
-    instructionsBox = gcnew TextBox();
-    instructionsBox->Multiline = true;
-    instructionsBox->ReadOnly = true;
-    instructionsBox->BackColor = System::Drawing::Color::LightBlue; // Soothing background
-    instructionsBox->BorderStyle = BorderStyle::FixedSingle; // Clean border
-    instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
-    instructionsBox->Size = System::Drawing::Size(700, 120);
-
-    instructionsBox->Text = L"Welcome to Sudoku Solver\r\n\r\n"
-        L"Instructions:\r\n\r\n"
-        L"  - Use the mouse cursor to move around the board.\r\n"
-        L"  - Use the keypad to enter numbers (0 to clear the current cell).\r\n"
-        L"  - Press 'A' to solve the puzzle (clicked inside a cell).\r\n"
-        L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles (clicked inside a cell).\r\n"
-        L"  - Press F5-F8 to save, and Shift+F5-F8 to load.";
-
-    instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9); // Consistent fixed-width font
-    this->Controls->Add(instructionsBox);
 
     // Initialize grid
     grid = gcnew array<TextBox ^, 2>(9, 9);
