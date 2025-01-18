@@ -153,6 +153,9 @@ ref class MainForm : public System::Windows::Forms::Form {
     this->Text = L"Sudoku Solver";
     this->StartPosition = FormStartPosition::CenterScreen;
 
+    this->KeyDown += gcnew KeyEventHandler(this, &MainForm::Form_KeyDown);
+    this->KeyPreview = true; // Ensure the form captures key events before child controls
+
     // Initialize StatusStrip
     statusStrip = gcnew StatusStrip();
     statusLabel = gcnew ToolStripStatusLabel("Ready");
@@ -309,6 +312,17 @@ ref class MainForm : public System::Windows::Forms::Form {
       gridContainer->Controls->Add(hline);
     }
   }
+
+void MainForm::Form_KeyDown(Object^ sender, KeyEventArgs^ e) {
+    if (e->KeyCode == Keys::N) {
+        // Call the New Game event handler
+        NewGame_Click(sender, EventArgs::Empty);
+    }
+    else if (e->KeyCode == Keys::Q) {
+        // Call the Exit event handler
+        Exit_Click(sender, EventArgs::Empty);
+    }
+}
 
   void UpdateGrid() {
     for (int i = 0; i < 9; i++) {
