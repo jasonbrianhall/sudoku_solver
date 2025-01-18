@@ -164,32 +164,28 @@ ref class MainForm : public System::Windows::Forms::Form {
     ToolStripMenuItem ^ fileMenu = gcnew ToolStripMenuItem("File");
     ToolStripMenuItem ^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
 
-    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "New Game", nullptr,
-        gcnew EventHandler(this, &MainForm::NewGame_Click)));
+    ToolStripMenuItem ^ newGameMenuItem = gcnew ToolStripMenuItem(
+        "New Game", nullptr, gcnew EventHandler(this, &MainForm::NewGame_Click));
+    newGameMenuItem->ShortcutKeys = Keys::N;
+
+    fileMenu->DropDownItems->Add(newGameMenuItem);
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Exit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
 
-
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Easy", nullptr,
-        gcnew EventHandler(this, &MainForm::GenerateEasy_Click)));
+        "Easy", nullptr, gcnew EventHandler(this, &MainForm::GenerateEasy_Click)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Medium", nullptr,
-        gcnew EventHandler(this, &MainForm::GenerateMedium_Click)));
+        "Medium", nullptr, gcnew EventHandler(this, &MainForm::GenerateMedium_Click)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Hard", nullptr,
-        gcnew EventHandler(this, &MainForm::GenerateHard_Click)));
+        "Hard", nullptr, gcnew EventHandler(this, &MainForm::GenerateHard_Click)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Master", nullptr,
-        gcnew EventHandler(this, &MainForm::GenerateMaster_Click)));
+        "Master", nullptr, gcnew EventHandler(this, &MainForm::GenerateMaster_Click)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Expert", nullptr,
-        gcnew EventHandler(this, &MainForm::GenerateExpert_Click)));
-
+        "Expert", nullptr, gcnew EventHandler(this, &MainForm::GenerateExpert_Click)));
 
     menuStrip->Items->Add(fileMenu);
     menuStrip->Items->Add(generateBoardMenu);
+
 
     this->Controls->Add(menuStrip);
 
