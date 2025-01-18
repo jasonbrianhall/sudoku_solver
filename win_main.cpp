@@ -228,8 +228,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
     instructionsBox->Size = System::Drawing::Size(700, 120);
 
-    instructionsBox->Text = L"Welcome to Sudoku Solver\r\n\r\n"
-        L"Instructions:\r\n\r\n"
+    instructionsBox->Text = L"Instructions:\r\n\r\n"
         L"  - Use the mouse cursor to move around the board.\r\n"
         L"  - Use the keypad to enter numbers (0 to clear the current cell).\r\n"
         L"  - Press 'A' to solve the puzzle (clicked inside a cell).\r\n"
@@ -293,6 +292,8 @@ ref class MainForm : public System::Windows::Forms::Form {
     gridContainer->Size = System::Drawing::Size(405, 405);
     gridContainer->BackColor = Color::Black;
     this->Controls->Add(gridContainer);
+
+    gcnew KeyEventHandler(this, &MainForm::Cell_KeyDown);
 
     // Initialize grid cells
     for (int i = 0; i < 9; i++) {
