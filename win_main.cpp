@@ -169,8 +169,10 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Save Slots
     ToolStripMenuItem^ saveMenu = gcnew ToolStripMenuItem("Save Game");
+    int k;
     for (int i = 1; i <= 4; i++) {
-        ToolStripMenuItem^ saveSlot = gcnew ToolStripMenuItem("Slot " + i + " F(" + i+4 + ")");
+        k=i+4;
+        ToolStripMenuItem^ saveSlot = gcnew ToolStripMenuItem("Slot " + i + " F(" + k + ")");
         saveSlot->Tag = i; // Store slot number in Tag
         saveSlot->Click += gcnew EventHandler(this, &MainForm::SaveSlot_Click);
         saveMenu->DropDownItems->Add(saveSlot);
@@ -179,7 +181,8 @@ ref class MainForm : public System::Windows::Forms::Form {
     // Load Slots
     ToolStripMenuItem^ loadMenu = gcnew ToolStripMenuItem("Load Game");
     for (int i = 1; i <= 4; i++) {
-        ToolStripMenuItem^ loadSlot = gcnew ToolStripMenuItem("Slot " + i + " Shift F(" + i+4 + ")");
+        k=i+4
+        ToolStripMenuItem^ loadSlot = gcnew ToolStripMenuItem("Slot " + i + " Shift F(" + k + ")");
         loadSlot->Tag = i; // Store slot number in Tag
         loadSlot->Click += gcnew EventHandler(this, &MainForm::LoadSlot_Click);
         loadMenu->DropDownItems->Add(loadSlot);
