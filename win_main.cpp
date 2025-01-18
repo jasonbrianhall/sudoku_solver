@@ -184,10 +184,14 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
     instructionsBox->Size = System::Drawing::Size(700, 80);
     instructionsBox->Text = L"Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasing difficulty)\r\n"
-        L"Commands:                                     Solving techniques:\r\n"
+        L"Commands:                                     Solving techniques:          Advanced techniques   Advanced Techiques\r\n"
         L"Arrow keys - Move cursor                     S - Standard elimination    N - Hidden singles     Y - Find XY Wing\r\n"
         L"1-9 - Fill number    0 - Clear cell          L - Line elimination        K - Naked sets         ; - Find XYZ Wing\r\n"
-        L"q - Quit                                     H - Hidden pairs            X - X-Wing             F - Swordfish";
+        L"q - Quit                                     H - Hidden pairs            X - X-Wing             F - Swordfish\n"
+        L"A - Automatically solves the puzzle\n\n"
+        L"To solve a puzzle manually, iterate between Standard Elimination and Line Elimination until nothing changes then run the more\n"
+        L"advanced techniques until another item is found then reiterate through standand and line elimination.  Repeat until full.\n";
+        
     instructionsBox->Font = gcnew System::Drawing::Font(L"Consolas", 9);
     this->Controls->Add(instructionsBox);
 
