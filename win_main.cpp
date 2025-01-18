@@ -161,12 +161,8 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize MenuStrip
     menuStrip = gcnew MenuStrip();
-    ToolStripMenuItem ^ fileMenu = gcnew ToolStripMenuItem("File");
-    ToolStripMenuItem ^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
-
-    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "New Game", nullptr,
-        gcnew EventHandler(this, &MainForm::NewGame_Click)));
+    ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
+    ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
 
     // Save Slots
     ToolStripMenuItem^ saveMenu = gcnew ToolStripMenuItem("Save Game");
@@ -189,11 +185,10 @@ ref class MainForm : public System::Windows::Forms::Form {
     // Add Save and Load Menus to File Menu
     fileMenu->DropDownItems->Add(saveMenu);
     fileMenu->DropDownItems->Add(loadMenu);
-
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Quit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
 
-
+    // Generate Board Menu Items
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Easy", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateEasy_Click)));
@@ -210,10 +205,12 @@ ref class MainForm : public System::Windows::Forms::Form {
         "Expert", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateExpert_Click)));
 
-
+    // Add Menus to MenuStrip
     menuStrip->Items->Add(fileMenu);
     menuStrip->Items->Add(generateBoardMenu);
 
+    // Attach MenuStrip to the Form
+    this->MainMenuStrip = menuStrip;
     this->Controls->Add(menuStrip);
 
     // Initialize ToolStrip
