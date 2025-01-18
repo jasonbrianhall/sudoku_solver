@@ -14,79 +14,27 @@ PuzzleGenerator::PuzzleGenerator(Sudoku& s) : sudoku(s),
     rng.seed(std::chrono::steady_clock::now().time_since_epoch().count());
 }
 
-bool PuzzleGenerator::isUnique(const std::vector<std::pair<int, int>>& removedCells) {
-    int backup[9][9][9];
-    memcpy(backup, sudoku.board, sizeof(backup));
-
-    if (sudoku.Solve() != 0) {
-        memcpy(sudoku.board, backup, sizeof(backup));
-        return false;
-    }
-
-    int solution[9][9];
-    for (int i = 0; i < 9; i++) {
-        for (int j = 0; j < 9; j++) {
-            solution[i][j] = sudoku.GetValue(i, j);
-        }
-    }
-
-    memcpy(sudoku.board, backup, sizeof(backup));
-    
-    for (const auto& cell : removedCells) {
-        for (int val = 0; val < 9; val++) {
-            if (val != solution[cell.first][cell.second]) {
-                sudoku.SetValue(cell.first, cell.second, val);
-                if (sudoku.Solve() == 0) {
-                    memcpy(sudoku.board, backup, sizeof(backup));
-                    return false;
-                }
-                memcpy(sudoku.board, backup, sizeof(backup));
-            }
-        }
-    }
-
-    return true;
-}
-
 bool PuzzleGenerator::generateValidSolution() {
-    const int maxAttempts = 100;
+    sudoku.NewGame();
     
-    for (int attempt = 0; attempt < maxAttempts; attempt++) {
-        sudoku.NewGame();
+    // Fill in diagonal boxes first (these can be filled independently)
+    for (int box = 0; box < 9; box += 4) {
+        std::vector<int> values{0,1,2,3,4,5,6,7,8};
+        std::shuffle(values.begin(), values.end(), rng);
         
-        // Create a list of all cells
-        std::vector<std::pair<int, int>> cells;
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                cells.emplace_back(i, j);
+        int boxRow = (box / 3) * 3;
+        int boxCol = (box % 3) * 3;
+        int idx = 0;
+        
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                sudoku.SetValue(boxRow + i, boxCol + j, values[idx++]);
             }
-        }
-        std::shuffle(cells.begin(), cells.end(), rng);
-        
-        // Try to fill 25 random cells with valid values
-        int filledCells = 0;
-        for (const auto& cell : cells) {
-            if (filledCells >= 25) break;
-            
-            std::vector<int> values(9);
-            for (int i = 0; i < 9; i++) values[i] = i;
-            std::shuffle(values.begin(), values.end(), rng);
-            
-            for (int val : values) {
-                if (sudoku.LegalValue(cell.first, cell.second, val)) {
-                    sudoku.SetValue(cell.first, cell.second, val);
-                    filledCells++;
-                    break;
-                }
-            }
-        }
-        
-        // Try to solve the puzzle
-        if (sudoku.Solve() == 0) {
-            return true;
         }
     }
-    return false;
+    
+    // Solve the rest of the grid to get a complete valid solution
+    return sudoku.Solve() == 0;
 }
 
 int PuzzleGenerator::countClues() {
@@ -99,6 +47,128 @@ int PuzzleGenerator::countClues() {
     return count;
 }
 
+bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
+    auto diffIt = difficultyLevels.find(difficulty);
+    if (diffIt == difficultyLevels.end()) {
+        return false;
+    }
+    const DifficultySettings& settings = diffIt->second;
+
+    // Try to generate a valid puzzle
+    const int maxAttempts = 50;
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+        // Generate a complete valid solution
+        if (!generateValidSolution()) {
+            continue;
+        }
+
+        // Store the complete solution
+        int solution[9][9][9];
+        memcpy(solution, sudoku.board, sizeof(solution));
+
+        // Create list of positions to try removing
+        std::vector<std::pair<int, int>> positions;
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                positions.emplace_back(i, j);
+            }
+        }
+        std::shuffle(positions.begin(), positions.end(), rng);
+
+        // Target number of clues for this difficulty
+        int targetClues = settings.minClues + 
+            (rng() % (settings.maxClues - settings.minClues + 1));
+
+        int currentState[9][9][9];
+        bool validPuzzleFound = false;
+
+        while (countClues() > targetClues && !positions.empty()) {
+            // Try removing a number
+            auto pos = positions.back();
+            positions.pop_back();
+
+            int backup[9][9][9];
+            memcpy(backup, sudoku.board, sizeof(backup));
+            
+            sudoku.ClearValue(pos.first, pos.second);
+
+            // Save the current unsolved state
+            memcpy(currentState, sudoku.board, sizeof(currentState));
+
+            // Run solver
+            if (sudoku.Solve() == 0) {
+                // Verify all positions are filled
+                bool allFilled = true;
+                for (int i = 0; i < 9 && allFilled; i++) {
+                    for (int j = 0; j < 9; j++) {
+                        if (sudoku.GetValue(i, j) == -1) {
+                            allFilled = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (allFilled) {
+                    // Restore to unsolved state and continue
+                    memcpy(sudoku.board, currentState, sizeof(currentState));
+                } else {
+                    // Not completely solvable - restore and skip
+                    memcpy(sudoku.board, backup, sizeof(backup));
+                    continue;
+                }
+            } else {
+                // Not solvable - restore and skip
+                memcpy(sudoku.board, backup, sizeof(backup));
+                continue;
+            }
+
+            // For harder difficulties, verify required techniques
+            bool valid = true;
+            if (settings.allowXWing) {
+                valid = requiresAdvancedTechnique("x-wing");
+            }
+            if (valid && settings.allowSwordfish) {
+                valid = requiresAdvancedTechnique("swordfish");
+            }
+            if (valid && settings.allowXYWing) {
+                valid = requiresAdvancedTechnique("xy-wing");
+            }
+            if (valid && settings.allowXYZWing) {
+                valid = requiresAdvancedTechnique("xyz-wing");
+            }
+
+            if (!valid) {
+                // Doesn't meet difficulty requirements - restore
+                memcpy(sudoku.board, backup, sizeof(backup));
+            }
+        }
+
+        // Final verification
+        memcpy(currentState, sudoku.board, sizeof(currentState));
+        if (sudoku.Solve() == 0) {
+            // Verify all positions are filled
+            bool allFilled = true;
+            for (int i = 0; i < 9 && allFilled; i++) {
+                for (int j = 0; j < 9; j++) {
+                    if (sudoku.GetValue(i, j) == -1) {
+                        allFilled = false;
+                        break;
+                    }
+                }
+            }
+
+            if (allFilled) {
+                // Valid puzzle found - restore to unsolved state
+                memcpy(sudoku.board, currentState, sizeof(currentState));
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+// Helper methods remain the same
 bool PuzzleGenerator::requiresAdvancedTechnique(const std::string& technique) {
     int backup[9][9][9];
     memcpy(backup, sudoku.board, sizeof(backup));
@@ -131,74 +201,4 @@ bool PuzzleGenerator::requiresAdvancedTechnique(const std::string& technique) {
     bool needsTechnique = !sudoku.IsValidSolution();
     memcpy(sudoku.board, backup, sizeof(backup));
     return needsTechnique;
-}
-
-bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
-    auto diffIt = difficultyLevels.find(difficulty);
-    if (diffIt == difficultyLevels.end()) {
-        return false;
-    }
-    const DifficultySettings& settings = diffIt->second;
-
-    const int maxAttempts = 50;
-    for (int attempt = 0; attempt < maxAttempts; attempt++) {
-        if (!generateValidSolution()) {
-            continue;
-        }
-
-        int backup[9][9][9];
-        memcpy(backup, sudoku.board, sizeof(backup));
-
-        std::vector<std::pair<int, int>> positions;
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                positions.emplace_back(i, j);
-            }
-        }
-        std::shuffle(positions.begin(), positions.end(), rng);
-
-        std::vector<std::pair<int, int>> removedCells;
-        int targetClues = settings.minClues + 
-            (rng() % (settings.maxClues - settings.minClues + 1));
-
-        while (countClues() > targetClues && !positions.empty()) {
-            auto pos = positions.back();
-            positions.pop_back();
-
-            int cellBackup[9][9][9];
-            memcpy(cellBackup, sudoku.board, sizeof(cellBackup));
-            
-            sudoku.ClearValue(pos.first, pos.second);
-            removedCells.push_back(pos);
-
-            bool valid = isUnique(removedCells);
-            
-            if (valid && settings.allowXWing) {
-                valid = requiresAdvancedTechnique("x-wing");
-            }
-            if (valid && settings.allowSwordfish) {
-                valid = requiresAdvancedTechnique("swordfish");
-            }
-            if (valid && settings.allowXYWing) {
-                valid = requiresAdvancedTechnique("xy-wing");
-            }
-            if (valid && settings.allowXYZWing) {
-                valid = requiresAdvancedTechnique("xyz-wing");
-            }
-
-            if (!valid) {
-                memcpy(sudoku.board, cellBackup, sizeof(cellBackup));
-                removedCells.pop_back();
-            }
-        }
-
-        if (countClues() >= settings.minClues && countClues() <= settings.maxClues) {
-            return true;
-        }
-
-        // If we didn't get a valid puzzle, restore the board and try again
-        memcpy(sudoku.board, backup, sizeof(backup));
-    }
-
-    return false;
 }
