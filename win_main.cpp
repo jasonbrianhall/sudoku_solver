@@ -192,7 +192,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         L"To solve a puzzle manually, iterate between Standard Elimination and Line Elimination until nothing changes then run the more\n"
         L"advanced techniques until another item is found then reiterate through standand and line elimination.  Repeat until full.\n";
         
-    instructionsBox->Font = gcnew System::Drawing::Font(L"Consolas", 9);
+    instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9);
     this->Controls->Add(instructionsBox);
 
     // Basic techniques group
