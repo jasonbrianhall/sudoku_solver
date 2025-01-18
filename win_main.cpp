@@ -53,14 +53,6 @@ ref class SudokuWrapper {
     nativeSudoku->SaveToFile(std::string(wstr.begin(), wstr.end()));
   }
 
-  // Sudoku Puzzle Generation Code   
-  void GenerateEasy_Click(Object ^ sender, EventArgs ^ e);
-  void GenerateMedium_Click(Object ^ sender, EventArgs ^ e);
-  void GenerateHard_Click(Object ^ sender, EventArgs ^ e);
-  void GenerateExpert_Click(Object ^ sender, EventArgs ^ e);
-  void GenerateMaster_Click(Object ^ sender, EventArgs ^ e);
-
-
   // Basic solving techniques
   void StdElim() { nativeSudoku->StdElim(); }
   void LinElim() { nativeSudoku->LinElim(); }
