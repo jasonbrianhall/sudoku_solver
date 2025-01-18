@@ -19,6 +19,7 @@ using namespace std;
 #include <cstring>
 
 #include "sudoku.h"
+#include "generatepuzzle.h"
 
 
 void print_usage() {
@@ -266,7 +267,114 @@ int main(int argc, char* argv[]) {
       case 'Z':  // New Game
         NewGame.NewGame();
         break;
-      case KEY_F(5):  // F5
+      case KEY_F(1):  // F1
+
+        {
+
+            PuzzleGenerator generator(NewGame);
+
+            if (generator.generatePuzzle("easy")) {
+
+                NewGame.print_debug("Generated new easy puzzle");
+
+            } else {
+
+                NewGame.print_debug("Failed to generate easy puzzle");
+
+            }
+
+        }
+
+        break;
+
+
+
+      case KEY_F(2):  // F2
+
+        {
+
+            PuzzleGenerator generator(NewGame);
+
+            if (generator.generatePuzzle("medium")) {
+
+                NewGame.print_debug("Generated new medium puzzle");
+
+            } else {
+
+                NewGame.print_debug("Failed to generate medium puzzle");
+
+            }
+
+        }
+
+        break;
+
+
+
+      case KEY_F(3):  // F3
+
+        {
+
+            PuzzleGenerator generator(NewGame);
+
+            if (generator.generatePuzzle("hard")) {
+
+                NewGame.print_debug("Generated new hard puzzle");
+
+            } else {
+
+                NewGame.print_debug("Failed to generate hard puzzle");
+
+            }
+
+        }
+
+        break;
+
+
+
+      case KEY_F(4):  // F4
+
+        {
+
+            PuzzleGenerator generator(NewGame);
+
+            if (generator.generatePuzzle("expert")) {
+
+                NewGame.print_debug("Generated new expert puzzle");
+
+            } else {
+
+                NewGame.print_debug("Failed to generate expert puzzle");
+
+            }
+
+        }
+
+        break;
+
+
+
+      case KEY_F(13):  // Shift + F1
+
+        {
+
+            PuzzleGenerator generator(NewGame);
+
+            if (generator.generatePuzzle("extreme")) {
+
+                NewGame.print_debug("Generated new extreme puzzle");
+
+            } else {
+
+                NewGame.print_debug("Failed to generate extreme puzzle");
+
+            }
+
+        }
+
+        break;
+     case KEY_F(5):  // F5
         NewGame.SaveToFile("sudoku_1.txt");
         NewGame.print_debug("Game saved to sudoku_1.txt");
         break;

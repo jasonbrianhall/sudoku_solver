@@ -57,10 +57,10 @@ public:
     int FindSimpleColoring();  // Simple coloring technique
     int Clean();
     bool IsValidSolution();
+    int board[9][9][9];
+
 
 private:
-    // Internal Board State
-    int board[9][9][9];
     static int debug_line;
 
     // Board Manipulation Functions
