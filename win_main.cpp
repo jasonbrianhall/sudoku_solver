@@ -308,9 +308,6 @@ ref class MainForm : public System::Windows::Forms::Form {
       hline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
       gridContainer->Controls->Add(hline);
     }
-    this->KeyDown += gcnew KeyEventHandler(this, &MainForm::Form_KeyDown);
-    this->KeyPreview = true; // Ensure the form captures key events before child controls
-
   }
 
 void MainForm::Form_KeyDown(Object^ sender, KeyEventArgs^ e) {
