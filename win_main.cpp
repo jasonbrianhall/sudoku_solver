@@ -232,13 +232,13 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->BackColor = System::Drawing::Color::LightBlue; // Soothing background
     instructionsBox->BorderStyle = BorderStyle::FixedSingle; // Clean border
     instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
-    instructionsBox->Size = System::Drawing::Size(700, 110);
+    instructionsBox->Size = System::Drawing::Size(700, 100);
 
     instructionsBox->Text = L"Instructions:\r\n\r\n"
         L"  - Use the mouse cursor to move around the board.\r\n"
         L"  - Use the keypad to enter numbers (0 to clear the current cell).\r\n"
-        L"  - Press 'A' to solve the puzzle (clicked inside a cell).\r\n"
-        L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles (clicked inside a cell).\r\n"
+        L"  - Press 'A' to solve the puzzle.\r\n"
+        L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles.\r\n"
         L"  - Press F5-F8 to save, and Shift+F5-F8 to load.";
 
     instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9); // Consistent fixed-width font
