@@ -775,6 +775,19 @@ ref class MainForm : public System::Windows::Forms::Form {
     UpdateStatus("Game saved to " + filename);
   }
 
+  void LoadSlot_Click(Object^ sender, EventArgs^ e) {
+    ToolStripMenuItem^ menuItem = safe_cast<ToolStripMenuItem^>(sender);
+    int slot = safe_cast<int>(menuItem->Tag); // Retrieve slot number
+    String^ filename = "sudoku_slot_" + slot + ".txt";
+
+    if (sudoku->LoadFromFile(filename)) {
+        UpdateGrid();
+        UpdateStatus("Game loaded from " + filename);
+    } else {
+        UpdateStatus("Failed to load " + filename);
+    }
+  }
+
  public:
   MainForm() {
     sudoku = gcnew SudokuWrapper();
