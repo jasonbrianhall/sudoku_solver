@@ -55,12 +55,14 @@
   <ItemGroup>
     <ClCompile Include="win_main.cpp" />
     <ClCompile Include="sudoku.cpp" />
+    <ClCompile Include="generatepuzzle.cpp"/>
     <ResourceCompile Include="app.rc" />
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sudoku.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="generatepuzzle.h"/>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
