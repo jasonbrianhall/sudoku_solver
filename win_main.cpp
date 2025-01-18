@@ -167,6 +167,29 @@ ref class MainForm : public System::Windows::Forms::Form {
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "New Game", nullptr,
         gcnew EventHandler(this, &MainForm::NewGame_Click)));
+
+    // Save Slots
+    ToolStripMenuItem^ saveMenu = gcnew ToolStripMenuItem("Save Game");
+    for (int i = 1; i <= 4; i++) {
+        ToolStripMenuItem^ saveSlot = gcnew ToolStripMenuItem("Slot " + i);
+        saveSlot->Tag = i; // Store slot number in Tag
+        saveSlot->Click += gcnew EventHandler(this, &MainForm::SaveSlot_Click);
+        saveMenu->DropDownItems->Add(saveSlot);
+    }
+
+    // Load Slots
+    ToolStripMenuItem^ loadMenu = gcnew ToolStripMenuItem("Load Game");
+    for (int i = 1; i <= 4; i++) {
+        ToolStripMenuItem^ loadSlot = gcnew ToolStripMenuItem("Slot " + i);
+        loadSlot->Tag = i; // Store slot number in Tag
+        loadSlot->Click += gcnew EventHandler(this, &MainForm::LoadSlot_Click);
+        loadMenu->DropDownItems->Add(loadSlot);
+    }
+
+    // Add Save and Load Menus to File Menu
+    fileMenu->DropDownItems->Add(saveMenu);
+    fileMenu->DropDownItems->Add(loadMenu);
+
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Quit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
 
@@ -744,6 +767,15 @@ ref class MainForm : public System::Windows::Forms::Form {
     } else {
       UpdateStatus("Current board is invalid");
     }
+  }
+
+  void SaveSlot_Click(Object^ sender, EventArgs^ e) {
+    ToolStripMenuItem^ menuItem = safe_cast<ToolStripMenuItem^>(sender);
+    int slot = safe_cast<int>(menuItem->Tag); // Retrieve slot number
+    String^ filename = "sudoku_slot_" + slot + ".txt";
+
+    sudoku->SaveToFile(filename);
+    UpdateStatus("Game saved to " + filename);
   }
 
  public:
