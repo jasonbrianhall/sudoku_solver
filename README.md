@@ -1,6 +1,8 @@
 # Sudoku Solver
 
-An interactive command-line Sudoku solver implemented in both C++ and Python, featuring a user-friendly ncurses interface for puzzle input and visualization. The C++ implementation offers robust solving capabilities with multiple advanced techniques, while the Python version serves as a basic prototype.
+An interactive Sudoku solver implemented in both C++ and Python, featuring a user-friendly ncurses interface for puzzle input and visualization. The C++ implementation offers robust solving capabilities with multiple advanced techniques, while the Python version serves as a basic prototype.
+
+Their are two main C++ versions, a CLI version written in Ncurses and a GUI version designed for Microsoft Windows.  The C++ Windows/CLI versions can also generate puzzles to be solved.  
 
 ## Features
 
@@ -8,10 +10,11 @@ An interactive command-line Sudoku solver implemented in both C++ and Python, fe
 - Real-time validity checking of moves
 - Multiple solving techniques ranging from basic to advanced
 - Colored display for better visualization
-- Cross-platform compatibility (Linux, macOS, Unix-like systems)
+- Cross-platform compatibility (Linux, macOS, Unix-like systems, MS Windows)
 - Comprehensive logging of solving steps
-- Available in both C++ (full version) and Python (prototype)
-- MS Windows version available (compile instructions not included here since it's compiled via github actions)
+- Available C++ CLI, Windows GUI and Python (prototype)
+- MS Windows version available
+- Sudoku puzzle generation in C++ versions
 
 ## Getting Started
 
@@ -64,7 +67,7 @@ The Python version is a prototype with limited functionality and doesn't require
 
 ### Running the Solver
 
-For C++ version (recommended):
+For C++ version:
 ```bash
 ./sudoku_solver
 ```
@@ -74,14 +77,24 @@ For Python version (prototype):
 python3 sudoku_solver.py
 ```
 
+For C#/C++ Windows Version
+```cmd
+sudoku_solver
+```
+
 ### Controls
 
 - Arrow keys: Navigate the puzzle grid
 - Numbers 1-9: Input values
 - '0' or 'c': Clear current cell
-- 'q': Quit the program
+- 'q': Quit the program (CLI only)
 - ESC: Quit (Python version only)
 - Z: New Game
+- F1-F4 and Shift F1:  Genaretes random puzzles, F1 being easy, F2, F3, F4 increasingly harder and shift F1 being the hardest
+- F5-F8:  Quick Save
+- Shft F5-F8:  Quick Load
+- A - Automatically solve the puzzle
+- Other keys for various algorithms (documented in interface)
 
 ### Solving Techniques (C++ version)
 
@@ -99,6 +112,7 @@ The solver implements several Sudoku solving techniques of increasing complexity
    - Swordfish (F): Advanced triple-line elimination strategy
    - Naked Sets (K): Identifies groups of cells with confined candidates
    - XY-Wing (Y):  XY-Wing is a solving technique that looks for three cells forming a Y pattern, where two cells (the "wings") share a candidate with a pivot cell, and eliminations can be made from cells that see both wings.
+   - XYZ-Wing (;): Advanced X-Wing Method
 
 ### Recommended Solving Strategy
 
@@ -165,7 +179,7 @@ This project is open source and available under the MIT License.
 sudoku | sudoku solver | logic puzzle | puzzle game | puzzle solver | brain teaser | number puzzle
 
 ### Core Technologies
-c++ | cpp | python | ncurses | terminal ui | tui | command line interface | cli | cross-platform
+c++ | cpp | python | ncurses | terminal ui | tui | command line interface | cli | cross-platform | windows
 
 ### Technical Features
 - Algorithms: backtracking | constraint programming | optimization | elimination algorithm
