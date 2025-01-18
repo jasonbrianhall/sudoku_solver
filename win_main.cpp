@@ -81,6 +81,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   ToolStrip ^ toolStrip;
   StatusStrip ^ statusStrip;
   ToolStripStatusLabel ^ statusLabel;
+  TextBox^ instructionsBox;
 
   void GenerateEasy_Click(Object ^ sender, EventArgs ^ e) {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
@@ -176,6 +177,20 @@ ref class MainForm : public System::Windows::Forms::Form {
         gcnew EventHandler(this, &MainForm::Solve_Click)));
     toolStrip->Items->Add(gcnew ToolStripSeparator());
 
+    instructionsBox = gcnew TextBox();
+    instructionsBox->Multiline = true;
+    instructionsBox->ReadOnly = true;
+    instructionsBox->BackColor = System::Drawing::Color::LightYellow;
+    instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
+    instructionsBox->Size = System::Drawing::Size(700, 80);
+    instructionsBox->Text = L"Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasing difficulty)\r\n"
+        L"Commands:                                     Solving techniques:\r\n"
+        L"Arrow keys - Move cursor                     S - Standard elimination    N - Hidden singles     Y - Find XY Wing\r\n"
+        L"1-9 - Fill number    0 - Clear cell          L - Line elimination        K - Naked sets         ; - Find XYZ Wing\r\n"
+        L"q - Quit                                     H - Hidden pairs            X - X-Wing             F - Swordfish";
+    instructionsBox->Font = gcnew System::Drawing::Font(L"Consolas", 9);
+    this->Controls->Add(instructionsBox);
+
     // Basic techniques group
     toolStrip->Items->Add(gcnew ToolStripLabel("Basic Algorithms: "));
     toolStrip->Items->Add(gcnew ToolStripButton(
@@ -221,7 +236,7 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize grid
     grid = gcnew array<TextBox ^, 2>(9, 9);
-    int gridTop = menuStrip->Height + toolStrip->Height + 20;
+    int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
 
     // Create a container panel for the Sudoku grid
     Panel ^ gridContainer = gcnew Panel();
