@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
   {
     int header_lines = 8;  // Reduced header size with two columns
     
-    printw("Welcome to Sudoku Solver\n");
+    printw("Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasly difficulty)\n");
     printw("Commands:                          Solving techniques:                                Experimental Techniques\n");
     printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles     Y - Find XY Wing\n");
     printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets         ; - Find XYZ Wing\n");  
