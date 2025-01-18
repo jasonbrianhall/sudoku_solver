@@ -162,12 +162,35 @@ ref class MainForm : public System::Windows::Forms::Form {
     // Initialize MenuStrip
     menuStrip = gcnew MenuStrip();
     ToolStripMenuItem ^ fileMenu = gcnew ToolStripMenuItem("File");
+    ToolStripMenuItem ^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
+
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "New Game", nullptr,
         gcnew EventHandler(this, &MainForm::NewGame_Click)));
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Exit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
+
+
+    generateBoard->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Easy", nullptr,
+        gcnew EventHandler(this, &MainForm::GenerateEasy_Click)));
+    generateBoard->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Medium", nullptr,
+        gcnew EventHandler(this, &MainForm::GenerateMedium_Click)));
+    generateBoard->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Hard", nullptr,
+        gcnew EventHandler(this, &MainForm::GenerateHard_Click)));
+    generateBoard->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Master", nullptr,
+        gcnew EventHandler(this, &MainForm::GenerateMaster_Click)));
+    generateBoard->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Expert", nullptr,
+        gcnew EventHandler(this, &MainForm::GenerateExpert_Click)));
+
+
     menuStrip->Items->Add(fileMenu);
+    menuStrip->Items->Add(generateBoardMenu);
+
     this->Controls->Add(menuStrip);
 
     // Initialize ToolStrip
@@ -722,16 +745,6 @@ ref class MainForm : public System::Windows::Forms::Form {
       UpdateStatus("Current board is invalid");
     }
   }
-
-protected:
-    virtual bool ProcessCmdKey(Message % msg, Keys keyData) override {
-    switch (keyData) {
-    case Keys::A:
-        Solve_Click(this, EventArgs::Empty);
-        return true;
-    return Form::ProcessCmdKey(msg, keyData);
-}
-
 
  public:
   MainForm() {
