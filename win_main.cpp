@@ -183,7 +183,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->BackColor = System::Drawing::Color::LightBlue; // Soothing background
     instructionsBox->BorderStyle = BorderStyle::FixedSingle; // Clean border
     instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
-    instructionsBox->Size = System::Drawing::Size(700, 230);
+    instructionsBox->Size = System::Drawing::Size(700, 150);
 
     instructionsBox->Text = L"Welcome to Sudoku Solver\n\n"
         L"Instructions:\n"
