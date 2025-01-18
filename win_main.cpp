@@ -28,7 +28,9 @@ ref class SudokuWrapper {
       nativeSudoku = nullptr;
     }
   }
-
+  property Sudoku* NativeSudoku {
+    Sudoku* get() { return nativeSudoku; }
+  }
   // Core game functions
   void SetValue(int x, int y, int value) {
     nativeSudoku->SetValue(x, y, value);
@@ -89,7 +91,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   ToolStripStatusLabel ^ statusLabel;
 
   void GenerateEasy_Click(Object ^ sender, EventArgs ^ e) {
-    PuzzleGenerator generator(*sudoku->nativeSudoku);
+    PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("easy")) {
       UpdateGrid();
       UpdateStatus("Generated new easy puzzle");
@@ -102,7 +104,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   }
 
   void GenerateMedium_Click(Object ^ sender, EventArgs ^ e) {
-    PuzzleGenerator generator(*sudoku->nativeSudoku);
+    PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("medium")) {
       UpdateGrid();
       UpdateStatus("Generated new medium puzzle");
@@ -115,7 +117,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   }
 
   void GenerateHard_Click(Object ^ sender, EventArgs ^ e) {
-    PuzzleGenerator generator(*sudoku->nativeSudoku);
+    PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("hard")) {
       UpdateGrid();
       UpdateStatus("Generated new hard puzzle");
@@ -128,7 +130,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   }
 
   void GenerateExpert_Click(Object ^ sender, EventArgs ^ e) {
-    PuzzleGenerator generator(*sudoku->nativeSudoku);
+    PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("expert")) {
       UpdateGrid();
       UpdateStatus("Generated new expert puzzle");
@@ -141,7 +143,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   }
 
   void GenerateMaster_Click(Object ^ sender, EventArgs ^ e) {
-    PuzzleGenerator generator(*sudoku->nativeSudoku);
+    PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("extreme")) {
       UpdateGrid();
       UpdateStatus("Generated new master puzzle");
