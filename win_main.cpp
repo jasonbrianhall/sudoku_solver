@@ -182,15 +182,15 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->ReadOnly = true;
     instructionsBox->BackColor = System::Drawing::Color::LightYellow;
     instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
-    instructionsBox->Size = System::Drawing::Size(1000, 80);
-    instructionsBox->Text = L"Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasing difficulty)\r\n"
-        L"Commands:                                     Solving techniques:          Advanced techniques   Advanced Techiques\r\n"
+    instructionsBox->Size = System::Drawing::Size(1400, 80);
+    instructionsBox->Text = L"Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasing difficulty)\r\n\r\n"
+        L"Commands:                                     Solving techniques:          Advanced techniques   Expert Techiques\r\n"
         L"Arrow keys - Move cursor                     S - Standard elimination    N - Hidden singles     Y - Find XY Wing\r\n"
         L"1-9 - Fill number    0 - Clear cell          L - Line elimination        K - Naked sets         ; - Find XYZ Wing\r\n"
-        L"q - Quit                                     H - Hidden pairs            X - X-Wing             F - Swordfish\n"
-        L"A - Automatically solves the puzzle\n\n"
-        L"To solve a puzzle manually, iterate between Standard Elimination and Line Elimination until nothing changes then run the more\n"
-        L"advanced techniques until another item is found then reiterate through standand and line elimination.  Repeat until full.\n";
+        L"q - Quit                                     H - Hidden pairs            X - X-Wing             F - Swordfish\r\n"
+        L"A - Automatically solves the puzzle\r\n\r\n"
+        L"To solve a puzzle manually, iterate between Standard Elimination and Line Elimination until nothing changes then run the more\r\n"
+        L"advanced techniques until another item is found then reiterate through standand and line elimination.  Repeat until full.\r\n";
         
     instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9);
     this->Controls->Add(instructionsBox);
