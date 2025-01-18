@@ -15,49 +15,57 @@ PuzzleGenerator::PuzzleGenerator(Sudoku& s) : sudoku(s),
 }
 
 bool PuzzleGenerator::generateValidSolution() {
-    sudoku.NewGame();
-    
-    // Create list of all possible positions
-    std::vector<std::pair<int, int>> positions;
-    for (int i = 0; i < 9; i++) {
-        for (int j = 0; j < 9; j++) {
-            positions.emplace_back(i, j);
-        }
-    }
-    
-    // Shuffle positions
-    std::shuffle(positions.begin(), positions.end(), rng);
-    
-    // Take first 50 positions and fill with random numbers 1-9
-    for (int i = 0; i < 50; i++) {
-        int row = positions[i].first;
-        int col = positions[i].second;
+    while (true) {  // Keep going until we succeed
+        sudoku.NewGame();
         
-        // Pick a random value 1-9
-        int val = (rng() % 9) + 1;
-        sudoku.SetValue(row, col, val);
-    }
-    
-    // Try to solve the grid
-    if (sudoku.Solve() != 0) {
-        return false;
-    }
-    
-    // Verify solution is valid and complete
-    if (!sudoku.IsValidSolution()) {
-        return false;
-    }
-    
-    // Check for any unfilled cells
-    for (int i = 0; i < 9; i++) {
-        for (int j = 0; j < 9; j++) {
-            if (sudoku.GetValue(i, j) == -1) {
-                return false;
+        // Create list of all positions
+        std::vector<std::pair<int, int>> positions;
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                positions.emplace_back(i, j);
             }
         }
+        std::shuffle(positions.begin(), positions.end(), rng);
+        
+        // Try to place up to 50 valid numbers
+        for (int placed = 0; placed < 50; placed++) {
+            int row = positions[placed].first;
+            int col = positions[placed].second;
+            
+            bool foundValid = false;
+            for (int val = 1; val <= 9; val++) {
+                sudoku.SetValue(row, col, val);
+                if (sudoku.IsValidSolution()) {
+                    foundValid = true;
+                    break;
+                }
+            }
+            
+            if (!foundValid) {
+                break;  // Try a new board
+            }
+            
+            // After each valid placement, try solving
+            if (sudoku.Solve() == 0) {
+                // Check if we have all 81 numbers
+                bool allFilled = true;
+                for (int i = 0; i < 9 && allFilled; i++) {
+                    for (int j = 0; j < 9; j++) {
+                        if (sudoku.GetValue(i, j) == -1) {
+                            allFilled = false;
+                            break;
+                        }
+                    }
+                }
+                
+                if (allFilled && sudoku.IsValidSolution()) {
+                    return true;  // Found a complete valid solution!
+                }
+            }
+        }
+        
+        // If we get here, try again from the start
     }
-    
-    return true;
 }
 
 int PuzzleGenerator::countClues() {
