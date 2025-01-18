@@ -2,7 +2,7 @@
 
 An interactive Sudoku solver implemented in both C++ and Python, featuring a user-friendly ncurses interface for puzzle input and visualization. The C++ implementation offers robust solving capabilities with multiple advanced techniques, while the Python version serves as a basic prototype.
 
-Their are two main C++ versions, a CLI version written in Ncurses and a GUI version designed for Microsoft Windows.  The C++ Windows/CLI versions can also generate puzzles to be solved.  
+There are two main C++ versions: a CLI version written in Ncurses and a GUI version designed for Microsoft Windows. Both C++ versions (Windows and CLI) can also generate puzzles to be solved.
 
 ## Features
 
@@ -12,8 +12,7 @@ Their are two main C++ versions, a CLI version written in Ncurses and a GUI vers
 - Colored display for better visualization
 - Cross-platform compatibility (Linux, macOS, Unix-like systems, MS Windows)
 - Comprehensive logging of solving steps
-- Available C++ CLI, Windows GUI and Python (prototype)
-- MS Windows version available
+- Available in C++ CLI, Windows GUI, and Python (prototype)
 - Sudoku puzzle generation in C++ versions
 
 ## Getting Started
@@ -37,7 +36,7 @@ Their are two main C++ versions, a CLI version written in Ncurses and a GUI vers
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/sudoku_solver.git
+git clone https://github.com/jasonbrianhall/sudoku_solver.git
 cd sudoku_solver
 ```
 
@@ -49,19 +48,20 @@ chmod +x compile.sh
 
 Or manually compile:
 ```bash
-g++ main.cpp sudoku.cpp -lncurses -o sudoku_solver
+g++ main.cpp sudoku.cpp generatepuzzle.cpp -lncurses -o sudoku_solver
 ```
+
 Or with Make Script:
 ```bash
 make
 ```
 
-Windows Version:
-```
+For Windows Version:
+```bash
 msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
 ```
 
-The Python version is a prototype with limited functionality and doesn't require compilation. For the best solving experience, use the C++ implementation.  The python version only has very basic algorithms implmeneted while the C++ versions (Windows and UNIX) can solve extreme puzzles due to the use of advanced algorithms.
+The Python version is a prototype with limited functionality and doesn't require compilation. For the best solving experience, use the C++ implementation. The Python version only has basic algorithms implemented, while the C++ versions (Windows and UNIX) can solve extreme puzzles using advanced algorithms.
 
 ## Usage
 
@@ -77,7 +77,7 @@ For Python version (prototype):
 python3 sudoku_solver.py
 ```
 
-For C#/C++ Windows Version
+For Windows Version:
 ```cmd
 sudoku_solver
 ```
@@ -90,10 +90,10 @@ sudoku_solver
 - 'q': Quit the program (CLI only)
 - ESC: Quit (Python version only)
 - Z: New Game
-- F1-F4 and Shift F1:  Genaretes random puzzles, F1 being easy, F2, F3, F4 increasingly harder and shift F1 being the hardest
-- F5-F8:  Quick Save
-- Shft F5-F8:  Quick Load
-- A - Automatically solve the puzzle
+- F1-F4 and Shift F1: Generate random puzzles (F1: easy, F2-F4: increasingly harder, Shift F1: hardest)
+- F5-F8: Quick Save
+- Shift F5-F8: Quick Load
+- A: Automatically solve the puzzle
 - Other keys for various algorithms (documented in interface)
 
 ### Solving Techniques (C++ version)
@@ -111,7 +111,7 @@ The solver implements several Sudoku solving techniques of increasing complexity
    - X-Wing (X): Locates rectangle patterns that eliminate candidates
    - Swordfish (F): Advanced triple-line elimination strategy
    - Naked Sets (K): Identifies groups of cells with confined candidates
-   - XY-Wing (Y):  XY-Wing is a solving technique that looks for three cells forming a Y pattern, where two cells (the "wings") share a candidate with a pivot cell, and eliminations can be made from cells that see both wings.
+   - XY-Wing (Y): Looks for three cells forming a Y pattern, where two cells (the "wings") share a candidate with a pivot cell
    - XYZ-Wing (;): Advanced X-Wing Method
 
 ### Recommended Solving Strategy
@@ -126,9 +126,9 @@ For the most efficient solving experience:
 3. After finding new possibilities with advanced techniques, return to alternating between Standard and Line Elimination
 4. Repeat this process until the puzzle is solved
 
-Pressing (A) for All Algorithms implements this strategy.
+Pressing (A) for All Algorithms implements this strategy automatically.
 
-I've been testing it against https://sudoku.com/extreme/ and haven't had too many fail to solve.
+The solver has been tested successfully against https://sudoku.com/extreme/ puzzles with a high success rate and can solve puzzles rated as "Expert" difficulty.
 
 ## Implementation Details
 
@@ -198,10 +198,10 @@ c++ | cpp | python | ncurses | terminal ui | tui | command line interface | cli 
 - Education: programming examples | algorithm implementation | data structures
 
 ### Repository Information
-Author: Jason Hall jasonbrianhall@gmail.com
-License: MIT  
-Version: 1.0  
-Last Updated: 2025-01
+- Author: Jason Hall (jasonbrianhall@gmail.com)
+- License: MIT
+- Version: 1.0
+- Last Updated: 2025-01
 
 ---
 
