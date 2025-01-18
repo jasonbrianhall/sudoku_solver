@@ -164,10 +164,13 @@ ref class MainForm : public System::Windows::Forms::Form {
     ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
     ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
 
+    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "New Game (Z)", nullptr, gcnew EventHandler(this, &MainForm::NewGame_Click)));
+
     // Save Slots
     ToolStripMenuItem^ saveMenu = gcnew ToolStripMenuItem("Save Game");
     for (int i = 1; i <= 4; i++) {
-        ToolStripMenuItem^ saveSlot = gcnew ToolStripMenuItem("Slot " + i);
+        ToolStripMenuItem^ saveSlot = gcnew ToolStripMenuItem("Slot " + i + " F(" + i+4 + ")");
         saveSlot->Tag = i; // Store slot number in Tag
         saveSlot->Click += gcnew EventHandler(this, &MainForm::SaveSlot_Click);
         saveMenu->DropDownItems->Add(saveSlot);
@@ -176,7 +179,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     // Load Slots
     ToolStripMenuItem^ loadMenu = gcnew ToolStripMenuItem("Load Game");
     for (int i = 1; i <= 4; i++) {
-        ToolStripMenuItem^ loadSlot = gcnew ToolStripMenuItem("Slot " + i);
+        ToolStripMenuItem^ loadSlot = gcnew ToolStripMenuItem("Slot " + i + "Shift F(" + i+4 + ")");
         loadSlot->Tag = i; // Store slot number in Tag
         loadSlot->Click += gcnew EventHandler(this, &MainForm::LoadSlot_Click);
         loadMenu->DropDownItems->Add(loadSlot);
@@ -190,19 +193,19 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Generate Board Menu Items
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Easy", nullptr,
+        "Easy F(1)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateEasy_Click)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Medium", nullptr,
+        "Medium F(2)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateMedium_Click)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Hard", nullptr,
+        "Hard F(3)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateHard_Click)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Master", nullptr,
+        "Master F(4)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateMaster_Click)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Expert", nullptr,
+        "Expert F(5)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateExpert_Click)));
 
     // Add Menus to MenuStrip
@@ -292,8 +295,6 @@ ref class MainForm : public System::Windows::Forms::Form {
     gridContainer->Size = System::Drawing::Size(405, 405);
     gridContainer->BackColor = Color::Black;
     this->Controls->Add(gridContainer);
-
-    gcnew KeyEventHandler(this, &MainForm::Cell_KeyDown);
 
     // Initialize grid cells
     for (int i = 0; i < 9; i++) {
@@ -654,7 +655,9 @@ ref class MainForm : public System::Windows::Forms::Form {
     UpdateStatus("Game saved successfully (sudoku_1.txt)");
   }
 
-  void Exit_Click(Object ^ sender, EventArgs ^ e) { Application::Exit(); }
+  void Exit_Click(Object ^ sender, EventArgs ^ e) {
+     Application::Exit(); 
+  }
 
   // Solving technique handlers
   void Solve_Click(Object ^ sender, EventArgs ^ e) {
