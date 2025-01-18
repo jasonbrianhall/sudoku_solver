@@ -205,4 +205,4 @@ c++ | cpp | python | ncurses | terminal ui | tui | command line interface | cli 
 
 ---
 
-_This is an open-source Sudoku solver implementing advanced solving techniques through a terminal-based interface, available in both C++ and Python. Perfect for puzzle enthusiasts, developers learning algorithm implementation, or anyone interested in logic puzzle solving techniques._
+_This is an open-source Sudoku solver implementing advanced solving techniques through a terminal-based and GUI interface, available in both C++ and Python. Perfect for puzzle enthusiasts, developers learning algorithm implementation, or anyone interested in logic puzzle solving techniques._
