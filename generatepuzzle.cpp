@@ -83,21 +83,33 @@ bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
     if (diffIt == difficultyLevels.end()) {
         return false;
     }
-    const DifficultySettings& settings = diffIt->second;
+
+    // Generate one valid solution - will always succeed
     generateValidSolution();
-    return true;
-    const int maxAttempts = 50;
-    for (int attempt = 0; attempt < maxAttempts; attempt++) {
-        // Generate initial solution
-        if (!generateValidSolution()) {
-            continue;
-        }
 
-        // Store the complete solution
-        int solution[9][9][9];
-        memcpy(solution, sudoku.board, sizeof(solution));
+    // Store the complete solution
+    int solution[9][9][9];
+    memcpy(solution, sudoku.board, sizeof(solution));
 
-        // Create list of positions to try removing
+    // Calculate how many numbers to remove based on difficulty
+    int numbersToRemove;
+    if (difficulty == "easy") {
+        numbersToRemove = 31;
+    } else if (difficulty == "medium") {
+        numbersToRemove = 45;
+    } else if (difficulty == "hard") {
+        numbersToRemove = 49;
+    } else if (difficulty == "expert") {
+        numbersToRemove = 53;
+    } else { // extreme
+        numbersToRemove = 57;
+    }
+
+    while (true) {
+        // Restore the complete solution
+        memcpy(sudoku.board, solution, sizeof(solution));
+
+        // Create list of all positions
         std::vector<std::pair<int, int>> positions;
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
@@ -106,84 +118,39 @@ bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
         }
         std::shuffle(positions.begin(), positions.end(), rng);
 
-        int targetClues = settings.minClues + 
-            (rng() % (settings.maxClues - settings.minClues + 1));
-
-        int backup[9][9][9];  // Moved to outer scope
-        
-        while (countClues() > targetClues && !positions.empty()) {
-            auto pos = positions.back();
-            positions.pop_back();
-
-            // Backup current state before removing number
-            memcpy(backup, sudoku.board, sizeof(backup));
-            
-            sudoku.ClearValue(pos.first, pos.second);
-            
-            // Test if puzzle is still solvable
-            sudoku.Clean();
-            bool valid = (sudoku.Solve() == 0);
-            
-            if (valid) {
-                // Check if all positions were filled
-                for (int i = 0; i < 9 && valid; i++) {
-                    for (int j = 0; j < 9; j++) {
-                        if (sudoku.GetValue(i, j) == -1) {
-                            valid = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // For harder difficulties, check if required techniques are needed
-            if (valid && settings.allowXWing) {
-                valid = requiresAdvancedTechnique("x-wing");
-            }
-            if (valid && settings.allowSwordfish) {
-                valid = requiresAdvancedTechnique("swordfish");
-            }
-            if (valid && settings.allowXYWing) {
-                valid = requiresAdvancedTechnique("xy-wing");
-            }
-            if (valid && settings.allowXYZWing) {
-                valid = requiresAdvancedTechnique("xyz-wing");
-            }
-
-            if (!valid) {
-                // Invalid removal - restore previous state
-                memcpy(sudoku.board, backup, sizeof(backup));
-                continue;
-            }
-
-            // Valid removal - restore to unsolved state
-            memcpy(sudoku.board, backup, sizeof(backup));
-            sudoku.ClearValue(pos.first, pos.second);
+        // Remove the specified number of random positions
+        for (int i = 0; i < numbersToRemove; i++) {
+            int row = positions[i].first;
+            int col = positions[i].second;
+            sudoku.ClearValue(row, col);
         }
 
-        // Final verification that puzzle is solvable
-        memcpy(backup, sudoku.board, sizeof(backup));  // Save the unsolved state
-        sudoku.Clean();
+        // Try to solve the puzzle
         if (sudoku.Solve() == 0) {
-            bool complete = true;
-            for (int i = 0; i < 9 && complete; i++) {
+            // Verify all cells are filled
+            bool allFilled = true;
+            for (int i = 0; i < 9 && allFilled; i++) {
                 for (int j = 0; j < 9; j++) {
                     if (sudoku.GetValue(i, j) == -1) {
-                        complete = false;
+                        allFilled = false;
                         break;
                     }
                 }
             }
-            
-            if (complete && countClues() >= settings.minClues && countClues() <= settings.maxClues) {
-                // Restore to unsolved state and return
-                memcpy(sudoku.board, backup, sizeof(backup));
+
+            if (allFilled) {
+                // Success - restore to unsolved state
+                memcpy(sudoku.board, solution, sizeof(solution));
+                for (int i = 0; i < numbersToRemove; i++) {
+                    int row = positions[i].first;
+                    int col = positions[i].second;
+                    sudoku.ClearValue(row, col);
+                }
                 return true;
             }
         }
+        // If we get here, try another removal pattern
     }
-
-    return false;
 }
 
 // Helper methods remain the same
