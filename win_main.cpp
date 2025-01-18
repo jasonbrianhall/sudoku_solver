@@ -310,17 +310,6 @@ ref class MainForm : public System::Windows::Forms::Form {
     }
   }
 
-void MainForm::Form_KeyDown(Object^ sender, KeyEventArgs^ e) {
-    if (e->KeyCode == Keys::N) {
-        // Call the New Game event handler
-        NewGame_Click(sender, EventArgs::Empty);
-    }
-    else if (e->KeyCode == Keys::Q) {
-        // Call the Exit event handler
-        Exit_Click(sender, EventArgs::Empty);
-    }
-}
-
   void UpdateGrid() {
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
