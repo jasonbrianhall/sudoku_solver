@@ -183,7 +183,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->BackColor = System::Drawing::Color::LightBlue; // Soothing background
     instructionsBox->BorderStyle = BorderStyle::FixedSingle; // Clean border
     instructionsBox->Location = Point(50, toolStrip->Height + menuStrip->Height + 5);
-    instructionsBox->Size = System::Drawing::Size(700, 100);
+    instructionsBox->Size = System::Drawing::Size(700, 120);
 
     instructionsBox->Text = L"Welcome to Sudoku Solver\r\n\r\n"
         L"Instructions:\r\n\r\n"
@@ -722,6 +722,16 @@ ref class MainForm : public System::Windows::Forms::Form {
       UpdateStatus("Current board is invalid");
     }
   }
+
+protected:
+    virtual bool ProcessCmdKey(Message % msg, Keys keyData) override {
+    switch (keyData) {
+    case Keys::A:
+        Solve_Click(this, EventArgs::Empty);
+        return true;
+    return Form::ProcessCmdKey(msg, keyData);
+}
+
 
  public:
   MainForm() {
