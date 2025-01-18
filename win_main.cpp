@@ -181,7 +181,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     // Load Slots
     ToolStripMenuItem^ loadMenu = gcnew ToolStripMenuItem("Load Game");
     for (int i = 1; i <= 4; i++) {
-        k=i+4
+        k=i+4;
         ToolStripMenuItem^ loadSlot = gcnew ToolStripMenuItem("Slot " + i + " Shift F(" + k + ")");
         loadSlot->Tag = i; // Store slot number in Tag
         loadSlot->Click += gcnew EventHandler(this, &MainForm::LoadSlot_Click);
