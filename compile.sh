@@ -10,8 +10,13 @@ fi
 
 # Check and compile Windows version if cross-compiler is available
 if command -v x86_64-w64-mingw32-g++ &> /dev/null; then
-    echo "Compiling Windows version..."
+    echo "Compiling Windows version (NCurses, not Mono) ..."
     x86_64-w64-mingw32-g++ main.cpp sudoku.cpp generatepuzzle.cpp -std=c++14 -lpdcurses -o sudoku_solver.exe
 else
     echo "Windows cross-compiler not found - skipping Windows build"
+fi
+
+if command -v docker &> /dev/null; then
+    echo "Compiling MSDOS version..."
+    make -f Makefile_MSDOS msdos
 fi

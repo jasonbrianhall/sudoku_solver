@@ -260,6 +260,17 @@ void Sudoku::print_debug(const char *format, ...) {
 }
 #endif
 
+#ifdef MSDOS
+void Sudoku::print_debug(const char *format, ...) {
+    /*char buffer[256];
+    va_list args;
+    va_start(args, format);
+    vsprintf_s(buffer, sizeof(buffer), format, args);
+    va_end(args);*/
+}
+#endif
+
+
 #ifdef _NCURSES
 void Sudoku::print_debug(const char *format, ...) {
     char buffer[256];  // Buffer for formatted string
@@ -576,7 +587,7 @@ bool Sudoku::LegalValue(int x, int y, int value)
 	temp=GetValue(i, y);
 	if(temp==value)
 	{
-	  return FALSE;
+	  return false;
 	}
       }
       for(i=x+1;i<9;i++)
@@ -584,7 +595,7 @@ bool Sudoku::LegalValue(int x, int y, int value)
 	temp=GetValue(i, y);
 	if(temp==value)
 	{
-	  return FALSE;
+	  return false;
 	}
       }
       for(i=0;i<y;i++)
@@ -592,7 +603,7 @@ bool Sudoku::LegalValue(int x, int y, int value)
 	temp=GetValue(x, i);
 	if(temp==value)
 	{
-	  return FALSE;
+	  return false;
 	}
       }
       for(i=y+1;i<9;i++)
@@ -600,7 +611,7 @@ bool Sudoku::LegalValue(int x, int y, int value)
 	temp=GetValue(x, i);
 	if(temp==value)
 	{
-	  return FALSE;
+	  return false;
 	}
       }
       section1=(x/3)*3;
@@ -614,16 +625,16 @@ bool Sudoku::LegalValue(int x, int y, int value)
 	    temp=GetValue(section1+j, section2+i);
 	    if(temp==value)
 	    {
-	      return FALSE;
+	      return false;
 	    }
 	  }
 	}
       }
-    return TRUE;
+    return true;
   }
   else
   {
-    return FALSE;
+    return false;
   }
 }
 
