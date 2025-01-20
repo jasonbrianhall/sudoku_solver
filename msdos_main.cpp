@@ -26,11 +26,11 @@ using namespace std;
 #define KEY_F6 64
 #define KEY_F7 65
 #define KEY_F8 66
-#define SHIFT_F1 84
-#define SHIFT_F5 87
-#define SHIFT_F6 88
-#define SHIFT_F7 89
-#define SHIFT_F8 90
+#define SHIFT_F1 85
+#define SHIFT_F5 88
+#define SHIFT_F6 89
+#define SHIFT_F7 90
+#define SHIFT_F8 91
 
 // Color attributes
 #define RED LIGHTRED
@@ -190,56 +190,56 @@ int main(int argc, char* argv[]) {
                     case KEY_F5:
                         {
                             NewGame.SaveToFile("sudoku1.txt");
-                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            NewGame.print_debug("Game saved to sudoku1.txt");
                             break;
                         }
                         break;
                     case KEY_F6:
                         {
                             NewGame.SaveToFile("sudoku2.txt");
-                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            NewGame.print_debug("Game saved to sudoku2.txt");
                             break;
                         }
                         break;
                     case KEY_F7:
                         {
                             NewGame.SaveToFile("sudoku3.txt");
-                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            NewGame.print_debug("Game saved to sudoku3.txt");
                             break;
                         }
                         break;
                     case KEY_F8:
                         {
                             NewGame.SaveToFile("sudoku4.txt");
-                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            NewGame.print_debug("Game saved to sudoku4.txt");
                             break;
                         }
                         break;
                     case SHIFT_F5:
                         {
                             NewGame.LoadFromFile("sudoku1.txt");
-                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            NewGame.print_debug("Game saved to sudoku1.txt");
                             break;
                         }
                         break;
                     case SHIFT_F6:
                         {
                             NewGame.LoadFromFile("sudoku2.txt");
-                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            NewGame.print_debug("Game saved to sudoku2.txt");
                             break;
                         }
                         break;
                     case SHIFT_F7:
                         {
                             NewGame.LoadFromFile("sudoku3.txt");
-                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            NewGame.print_debug("Game saved to sudoku3.txt");
                             break;
                         }
                         break;
                     case SHIFT_F8:
                         {
                             NewGame.LoadFromFile("sudoku4.txt");
-                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            NewGame.print_debug("Game saved to sudoku4.txt");
                             break;
                         }
                         break;
