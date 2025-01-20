@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -Wall -Wextra -std=c++11
 LDFLAGS = -lncurses
 
-TARGET = sudoku
+TARGET = sudoku_solver
 SRCS = main.cpp sudoku.cpp generatepuzzle.cpp
 OBJS = $(SRCS:.cpp=.o)
 
