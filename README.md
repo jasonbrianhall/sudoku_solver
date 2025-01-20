@@ -4,6 +4,8 @@ An interactive Sudoku solver implemented in both C++ and Python, featuring a use
 
 There are two main C++ versions: a CLI version written in Ncurses and a GUI version designed for Microsoft Windows. Both C++ versions (Windows and CLI) can also generate puzzles to be solved.
 
+There is a MS-DOS version written in C++.  It is fully functional but because DOSBOX is emulated, can be a little slow.
+
 ## Features
 
 - Interactive puzzle input with arrow key navigation
@@ -27,6 +29,10 @@ There are two main C++ versions: a CLI version written in Ncurses and a GUI vers
 - For C++/Windows version:
   - Visual Studio with CMD support
   - msbuild
+
+- For C++/MS-DOS version:
+  - docker (built via docker)
+  - dosbox or real hardware
 
 - For Python version (prototype):
   - Python 3.x
@@ -95,6 +101,7 @@ sudoku_solver
 - Shift F5-F8: Quick Load
 - A: Automatically solve the puzzle
 - Other keys for various algorithms (documented in interface)
+
 
 ### Solving Techniques (C++ version)
 
@@ -189,7 +196,7 @@ c++ | cpp | python | ncurses | terminal ui | tui | command line interface | cli 
 ### Development
 - Languages: C++ | Python3 | Modern C++
 - Type: Open Source | FOSS | Free Software
-- Platform: Linux | Unix | macOS | Cross-Platform
+- Platform: Linux | Unix | macOS | Cross-Platform | MS-DOS | Windows
 - Category: Game Development | Developer Tools | Educational
 
 ### Academic & Concepts
