@@ -26,7 +26,10 @@ using namespace std;
 #define KEY_F6 64
 #define KEY_F7 65
 #define KEY_F8 66
-#define SHIFT_F1 85
+#define SHIFT_F1 84
+#define SHIFT_F2 85
+#define SHIFT_F3 86
+#define SHIFT_F4 87
 #define SHIFT_F5 88
 #define SHIFT_F6 89
 #define SHIFT_F7 90
