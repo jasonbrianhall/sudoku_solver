@@ -15,3 +15,8 @@ if command -v x86_64-w64-mingw32-g++ &> /dev/null; then
 else
     echo "Windows cross-compiler not found - skipping Windows build"
 fi
+
+if command -v docker &> /dev/null; then
+    echo "Compiling MSDOS version..."
+    make -f Makefile_MSDOS msdox
+fi
