@@ -187,6 +187,63 @@ int main(int argc, char* argv[]) {
                             NewGame.Clean();
                         }
                         break;
+                    case KEY_F5:
+                        {
+                            NewGame.SaveToFile("sudoku1.txt");
+                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            break;
+                        }
+                        break;
+                    case KEY_F6:
+                        {
+                            NewGame.SaveToFile("sudoku2.txt");
+                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            break;
+                        }
+                        break;
+                    case KEY_F7:
+                        {
+                            NewGame.SaveToFile("sudoku3.txt");
+                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            break;
+                        }
+                        break;
+                    case KEY_F8:
+                        {
+                            NewGame.SaveToFile("sudoku4.txt");
+                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            break;
+                        }
+                        break;
+                    case SHIFT_F5:
+                        {
+                            NewGame.LoadFromFile("sudoku1.txt");
+                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            break;
+                        }
+                        break;
+                    case SHIFT_F6:
+                        {
+                            NewGame.LoadFromFile("sudoku2.txt");
+                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            break;
+                        }
+                        break;
+                    case SHIFT_F7:
+                        {
+                            NewGame.LoadFromFile("sudoku3.txt");
+                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            break;
+                        }
+                        break;
+                    case SHIFT_F8:
+                        {
+                            NewGame.LoadFromFile("sudoku4.txt");
+                            NewGame.print_debug("Game saved to sudoku_1.txt");
+                            break;
+                        }
+                        break;
+                        
                     default:
                         need_redraw = false;
                         break;
