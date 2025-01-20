@@ -32,9 +32,14 @@ using namespace std;
 #define SHIFT_F7 89
 #define SHIFT_F8 90
 
-// Constants for screen layout
-#define HEADER_LINES 3
-#define GRID_START_LINE 5
+// Color attributes
+#define RED LIGHTRED
+#define NORMAL LIGHTGRAY
+
+void printc(char c, int color) {
+    textcolor(color);
+    putch(c);
+}
 
 void show_help() {
     clrscr();
@@ -66,6 +71,7 @@ void show_help() {
 
 void draw_screen(Sudoku& NewGame, int x_pos, int y_pos) {
     clrscr();
+    textcolor(NORMAL);
     
     // Print header
     cputs("Welcome to Sudoku\r\n");
@@ -74,36 +80,49 @@ void draw_screen(Sudoku& NewGame, int x_pos, int y_pos) {
     // Draw the grid
     for(int y=0; y<9; y++) {
         if(y%3==0) {
-            for(int i=0; i<37; i++) cprintf("-");
+            for(int i=0; i<37; i++) {
+                printc('-', RED);
+            }
         } else {
             for(int i=0; i<37; i++) {
-                if(i%4==0) {
-                    if(i%12==0) cprintf("+");
-                    else cprintf("+");
+                if(i%12==0) {
+                    printc('+', RED);  // 3x3 intersection
+                } else if(i%4==0) {
+                    printc('+', NORMAL);  // Regular intersection
+                } else {
+                    printc('-', NORMAL);  // Regular horizontal line
                 }
-                else cprintf("-");
             }
         }
         cprintf("\r\n");
         
         for(int x=0; x<9; x++) {
-            if(x%3==0) cprintf("|");
-            else cprintf("|");
+            if(x%3==0) {
+                printc('|', RED);
+            } else {
+                printc('|', NORMAL);
+            }
             
             int temp = NewGame.GetValue(x,y);
+            textcolor(NORMAL);
             if(temp >= 0 && temp <= 8) {
                 cprintf(" %d ", temp+1);
             }
-            else cprintf("   ");
+            else {
+                cprintf("   ");
+            }
         }
-        cprintf("|\r\n");
+        printc('|', RED);
+        cprintf("\r\n");
     }
     
-    for(int i=0; i<37; i++) cprintf("-");
+    for(int i=0; i<37; i++) {
+        printc('-', RED);
+    }
     cprintf("\r\n");
 
-    // Position cursor with adjusted offset
-    gotoxy(x_pos*4 + 2, GRID_START_LINE + y_pos * 2);
+    textcolor(NORMAL);
+    gotoxy(x_pos*4 + 2, 5 + y_pos * 2);
 }
 
 int main(int argc, char* argv[]) {
