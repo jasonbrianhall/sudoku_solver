@@ -32,6 +32,10 @@ using namespace std;
 #define SHIFT_F7 89
 #define SHIFT_F8 90
 
+// Constants for screen layout
+#define HEADER_LINES 3
+#define GRID_START_LINE 5
+
 void show_help() {
     clrscr();
     cputs("Sudoku Help\r\n");
@@ -98,8 +102,8 @@ void draw_screen(Sudoku& NewGame, int x_pos, int y_pos) {
     for(int i=0; i<37; i++) cprintf("-");
     cprintf("\r\n");
 
-    // Position cursor
-    gotoxy(x_pos*4 + 2, 3 + y_pos * 2);
+    // Position cursor with adjusted offset
+    gotoxy(x_pos*4 + 2, GRID_START_LINE + y_pos * 2);
 }
 
 int main(int argc, char* argv[]) {
