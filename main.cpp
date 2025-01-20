@@ -328,7 +328,7 @@ int main(int argc, char* argv[]) {
             NewGame.Clean();
         }
         break;
-      case KEY_F(14):  // Shift + F2
+      /*case KEY_F(14):  // Shift + F2
         {
             PuzzleGenerator generator(NewGame);
             if (generator.generatePuzzle("ultraextreme")) {
@@ -339,7 +339,7 @@ int main(int argc, char* argv[]) {
             }
             NewGame.Clean();
         }
-        break;
+        break; */
      case KEY_F(5):  // F5
         NewGame.SaveToFile("sudoku_1.txt");
         NewGame.print_debug("Game saved to sudoku_1.txt");

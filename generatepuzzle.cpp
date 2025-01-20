@@ -5,11 +5,13 @@
 
 PuzzleGenerator::PuzzleGenerator(Sudoku& s) : sudoku(s), 
     difficultyLevels{
-        {"easy",    {50, 55, false, false, false, false}},
-        {"medium",  {36, 49, false, false, false, false}},
-        {"hard",    {32, 35, true,  false, false, false}},
-        {"expert",  {28, 31, true,  true,  true,  false}},
-        {"extreme", {24, 27, true,  true,  true,  true}}
+        {"easy",    {50, 55, false, false, false, false     }},
+        {"medium",  {36, 49, false, false, false, false     }},
+        {"hard",    {32, 35, true,  false, false, false     }},
+        {"expert",  {28, 31, true,  true,  true,  false     }},
+        {"extreme", {24, 27, true,  true,  true,  true      }},
+        {"ultraextreme", {17, 19, true,  true,  true,  true }}
+
     } {
     rng.seed(std::chrono::steady_clock::now().time_since_epoch().count());
 }
@@ -101,6 +103,10 @@ bool PuzzleGenerator::generatePuzzle(const std::string& difficulty) {
         numbersToRemove = 49;
     } else if (difficulty == "expert") {
         numbersToRemove = 53;
+    } else if (difficulty == "extreme") {
+        numbersToRemove = 57;
+    } else if (difficulty == "ultraextreme") {
+        numbersToRemove = 64;
     } else { // extreme
         numbersToRemove = 57;
     }
