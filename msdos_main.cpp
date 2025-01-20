@@ -32,98 +32,88 @@ using namespace std;
 #define SHIFT_F7 89
 #define SHIFT_F8 90
 
-/*void gotoxy(int x, int y) {
-    union REGS regs;
-    regs.h.ah = 0x02;
-    regs.h.bh = 0x00;
-    regs.h.dh = y;
-    regs.h.dl = x;
-    int86(0x10, &regs, &regs);
-}*/
+void show_help() {
+    clrscr();
+    cputs("Sudoku Help\r\n");
+    cputs("\r\n");
+    cputs("Game Controls:\r\n");
+    cputs(" Arrow keys - Move cursor\r\n");
+    cputs(" 1-9       - Fill number\r\n");
+    cputs(" 0         - Clear cell\r\n");
+    cputs(" Q         - Quit game\r\n");
+    cputs("\r\n");
+    cputs("Puzzle Generation:\r\n");
+    cputs(" F1        - Generate Easy puzzle\r\n");
+    cputs(" F2        - Generate Medium puzzle\r\n");
+    cputs(" F3        - Generate Hard puzzle\r\n");
+    cputs(" F4        - Generate Expert puzzle\r\n");
+    cputs(" Shift+F1  - Generate Extreme puzzle\r\n");
+    cputs("\r\n");
+    cputs("Solving Techniques:\r\n");
+    cputs(" S - Standard elimination    N - Hidden singles    Y - Find XY Wing\r\n");
+    cputs(" L - Line elimination        K - Naked sets        ; - Find XYZ Wing\r\n");
+    cputs(" H - Hidden pairs            X - X-Wing            C - Simple Coloring\r\n");
+    cputs(" P - Pointing pairs          F - Swordfish\r\n");
+    cputs(" A - Run all techniques\r\n");
+    cputs("\r\n");
+    cputs("Press any key to return to game...");
+    getch();
+}
 
-void print_usage() {
-    cout << "Usage:" << endl;
-    cout << "  sudoku                     - Run in interactive mode" << endl;
-    cout << "  sudoku -f <input_file>     - Load and solve puzzle from file" << endl;
+void draw_screen(Sudoku& NewGame, int x_pos, int y_pos) {
+    clrscr();
+    
+    // Print header
+    cputs("Welcome to Sudoku\r\n");
+    cputs("Press (H) for Help\r\n\r\n");
+    
+    // Draw the grid
+    for(int y=0; y<9; y++) {
+        if(y%3==0) {
+            for(int i=0; i<37; i++) cprintf("-");
+        } else {
+            for(int i=0; i<37; i++) {
+                if(i%4==0) {
+                    if(i%12==0) cprintf("+");
+                    else cprintf("+");
+                }
+                else cprintf("-");
+            }
+        }
+        cprintf("\r\n");
+        
+        for(int x=0; x<9; x++) {
+            if(x%3==0) cprintf("|");
+            else cprintf("|");
+            
+            int temp = NewGame.GetValue(x,y);
+            if(temp >= 0 && temp <= 8) {
+                cprintf(" %d ", temp+1);
+            }
+            else cprintf("   ");
+        }
+        cprintf("|\r\n");
+    }
+    
+    for(int i=0; i<37; i++) cprintf("-");
+    cprintf("\r\n");
+
+    // Position cursor
+    gotoxy(x_pos*4 + 2, 3 + y_pos * 2);
 }
 
 int main(int argc, char* argv[]) {
-    int i, x, y, temp, input, x_pos=0, y_pos=0;
+    int x_pos=0, y_pos=0;
     Sudoku NewGame;
-    std::ofstream logfile("sudoku_progress.txt", std::ios::app);
     
-    string input_file = "";
-    string output_file = "";
-    
-    for (int i = 1; i < argc; i++) {
-        string arg = argv[i];
-        if (arg == "-h" || arg == "--help") {
-            print_usage();
-            return 0;
-        }
-        else if (arg == "-f" && i + 1 < argc) {
-            input_file = argv[++i];
-        }
-        else if (arg == "-o" && i + 1 < argc) {
-            output_file = argv[++i];
-        }
-    }
-    
-    if (!input_file.empty()) {
-        if (!NewGame.LoadFromFile(input_file)) {
-            cerr << "Failed to load puzzle from " << input_file << endl;
-            return 1;
-        }
-    }
-
     _setcursortype(_NORMALCURSOR);
+    draw_screen(NewGame, x_pos, y_pos);
 
     while(1) {
-        clrscr();
-        
-        cputs("Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasing difficulty)\r\n");
-        cputs("Commands:                          Solving techniques:                                Experimental Techniques\r\n");
-        cputs(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles     Y - Find XY Wing\r\n");
-        cputs(" 1-9 - Fill number                  L - Line elimination        K - Naked sets         ; - Find XYZ Wing\r\n");
-        cputs(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing             C - Simple Coloring\r\n");
-        cputs(" q - Quit                           P - Pointing pairs          F - Swordfish\r\n");
-        cputs(" A - Run all techniques             Z - New Game                F(5-8) - Save Game     Shift F(5-8) - Load Game\r\n\r\n");
-        
-        for(y=0; y<9; y++) {
-            if(y%3==0) {
-                for(i=0; i<37; i++) cprintf("-");
-            } else {
-                for(i=0; i<37; i++) {
-                    if(i%4==0) {
-                        if(i%12==0) cprintf("+");
-                        else cprintf("+");
-                    }
-                    else cprintf("-");
-                }
-            }
-            cprintf("\r\n");
-            
-            for(x=0; x<9; x++) {
-                if(x%3==0) cprintf("|");
-                else cprintf("|");
-                
-                temp = NewGame.GetValue(x,y);
-                if(temp >= 0 && temp <= 8) {
-                    cprintf(" %d ", temp+1);
-                }
-                else cprintf("   ");
-            }
-            cprintf("|\r\n");
-        }
-        
-        for(i=0; i<37; i++) cprintf("-");
-        cprintf("\r\n");
-
-        int cursor_y = 8 + y_pos * 2 + 1;
-        gotoxy(x_pos*4 + 2, cursor_y);
-        
         if (kbhit()) {
-            input = getch();
+            int input = getch();
+            bool need_redraw = true;
+
             if (input == 0) {
                 input = getch();
                 switch(input) {
@@ -142,106 +132,40 @@ int main(int argc, char* argv[]) {
                     case KEY_F1:
                         {
                             PuzzleGenerator generator(NewGame);
-                            if (generator.generatePuzzle("easy")) {
-                                NewGame.print_debug("Generated new easy puzzle");
-                            } else {
-                                NewGame.print_debug("Failed to generate easy puzzle");
-                                NewGame.NewGame();
-                            }
+                            generator.generatePuzzle("easy");
                             NewGame.Clean();
                         }
                         break;
                     case KEY_F2:
                         {
                             PuzzleGenerator generator(NewGame);
-                            if (generator.generatePuzzle("medium")) {
-                                NewGame.print_debug("Generated new medium puzzle");
-                            } else {
-                                NewGame.print_debug("Failed to generate medium puzzle");
-                                NewGame.NewGame();
-                            }
+                            generator.generatePuzzle("medium");
                             NewGame.Clean();
                         }
                         break;
                     case KEY_F3:
                         {
                             PuzzleGenerator generator(NewGame);
-                            if (generator.generatePuzzle("hard")) {
-                                NewGame.print_debug("Generated new hard puzzle");
-                            } else {
-                                NewGame.print_debug("Failed to generate hard puzzle");
-                                NewGame.NewGame();
-                            }
+                            generator.generatePuzzle("hard");
                             NewGame.Clean();
                         }
                         break;
                     case KEY_F4:
                         {
                             PuzzleGenerator generator(NewGame);
-                            if (generator.generatePuzzle("expert")) {
-                                NewGame.print_debug("Generated new expert puzzle");
-                            } else {
-                                NewGame.print_debug("Failed to generate expert puzzle");
-                                NewGame.NewGame();
-                            }
+                            generator.generatePuzzle("expert");
                             NewGame.Clean();
                         }
-                        break;
-                    case KEY_F5:
-                        NewGame.SaveToFile("sudoku_1.txt");
-                        NewGame.print_debug("Game saved to sudoku_1.txt");
-                        break;
-                    case KEY_F6:
-                        NewGame.SaveToFile("sudoku_2.txt");
-                        NewGame.print_debug("Game saved to sudoku_2.txt");
-                        break;
-                    case KEY_F7:
-                        NewGame.SaveToFile("sudoku_3.txt");
-                        NewGame.print_debug("Game saved to sudoku_3.txt");
-                        break;
-                    case KEY_F8:
-                        NewGame.SaveToFile("sudoku_4.txt");
-                        NewGame.print_debug("Game saved to sudoku_4.txt");
                         break;
                     case SHIFT_F1:
                         {
                             PuzzleGenerator generator(NewGame);
-                            if (generator.generatePuzzle("extreme")) {
-                                NewGame.print_debug("Generated new extreme puzzle");
-                            } else {
-                                NewGame.print_debug("Failed to generate extreme puzzle");
-                                NewGame.NewGame();
-                            }
+                            generator.generatePuzzle("extreme");
                             NewGame.Clean();
                         }
                         break;
-                    case SHIFT_F5:
-                        if (NewGame.LoadFromFile("sudoku_1.txt")) {
-                            NewGame.print_debug("Game loaded from sudoku_1.txt");
-                        } else {
-                            NewGame.print_debug("Failed to load sudoku_1.txt");
-                        }
-                        break;
-                    case SHIFT_F6:
-                        if (NewGame.LoadFromFile("sudoku_2.txt")) {
-                            NewGame.print_debug("Game loaded from sudoku_2.txt");
-                        } else {
-                            NewGame.print_debug("Failed to load sudoku_2.txt");
-                        }
-                        break;
-                    case SHIFT_F7:
-                        if (NewGame.LoadFromFile("sudoku_3.txt")) {
-                            NewGame.print_debug("Game loaded from sudoku_3.txt");
-                        } else {
-                            NewGame.print_debug("Failed to load sudoku_3.txt");
-                        }
-                        break;
-                    case SHIFT_F8:
-                        if (NewGame.LoadFromFile("sudoku_4.txt")) {
-                            NewGame.print_debug("Game loaded from sudoku_4.txt");
-                        } else {
-                            NewGame.print_debug("Failed to load sudoku_4.txt");
-                        }
+                    default:
+                        need_redraw = false;
                         break;
                 }
             } else {
@@ -250,6 +174,9 @@ int main(int argc, char* argv[]) {
                 }
                 
                 switch(input) {
+                    case 'H':
+                        show_help();
+                        break;
                     case '0':
                         NewGame.ClearValue(x_pos, y_pos);
                         break;
@@ -268,69 +195,46 @@ int main(int argc, char* argv[]) {
                     case 'Q':
                         return 0;
                     case 'S':
-                        NewGame.LogBoard(logfile, "Standard Elim Before");
                         NewGame.StdElim();
-                        NewGame.LogBoard(logfile, "Standard Elim After");
                         break;
                     case 'L':
-                        NewGame.LogBoard(logfile, "Line Elim Before");
                         NewGame.LinElim();
-                        NewGame.LogBoard(logfile, "Line Elim After");
                         break;
                     case 'C':
-                        NewGame.LogBoard(logfile, "Find Simple Coloring Before");
                         NewGame.FindSimpleColoring();
-                        NewGame.LogBoard(logfile, "Find Simple Coloring After");
-                        break;
-                    case 'H':
-                        NewGame.LogBoard(logfile, "Find Hidden Pairs Before");
-                        NewGame.FindHiddenPairs();
-                        NewGame.LogBoard(logfile, "Find Hidden Pairs After");
                         break;
                     case 'P':
-                        NewGame.LogBoard(logfile, "Find Pointing Pairs Before");
                         NewGame.FindPointingPairs();
-                        NewGame.LogBoard(logfile, "Find Pointing Pairs After");
                         break;
                     case 'X':
-                        NewGame.LogBoard(logfile, "Find XWING Before");
                         NewGame.FindXWing();
-                        NewGame.LogBoard(logfile, "Find XWING After");
                         break;
                     case 'Y':
-                        NewGame.LogBoard(logfile, "Find XYWING Before");
                         NewGame.FindXYWing();
-                        NewGame.LogBoard(logfile, "Find XYWING After");
                         break;
                     case ';':
-                        NewGame.LogBoard(logfile, "Find XYZWING Before");
                         NewGame.FindXYZWing();
-                        NewGame.LogBoard(logfile, "Find XYZWING After");
                         break;
                     case 'F':
-                        NewGame.LogBoard(logfile, "Find Swordfish Before");
                         NewGame.FindSwordFish();
-                        NewGame.LogBoard(logfile, "Find Swordfish After");
                         break;
                     case 'N':
-                        NewGame.LogBoard(logfile, "Find Hidden Singles Before");
                         NewGame.FindHiddenSingles();
-                        NewGame.LogBoard(logfile, "Find Hidden Singles After");
                         break;
                     case 'K':
-                        NewGame.LogBoard(logfile, "Find Naked Sets Before");
                         NewGame.FindNakedSets();
-                        NewGame.LogBoard(logfile, "Find Naked Sets After");
                         break;
                     case 'A':
-                        NewGame.LogBoard(logfile, "Run All Techniques Before");
                         NewGame.Solve();
-                        NewGame.LogBoard(logfile, "Run All Techniques After");
                         break;
-                    case 'Z':
-                        NewGame.NewGame();
+                    default:
+                        need_redraw = false;
                         break;
                 }
+            }
+
+            if (need_redraw) {
+                draw_screen(NewGame, x_pos, y_pos);
             }
         }
     }
