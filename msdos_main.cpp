@@ -74,7 +74,7 @@ void draw_screen(Sudoku& NewGame, int x_pos, int y_pos) {
     textcolor(NORMAL);
     
     // Print header
-    cputs("Welcome to Sudoku\r\n");
+    cputs("Welcome to Sudoku Solver for MS-DOS\r\n");
     cputs("Press (H) for Help\r\n\r\n");
     
     // Draw the grid
