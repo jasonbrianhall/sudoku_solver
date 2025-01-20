@@ -4,8 +4,10 @@
 #ifdef _WIN32
     #include <windows.h>
 #else
-    #include <ncurses.h>
-    #define _NCURSES
+    #ifndef MSDOS
+        #include <ncurses.h>
+        #define _NCURSES
+    #endif
 #endif
 
 #include <iostream>
