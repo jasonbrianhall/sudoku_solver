@@ -158,35 +158,65 @@ int main(int argc, char* argv[]) {
                     case KEY_F1:
                         {
                             PuzzleGenerator generator(NewGame);
-                            generator.generatePuzzle("easy");
+                            NewGame.print_debug("Generating easy puzzle.  Be patient.");
+                            if (generator.generatePuzzle("easy")) {
+                                 NewGame.print_debug("Successfully generated easy puzzle");
+                            }
+                            else {
+                                 NewGame.print_debug("Failed to generate easy puzzle");
+                            }                            
                             NewGame.Clean();
                         }
                         break;
                     case KEY_F2:
                         {
+                            NewGame.print_debug("Generating medium puzzle.  Be patient.");
                             PuzzleGenerator generator(NewGame);
-                            generator.generatePuzzle("medium");
+                            if (generator.generatePuzzle("medium")) {
+                                 NewGame.print_debug("Successfully generated medium puzzle");
+                            }
+                            else {
+                                 NewGame.print_debug("Failed to generate medium puzzle");
+                            }                            
                             NewGame.Clean();
                         }
                         break;
                     case KEY_F3:
                         {
                             PuzzleGenerator generator(NewGame);
-                            generator.generatePuzzle("hard");
+                            NewGame.print_debug("Generating hard puzzle.  Be patient.");
+                            if (generator.generatePuzzle("hard")) {
+                                 NewGame.print_debug("Successfully generated hard puzzle");
+                            }
+                            else {
+                                 NewGame.print_debug("Failed to generate hard puzzle");
+                            }                            
                             NewGame.Clean();
                         }
                         break;
                     case KEY_F4:
                         {
                             PuzzleGenerator generator(NewGame);
-                            generator.generatePuzzle("expert");
+                            NewGame.print_debug("Generating expert puzzle.  Be patient.");
+                            if (generator.generatePuzzle("expert")) {
+                                 NewGame.print_debug("Successfully generated expert puzzle");
+                            }
+                            else {
+                                 NewGame.print_debug("Failed to generate expert puzzle");
+                            }                            
                             NewGame.Clean();
                         }
                         break;
                     case SHIFT_F1:
                         {
                             PuzzleGenerator generator(NewGame);
-                            generator.generatePuzzle("extreme");
+                            NewGame.print_debug("Generating extreme puzzle.  Be patient.");
+                            if (generator.generatePuzzle("extreme")) {
+                                 NewGame.print_debug("Successfully generated extreme puzzle");
+                            }
+                            else {
+                                 NewGame.print_debug("Failed to generate extreme puzzle");
+                            }                            
                             NewGame.Clean();
                         }
                         break;
