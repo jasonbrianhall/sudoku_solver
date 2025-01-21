@@ -7,7 +7,12 @@
     #ifndef MSDOS
         #include <ncurses.h>
         #define _NCURSES
+    #else
+        #include <stdarg.h>  // Required for va_list, va_start, va_end
+        #include <stdio.h>   // Required for vsprintf
+        #include <conio.h>
     #endif
+
 #endif
 
 #include <iostream>

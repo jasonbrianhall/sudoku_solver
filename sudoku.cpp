@@ -262,11 +262,30 @@ void Sudoku::print_debug(const char *format, ...) {
 
 #ifdef MSDOS
 void Sudoku::print_debug(const char *format, ...) {
-    /*char buffer[256];
+    char buffer[256];
+    debug_line = 0;
+    
+    // Format the string
     va_list args;
     va_start(args, format);
-    vsprintf_s(buffer, sizeof(buffer), format, args);
-    va_end(args);*/
+    vsprintf(buffer, format, args);
+    va_end(args);
+    
+    // Move to position below grid using gotoxy
+    gotoxy(1, 25 + debug_line);
+    
+    // Print the formatted string
+    cputs(buffer);
+    
+    // Clear rest of line (conio doesn't have direct equivalent, 
+    // so we'll print spaces to the end of line)
+    int currentX = wherex();
+    for(int i = currentX; i < 80; i++) {  // Assuming 80 column display
+        putch(' ');
+    }
+        
+    // Increment line counter, wrap around after 20 lines
+    debug_line = (debug_line + 1) % 20;
 }
 #endif
 
