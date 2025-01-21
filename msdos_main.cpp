@@ -49,10 +49,10 @@ void show_help() {
     cputs("Sudoku Help\r\n");
     cputs("\r\n");
     cputs("Game Controls:\r\n");
-    cputs(" Arrow keys - Move cursor\r\n");
-    cputs(" 1-9       - Fill number\r\n");
-    cputs(" 0         - Clear cell\r\n");
-    cputs(" Q         - Quit game\r\n");
+    cputs(" Arrow keys - Move cursor    F5/Shift - Save/Load Slot 1\r\n");
+    cputs(" 1-9       - Fill number     F6/Shift - Save/Load Slot 2\r\n");
+    cputs(" 0         - Clear cell      F7/Shift - Save/Load Slot 3\r\n");
+    cputs(" Q         - Quit game       F8/Shift - Save/Load Slot 4\r\n");
     cputs("\r\n");
     cputs("Puzzle Generation:\r\n");
     cputs(" F1        - Generate Easy puzzle\r\n");
@@ -65,7 +65,7 @@ void show_help() {
     cputs(" S - Standard elimination    N - Hidden singles    Y - Find XY Wing\r\n");
     cputs(" L - Line elimination        K - Naked sets        ; - Find XYZ Wing\r\n");
     cputs(" H - Hidden pairs            X - X-Wing            C - Simple Coloring\r\n");
-    cputs(" P - Pointing pairs          F - Swordfish\r\n");
+    cputs(" P - Pointing pairs          F - Swordfish         Z - New Game\r\n");
     cputs(" A - Run all techniques\r\n");
     cputs("\r\n");
     cputs("Press any key to return to game...");
