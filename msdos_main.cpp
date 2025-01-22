@@ -70,10 +70,13 @@ void show_help() {
     cputs("\r\n");
     cputs("Press any key to return to game...");
     getch();
+    clrscr();
 }
 
 void draw_screen(Sudoku& NewGame, int x_pos, int y_pos) {
-    clrscr();
+    //clrscr();
+    gotoxy(1, 1);
+
     textcolor(NORMAL);
     
     // Print header
