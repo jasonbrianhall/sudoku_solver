@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
     move(cursor_y, x_pos*4 + 2);  // x*4 accounts for "| n |" pattern
     refresh();
     input=getch();
-    clear();
+    //clear();
 
     // Upper Case
     if(input>='a' && input<='z')
