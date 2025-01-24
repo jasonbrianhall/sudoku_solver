@@ -82,6 +82,8 @@ ref class MainForm : public System::Windows::Forms::Form {
   StatusStrip ^ statusStrip;
   ToolStripStatusLabel ^ statusLabel;
   TextBox^ instructionsBox;
+  TextBox^ debugBox;
+
 
   void GenerateEasy_Click(Object ^ sender, EventArgs ^ e) {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
