@@ -35,6 +35,7 @@ ref class SudokuWrapper {
   void SetValue(int x, int y, int value) {
     nativeSudoku->SetValue(x, y, value);
   }
+  void Sudoku::print_debug(const char* format, ...) { nativeSudoku->print_debug(const char* format, ...); }
   int GetValue(int x, int y) { return nativeSudoku->GetValue(x, y); }
   void NewGame() { nativeSudoku->NewGame(); }
   void Solve() { nativeSudoku->Solve(); }
