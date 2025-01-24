@@ -251,6 +251,8 @@ void Sudoku::RestoreBoard(int original_board[9][9][9], int board[9][9][9]) {
 } 
 
 #ifdef _WIN32
+static DebugQueue debugQueue;
+
 
 void Sudoku::print_debug(const char* format, ...) {
     char buffer[256];
