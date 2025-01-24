@@ -334,7 +334,34 @@ ref class MainForm : public System::Windows::Forms::Form {
       hline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
       gridContainer->Controls->Add(hline);
     }
+
+    // Initialize debug box
+    debugBox = gcnew TextBox();
+    debugBox->Multiline = true;
+    debugBox->ScrollBars = ScrollBars::Vertical;
+    debugBox->ReadOnly = true;
+    debugBox->Location = Point(500, gridTop);  // Position next to grid
+    debugBox->Size = System::Drawing::Size(250, 405);  // Same height as grid
+    debugBox->Font = gcnew System::Drawing::Font(L"Consolas", 9);
+    this->Controls->Add(debugBox);
+
+    // Create a timer for updating debug messages
+    Timer^ debugTimer = gcnew Timer();
+    debugTimer->Interval = 100; // Check every 100ms
+    debugTimer->Tick += gcnew EventHandler(this, &MainForm::UpdateDebugBox);
+    debugTimer->Start();
   }
+
+    void UpdateDebugBox(Object^ sender, EventArgs^ e) {
+        char* msg = sudoku->NativeSudoku->get_next_debug_message();
+        if (msg != nullptr) {
+            String^ managedMsg = gcnew String(msg);
+            debugBox->AppendText(managedMsg + "\r\n");
+            debugBox->SelectionStart = debugBox->Text->Length;
+            debugBox->ScrollToCaret();
+        }
+    }
+
 
   void UpdateGrid() {
     for (int i = 0; i < 9; i++) {
