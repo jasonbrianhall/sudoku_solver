@@ -16,6 +16,7 @@ There is a MS-DOS version written in C++.  It is fully functional but because DO
 - Comprehensive logging of solving steps
 - Available in C++ CLI, Windows GUI, and Python (prototype)
 - Sudoku puzzle generation in C++ versions
+- Debug Log in Mono version
 
 ## Getting Started
 
