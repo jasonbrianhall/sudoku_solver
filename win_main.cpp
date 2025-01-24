@@ -364,7 +364,15 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
    char* msg;
    while ((msg = sudoku->NativeSudoku->get_next_debug_message()) != nullptr) {
        String^ managedMsg = gcnew String(msg);
-       debugBox->AppendText(managedMsg);
+       debugBox->AppendText(managedMsg + "\r\n");
+
+       // Keep only last 1000 lines
+       array<String^>^ lines = debugBox->Text->Split('\n');
+       if (lines->Length > 1000) {
+           debugBox->Text = String::Join("\r\n", 
+               gcnew Collections::Generic::List<String^>(lines)->GetRange(lines->Length - 1000, 1000));
+       }
+
        debugBox->SelectionStart = debugBox->Text->Length;
        debugBox->ScrollToCaret();
    }
