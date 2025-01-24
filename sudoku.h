@@ -3,6 +3,13 @@
 
 #ifdef _WIN32
     #include <windows.h>
+        struct DebugQueue {
+        static const int MAX_SIZE = 100;
+        char messages[MAX_SIZE][256];
+        int front = 0;
+        int rear = -1;
+        int size = 0;
+    };
 #else
     #ifndef MSDOS
         #include <ncurses.h>
@@ -65,6 +72,11 @@ public:
     int Clean();
     bool IsValidSolution();
     int board[9][9][9];
+    
+    #ifdef _WIN32
+    char* get_next_debug_message();
+    #endif
+    
 
 
 private:
