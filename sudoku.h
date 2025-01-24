@@ -74,6 +74,7 @@ public:
     int board[9][9][9];
     
     #ifdef _WIN32
+    static DebugQueue debugQueue;
     char* get_next_debug_message();
     #endif
     
