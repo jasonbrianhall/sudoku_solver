@@ -72,6 +72,19 @@ ref class SudokuWrapper {
   }  // This seems broken right now
 };
 
+std::string unix2dos(const std::string& input) {
+    std::string output;
+    output.reserve(input.size() * 2); // Reserving space to avoid multiple allocations
+
+    for (size_t i = 0; i < input.size(); ++i) {
+        if (input[i] == '\n' && (i == 0 || input[i - 1] != '\r')) {
+            output.push_back('\r');
+        }
+        output.push_back(input[i]);
+    }
+
+    return output;
+}
 
 public
 ref class MainForm : public System::Windows::Forms::Form {
@@ -362,13 +375,15 @@ ref class MainForm : public System::Windows::Forms::Form {
   }
 
   void UpdateDebugBox(Object^ sender, EventArgs^ e) {
-     char* msg;
-     while ((msg = sudoku->NativeSudoku->get_next_debug_message()) != nullptr) {
-         String^ managedMsg = gcnew String(msg);
-         debugBox->AppendText(managedMsg);
-         debugBox->SelectionStart = debugBox->Text->Length;
-         debugBox->ScrollToCaret();
-     }
+      char* msg;
+      while ((msg = sudoku->NativeSudoku->get_next_debug_message()) != nullptr) {
+          std::string unixMsg(msg);
+          std::string dosMsg = unix2dos(unixMsg);
+          String^ managedMsg = gcnew String(dosMsg.c_str());
+          debugBox->AppendText(managedMsg);
+          debugBox->SelectionStart = debugBox->Text->Length;
+          debugBox->ScrollToCaret();
+      }
   }
 
   void ClearDebugBox() {
@@ -387,7 +402,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   void UpdateStatus(String ^ message) {
     statusLabel->Text = message;
     statusStrip->Refresh();
-    debugBox->AppendText(message);
+    debugBox->AppendText(message + "\r\n");
     debugBox->SelectionStart = debugBox->Text->Length;
     debugBox->ScrollToCaret();
 
