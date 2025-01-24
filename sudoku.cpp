@@ -269,7 +269,7 @@ void Sudoku::print_debug(const char* format, ...) {
     }
 }
 
-char* get_next_debug_message() {
+char* Sudoku::get_next_debug_message() {
     if (debugQueue.size > 0) {
         char* msg = debugQueue.messages[debugQueue.front];
         debugQueue.front = (debugQueue.front + 1) % DebugQueue::MAX_SIZE;
