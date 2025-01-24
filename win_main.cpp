@@ -36,7 +36,7 @@ ref class SudokuWrapper {
     nativeSudoku->SetValue(x, y, value);
   }
 
-    void PrintDebug(String^ format, ...array<Object^>^ args) {
+/*    void PrintDebug(String^ format, ...array<Object^>^ args) {
         IntPtr ptrToNativeString = Marshal::StringToHGlobalAnsi(format);
         const char* nativeFormat = static_cast<const char*>(ptrToNativeString.ToPointer());
 
@@ -44,7 +44,7 @@ ref class SudokuWrapper {
         nativeSudoku->print_debug(nativeFormat); // Adjust this based on how you handle args in your native method
 
         Marshal::FreeHGlobal(ptrToNativeString);
-  }
+  }*/
 
   int GetValue(int x, int y) { return nativeSudoku->GetValue(x, y); }
   void NewGame() { nativeSudoku->NewGame(); }
@@ -397,7 +397,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   void UpdateStatus(String ^ message) {
     statusLabel->Text = message;
     statusStrip->Refresh();
-    sudoku->print_debug(message);
+    /*sudoku->print_debug(message);*/
 
   }
 
