@@ -35,6 +35,7 @@ ref class SudokuWrapper {
   void SetValue(int x, int y, int value) {
     nativeSudoku->SetValue(x, y, value);
   }
+
   int GetValue(int x, int y) { return nativeSudoku->GetValue(x, y); }
   void NewGame() { nativeSudoku->NewGame(); }
   void Solve() { nativeSudoku->Solve(); }
@@ -71,6 +72,19 @@ ref class SudokuWrapper {
   }  // This seems broken right now
 };
 
+std::string unix2dos(const std::string& input) {
+    std::string output;
+    output.reserve(input.size() * 2); // Reserving space to avoid multiple allocations
+
+    for (size_t i = 0; i < input.size(); ++i) {
+        if (input[i] == '\n' && (i == 0 || input[i - 1] != '\r')) {
+            output.push_back('\r');
+        }
+        output.push_back(input[i]);
+    }
+
+    return output;
+}
 
 public
 ref class MainForm : public System::Windows::Forms::Form {
@@ -82,6 +96,8 @@ ref class MainForm : public System::Windows::Forms::Form {
   StatusStrip ^ statusStrip;
   ToolStripStatusLabel ^ statusLabel;
   TextBox^ instructionsBox;
+  TextBox^ debugBox;
+
 
   void GenerateEasy_Click(Object ^ sender, EventArgs ^ e) {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
@@ -334,6 +350,44 @@ ref class MainForm : public System::Windows::Forms::Form {
       hline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
       gridContainer->Controls->Add(hline);
     }
+
+    Label^ debugLabel = gcnew Label();
+    debugLabel->Text = "Debug Output";
+    debugLabel->Location = Point(500, gridTop);
+    debugLabel->AutoSize = true;
+    this->Controls->Add(debugLabel);
+
+    // Initialize debug box
+    debugBox = gcnew TextBox();
+    debugBox->Multiline = true;
+    debugBox->ScrollBars = ScrollBars::Vertical;
+    debugBox->ReadOnly = true;
+    debugBox->Location = Point(500, gridTop+20);  // Position next to grid
+    debugBox->Size = System::Drawing::Size(250, 385);  // Same height as grid
+    debugBox->Font = gcnew System::Drawing::Font(L"Consolas", 9);
+    this->Controls->Add(debugBox);
+
+    // Create a timer for updating debug messages
+    Timer^ debugTimer = gcnew Timer();
+    debugTimer->Interval = 100; // Check every 100ms
+    debugTimer->Tick += gcnew EventHandler(this, &MainForm::UpdateDebugBox);
+    debugTimer->Start();
+  }
+
+  void UpdateDebugBox(Object^ sender, EventArgs^ e) {
+      char* msg;
+      while ((msg = sudoku->NativeSudoku->get_next_debug_message()) != nullptr) {
+          std::string unixMsg(msg);
+          std::string dosMsg = unix2dos(unixMsg);
+          String^ managedMsg = gcnew String(dosMsg.c_str());
+          debugBox->AppendText(managedMsg);
+          debugBox->SelectionStart = debugBox->Text->Length;
+          debugBox->ScrollToCaret();
+      }
+  }
+
+  void ClearDebugBox() {
+      debugBox->Clear();
   }
 
   void UpdateGrid() {
@@ -348,6 +402,12 @@ ref class MainForm : public System::Windows::Forms::Form {
   void UpdateStatus(String ^ message) {
     statusLabel->Text = message;
     statusStrip->Refresh();
+    debugBox->AppendText(message + "\r\n");
+    debugBox->SelectionStart = debugBox->Text->Length;
+    debugBox->ScrollToCaret();
+
+    /*sudoku->print_debug(message);*/
+
   }
 
   void Cell_TextChanged(Object ^ sender, EventArgs ^ e) {
@@ -466,6 +526,7 @@ ref class MainForm : public System::Windows::Forms::Form {
       case Keys::S:
         if (sudoku->IsValidSolution()) {
           sudoku->StdElim();
+          ClearDebugBox();
           UpdateGrid();
           UpdateStatus("Standard elimination completed");
         } else {
@@ -475,6 +536,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         break;
       case Keys::L:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->LinElim();
           UpdateGrid();
           UpdateStatus("Line elimination completed");
@@ -485,6 +547,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         break;
       case Keys::H:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindHiddenPairs();
           UpdateGrid();
           UpdateStatus("Hidden pairs completed");
@@ -495,6 +558,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         break;
       case Keys::P:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindPointingPairs();
           UpdateGrid();
           UpdateStatus("Pointing pairs completed");
@@ -505,6 +569,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         break;
       case Keys::N:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindHiddenSingles();
           UpdateGrid();
           UpdateStatus("Hidden singles completed");
@@ -515,6 +580,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         break;
       case Keys::K:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindNakedSets();
           UpdateGrid();
           UpdateStatus("Naked sets completed");
@@ -525,6 +591,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         break;
       case Keys::X:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindXWing();
           UpdateGrid();
           UpdateStatus("X-Wing technique completed");
@@ -535,6 +602,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         break;
       case Keys::F:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindSwordFish();
           UpdateGrid();
           UpdateStatus("Swordfish technique completed");
@@ -545,6 +613,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         break;
       case Keys::Y:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindXYWing();
           UpdateGrid();
           UpdateStatus("XY-Wing technique completed");
@@ -556,6 +625,7 @@ ref class MainForm : public System::Windows::Forms::Form {
       case Keys::OemSemicolon:  // For XYZ-Wing (;)
         if (!e->Shift) {
           if (sudoku->IsValidSolution()) {
+            ClearDebugBox();
             sudoku->FindXYZWing();
             UpdateGrid();
             UpdateStatus("XYZ-Wing technique completed");
@@ -567,6 +637,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         break;
       case Keys::A:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->Solve();
           UpdateGrid();
           UpdateStatus("Full solve completed");
@@ -576,6 +647,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         e->Handled = true;
         break;
       case Keys::Z:
+        ClearDebugBox();
         sudoku->NewGame();
         UpdateGrid();
         UpdateStatus("New game started");
@@ -584,6 +656,7 @@ ref class MainForm : public System::Windows::Forms::Form {
       case Keys::F5:
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_1.txt")) {
+            ClearDebugBox();
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_1.txt");
           } else {
@@ -598,6 +671,7 @@ ref class MainForm : public System::Windows::Forms::Form {
       case Keys::F6:
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_2.txt")) {
+            ClearDebugBox();
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_2.txt");
           } else {
@@ -612,6 +686,7 @@ ref class MainForm : public System::Windows::Forms::Form {
       case Keys::F7:
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_3.txt")) {
+            ClearDebugBox();
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_3.txt");
           } else {
@@ -626,6 +701,7 @@ ref class MainForm : public System::Windows::Forms::Form {
       case Keys::F8:
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_4.txt")) {
+            ClearDebugBox();
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_4.txt");
           } else {

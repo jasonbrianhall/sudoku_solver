@@ -2,7 +2,7 @@ name: Build Sudoku
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master,dev ]
   pull_request:
     branches: [ master ]
   schedule:
@@ -45,3 +45,18 @@ jobs:
           Commit: ${{ github.sha }}
           Build number: ${{ github.run_number }}
 
+    - name: Create Dev Build
+      if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+      id: create_dev_build
+      uses: softprops/action-gh-release@v1
+      with:
+        files: x64/Release/SudokuSolver.exe
+        tag_name: bleedingedge-v${{ github.run_number }}
+        name: Dev Build ${{ github.run_number }}
+        draft: false
+        prerelease: true
+        token: ${{ secrets.GITHUB_TOKEN }}
+        body: |
+          Development build
+          Commit: ${{ github.sha }}
+          Build number: ${{ github.run_number }}
