@@ -35,7 +35,17 @@ ref class SudokuWrapper {
   void SetValue(int x, int y, int value) {
     nativeSudoku->SetValue(x, y, value);
   }
-  void print_debug(const char* format, ...) { nativeSudoku->print_debug(const char* format, ...); }
+
+    void PrintDebug(String^ format, ...array<Object^>^ args) {
+        IntPtr ptrToNativeString = Marshal::StringToHGlobalAnsi(format);
+        const char* nativeFormat = static_cast<const char*>(ptrToNativeString.ToPointer());
+
+        // Call the native print_debug function
+        nativeSudoku->print_debug(nativeFormat); // Adjust this based on how you handle args in your native method
+
+        Marshal::FreeHGlobal(ptrToNativeString);
+  }
+
   int GetValue(int x, int y) { return nativeSudoku->GetValue(x, y); }
   void NewGame() { nativeSudoku->NewGame(); }
   void Solve() { nativeSudoku->Solve(); }
