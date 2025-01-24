@@ -386,6 +386,8 @@ ref class MainForm : public System::Windows::Forms::Form {
   void UpdateStatus(String ^ message) {
     statusLabel->Text = message;
     statusStrip->Refresh();
+    sudoku->print_debug(message);
+
   }
 
   void Cell_TextChanged(Object ^ sender, EventArgs ^ e) {
