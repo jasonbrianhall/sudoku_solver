@@ -4,7 +4,7 @@
 #ifdef _WIN32
     #include <windows.h>
         struct DebugQueue {
-        static const int MAX_SIZE = 100;
+        static const int MAX_SIZE = 1024;
         char messages[MAX_SIZE][256];
         int front = 0;
         int rear = -1;
@@ -74,7 +74,7 @@ public:
     int board[9][9][9];
     
     #ifdef _WIN32
-    static DebugQueue debugQueue;
+    DebugQueue debugQueue;
     char* get_next_debug_message();
     #endif
     
