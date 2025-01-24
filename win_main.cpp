@@ -354,16 +354,15 @@ ref class MainForm : public System::Windows::Forms::Form {
     debugTimer->Start();
   }
 
-    void UpdateDebugBox(Object^ sender, EventArgs^ e) {
-        char* msg = sudoku->NativeSudoku->get_next_debug_message();
-        if (msg != nullptr) {
-            String^ managedMsg = gcnew String(msg);
-            debugBox->AppendText(managedMsg + "\r\n");
-            debugBox->SelectionStart = debugBox->Text->Length;
-            debugBox->ScrollToCaret();
-        }
-    }
-
+void UpdateDebugBox(Object^ sender, EventArgs^ e) {
+   char* msg;
+   while ((msg = sudoku->NativeSudoku->get_next_debug_message()) != nullptr) {
+       String^ managedMsg = gcnew String(msg);
+       debugBox->AppendText(managedMsg);
+       debugBox->SelectionStart = debugBox->Text->Length;
+       debugBox->ScrollToCaret();
+   }
+}
 
   void UpdateGrid() {
     for (int i = 0; i < 9; i++) {
