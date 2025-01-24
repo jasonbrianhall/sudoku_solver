@@ -360,15 +360,19 @@ ref class MainForm : public System::Windows::Forms::Form {
     debugTimer->Start();
   }
 
-void UpdateDebugBox(Object^ sender, EventArgs^ e) {
-   char* msg;
-   while ((msg = sudoku->NativeSudoku->get_next_debug_message()) != nullptr) {
-       String^ managedMsg = gcnew String(msg);
-       debugBox->AppendText(managedMsg);
-       debugBox->SelectionStart = debugBox->Text->Length;
-       debugBox->ScrollToCaret();
-   }
-}
+  void UpdateDebugBox(Object^ sender, EventArgs^ e) {
+     char* msg;
+     while ((msg = sudoku->NativeSudoku->get_next_debug_message()) != nullptr) {
+         String^ managedMsg = gcnew String(msg);
+         debugBox->AppendText(managedMsg);
+         debugBox->SelectionStart = debugBox->Text->Length;
+         debugBox->ScrollToCaret();
+     }
+  }
+
+  void ClearDebugBox() {
+      debugBox->Clear();
+  }
 
   void UpdateGrid() {
     for (int i = 0; i < 9; i++) {
@@ -500,6 +504,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
       case Keys::S:
         if (sudoku->IsValidSolution()) {
           sudoku->StdElim();
+          ClearDebugBox();
           UpdateGrid();
           UpdateStatus("Standard elimination completed");
         } else {
@@ -509,6 +514,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
         break;
       case Keys::L:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->LinElim();
           UpdateGrid();
           UpdateStatus("Line elimination completed");
@@ -519,6 +525,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
         break;
       case Keys::H:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindHiddenPairs();
           UpdateGrid();
           UpdateStatus("Hidden pairs completed");
@@ -529,6 +536,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
         break;
       case Keys::P:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindPointingPairs();
           UpdateGrid();
           UpdateStatus("Pointing pairs completed");
@@ -539,6 +547,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
         break;
       case Keys::N:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindHiddenSingles();
           UpdateGrid();
           UpdateStatus("Hidden singles completed");
@@ -549,6 +558,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
         break;
       case Keys::K:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindNakedSets();
           UpdateGrid();
           UpdateStatus("Naked sets completed");
@@ -559,6 +569,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
         break;
       case Keys::X:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindXWing();
           UpdateGrid();
           UpdateStatus("X-Wing technique completed");
@@ -569,6 +580,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
         break;
       case Keys::F:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindSwordFish();
           UpdateGrid();
           UpdateStatus("Swordfish technique completed");
@@ -579,6 +591,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
         break;
       case Keys::Y:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->FindXYWing();
           UpdateGrid();
           UpdateStatus("XY-Wing technique completed");
@@ -590,6 +603,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
       case Keys::OemSemicolon:  // For XYZ-Wing (;)
         if (!e->Shift) {
           if (sudoku->IsValidSolution()) {
+            ClearDebugBox();
             sudoku->FindXYZWing();
             UpdateGrid();
             UpdateStatus("XYZ-Wing technique completed");
@@ -601,6 +615,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
         break;
       case Keys::A:
         if (sudoku->IsValidSolution()) {
+          ClearDebugBox();
           sudoku->Solve();
           UpdateGrid();
           UpdateStatus("Full solve completed");
@@ -610,6 +625,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
         e->Handled = true;
         break;
       case Keys::Z:
+        ClearDebugBox();
         sudoku->NewGame();
         UpdateGrid();
         UpdateStatus("New game started");
@@ -618,6 +634,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
       case Keys::F5:
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_1.txt")) {
+            ClearDebugBox();
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_1.txt");
           } else {
@@ -632,6 +649,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
       case Keys::F6:
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_2.txt")) {
+            ClearDebugBox();
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_2.txt");
           } else {
@@ -646,6 +664,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
       case Keys::F7:
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_3.txt")) {
+            ClearDebugBox();
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_3.txt");
           } else {
@@ -660,6 +679,7 @@ void UpdateDebugBox(Object^ sender, EventArgs^ e) {
       case Keys::F8:
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_4.txt")) {
+            ClearDebugBox();
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_4.txt");
           } else {
