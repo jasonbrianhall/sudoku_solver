@@ -337,13 +337,19 @@ ref class MainForm : public System::Windows::Forms::Form {
       gridContainer->Controls->Add(hline);
     }
 
+    Label^ debugLabel = gcnew Label();
+    debugLabel->Text = "Debug Output";
+    debugLabel->Location = Point(500, gridTop);
+    debugLabel->AutoSize = true;
+    this->Controls->Add(debugLabel);
+
     // Initialize debug box
     debugBox = gcnew TextBox();
     debugBox->Multiline = true;
     debugBox->ScrollBars = ScrollBars::Vertical;
     debugBox->ReadOnly = true;
-    debugBox->Location = Point(500, gridTop);  // Position next to grid
-    debugBox->Size = System::Drawing::Size(250, 405);  // Same height as grid
+    debugBox->Location = Point(500, gridTop+20);  // Position next to grid
+    debugBox->Size = System::Drawing::Size(250, 385);  // Same height as grid
     debugBox->Font = gcnew System::Drawing::Font(L"Consolas", 9);
     this->Controls->Add(debugBox);
 
