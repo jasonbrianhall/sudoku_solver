@@ -106,22 +106,22 @@ ref class MainForm : public System::Windows::Forms::Form {
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle1.xml");
-    UpdateStatus("Saved puzzle as Excel");
+    UpdateStatus("Saved puzzle as Excel/puzzle1.xml");
   }
 
   void GeneratePuzzle2(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle2.xml");
-    UpdateStatus("Saved puzzle as Excel");
+    UpdateStatus("Saved puzzle as Excel/puzzle2.xml");
   }
 
   void GeneratePuzzle3(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle3.xml");
-    UpdateStatus("Saved puzzle as Excel");
+    UpdateStatus("Saved puzzle as Excel/puzzle3.xml");
   }
 
   void GeneratePuzzle4(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle4.xml");
-    UpdateStatus("Saved puzzle as Excel");
+    UpdateStatus("Saved puzzle as Excel/puzzle4.xml");
   }
 
   void GenerateEasy_Click(Object ^ sender, EventArgs ^ e) {
@@ -252,16 +252,16 @@ ref class MainForm : public System::Windows::Forms::Form {
         "Expert Shift F(1)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateExpert_Click)));
    generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Save as spreadsheet puzzle1.xml", nullptr,
+        "Save as spreadsheet puzzle1.xml F(9)", nullptr,
         gcnew EventHandler(this, &MainForm::GeneratePuzzle1)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Save as spreadsheet puzzle2.xml", nullptr,
+        "Save as spreadsheet puzzle2.xml F(10)", nullptr,
         gcnew EventHandler(this, &MainForm::GeneratePuzzle2)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Save as spreadsheet puzzle3.xml", nullptr,
+        "Save as spreadsheet puzzle3.xml F(11)", nullptr,
         gcnew EventHandler(this, &MainForm::GeneratePuzzle3)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Save as spreadsheet puzzle4.xml", nullptr,
+        "Save as spreadsheet puzzle4.xml F(12)", nullptr,
         gcnew EventHandler(this, &MainForm::GeneratePuzzle4)));
 
     // Add Menus to MenuStrip
