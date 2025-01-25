@@ -54,6 +54,12 @@ ref class SudokuWrapper {
     nativeSudoku->SaveToFile(std::string(wstr.begin(), wstr.end()));
   }
 
+  void ExportToExcel(String ^ filename) {
+    std::wstring wstr = msclr::interop::marshal_as<std::wstring>(filename);
+    nativeSudoku->ExportToExcel(std::string(wstr.begin(), wstr.end()));
+  }
+
+
   // Basic solving techniques
   void StdElim() { nativeSudoku->StdElim(); }
   void LinElim() { nativeSudoku->LinElim(); }
@@ -98,6 +104,25 @@ ref class MainForm : public System::Windows::Forms::Form {
   TextBox^ instructionsBox;
   TextBox^ debugBox;
 
+  void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
+    sudoku->ExportToExcel("puzzle1.xml");
+    UpdateStatus("Saved puzzle as Excel");
+  }
+
+  void GeneratePuzzle2(Object ^ sender, EventArgs ^ e) {
+    sudoku->ExportToExcel("puzzle2.xml");
+    UpdateStatus("Saved puzzle as Excel");
+  }
+
+  void GeneratePuzzle3(Object ^ sender, EventArgs ^ e) {
+    sudoku->ExportToExcel("puzzle3.xml");
+    UpdateStatus("Saved puzzle as Excel");
+  }
+
+  void GeneratePuzzle4(Object ^ sender, EventArgs ^ e) {
+    sudoku->ExportToExcel("puzzle4.xml");
+    UpdateStatus("Saved puzzle as Excel");
+  }
 
   void GenerateEasy_Click(Object ^ sender, EventArgs ^ e) {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
@@ -226,6 +251,18 @@ ref class MainForm : public System::Windows::Forms::Form {
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Expert Shift F(1)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateExpert_Click)));
+   generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Save as spreadsheet puzzle1.xml", nullptr,
+        gcnew EventHandler(this, &MainForm::GeneratePuzzle1)));
+    generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Save as spreadsheet puzzle2.xml", nullptr,
+        gcnew EventHandler(this, &MainForm::GeneratePuzzle2)));
+    generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Save as spreadsheet puzzle3.xml", nullptr,
+        gcnew EventHandler(this, &MainForm::GeneratePuzzle3)));
+    generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Save as spreadsheet puzzle4.xml", nullptr,
+        gcnew EventHandler(this, &MainForm::GeneratePuzzle4)));
 
     // Add Menus to MenuStrip
     menuStrip->Items->Add(fileMenu);
@@ -256,6 +293,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         L"  - Press 'A' to solve the puzzle.\r\n"
         L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles.\r\n"
         L"  - Press F5-F8 to save, and Shift+F5-F8 to load.";
+        L"  - Press F9-F12 to save as XML Spreadsheet in the format puzzle1.xml, puzzle2.xml, etc.";
 
     instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9); // Consistent fixed-width font
     this->Controls->Add(instructionsBox);
@@ -713,6 +751,32 @@ ref class MainForm : public System::Windows::Forms::Form {
         }
         e->Handled = true;
         break;
+      case Keys::F9:
+        if (!e->Shift) {
+          sudoku->ExportToExcelXML("puzzle1.xml");
+        }
+        e->Handled = true;
+        break;
+      case Keys::F10:
+        if (!e->Shift) {
+          sudoku->ExportToExcelXML("puzzle2.xml");
+        }
+        e->Handled = true;
+        break;
+      case Keys::F11:
+        if (!e->Shift) {
+          sudoku->ExportToExcelXML("puzzle3.xml");
+        }
+        e->Handled = true;
+        break;
+      case Keys::F12:
+        if (!e->Shift) {
+          sudoku->ExportToExcelXML("puzzle4.xml");
+        }
+        e->Handled = true;
+        break;
+
+
     }
   }
 
