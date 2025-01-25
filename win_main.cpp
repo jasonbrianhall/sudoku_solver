@@ -54,9 +54,9 @@ ref class SudokuWrapper {
     nativeSudoku->SaveToFile(std::string(wstr.begin(), wstr.end()));
   }
 
-  void ExportToExcel(String ^ filename) {
+  void ExportToExcelXML(String ^ filename) {
     std::wstring wstr = msclr::interop::marshal_as<std::wstring>(filename);
-    nativeSudoku->ExportToExcel(std::string(wstr.begin(), wstr.end()));
+    nativeSudoku->ExportToExcelXML(std::string(wstr.begin(), wstr.end()));
   }
 
 
@@ -105,22 +105,22 @@ ref class MainForm : public System::Windows::Forms::Form {
   TextBox^ debugBox;
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
-    sudoku->ExportToExcel("puzzle1.xml");
+    sudoku->ExportToExcelXML("puzzle1.xml");
     UpdateStatus("Saved puzzle as Excel");
   }
 
   void GeneratePuzzle2(Object ^ sender, EventArgs ^ e) {
-    sudoku->ExportToExcel("puzzle2.xml");
+    sudoku->ExportToExcelXML("puzzle2.xml");
     UpdateStatus("Saved puzzle as Excel");
   }
 
   void GeneratePuzzle3(Object ^ sender, EventArgs ^ e) {
-    sudoku->ExportToExcel("puzzle3.xml");
+    sudoku->ExportToExcelXML("puzzle3.xml");
     UpdateStatus("Saved puzzle as Excel");
   }
 
   void GeneratePuzzle4(Object ^ sender, EventArgs ^ e) {
-    sudoku->ExportToExcel("puzzle4.xml");
+    sudoku->ExportToExcelXML("puzzle4.xml");
     UpdateStatus("Saved puzzle as Excel");
   }
 
