@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
     printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets         ; - Find XYZ Wing\n");  
     printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing             C - Simple Coloring\n"); 
     printw(" q - Quit                           P - Pointing pairs          F - Swordfish\n");
-    printw(" A - Run all techniques             Z - New Game                F(5-8) - Save Game     Shift F(5-8) - Load Game\n\n");
+    printw(" A - Run all techniques             Z - New Game                F(5-8) - Save Game     Shift F(5-8) - Load Game    F9-12 - Save Puzzle as XML Spreadsheet (Excel Compatible)\n\n");
     
     // Draw the grid
     for(y=0;y<9;y++)
