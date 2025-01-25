@@ -332,6 +332,100 @@ void Sudoku::print_debug(const char *format, ...) {
 
 #endif
 
+void Sudoku::ExportToExcelXML(const string& filename) {
+    ofstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error: Could not create file " << filename << endl;
+        return;
+    }
+
+    // XML Header
+    file << "<?xml version=\"1.0\"?>\n";
+    file << "<?mso-application progid=\"Excel.Sheet\"?>\n";
+    file << "<Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\"\n";
+    file << " xmlns:o=\"urn:schemas-microsoft-com:office:office\"\n";
+    file << " xmlns:x=\"urn:schemas-microsoft-com:office:excel\"\n";
+    file << " xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\">\n";
+
+    // Styles
+    file << "<Styles>\n";
+    
+    // Default style
+    file << " <Style ss:ID=\"Default\">\n";
+    file << "  <Alignment ss:Horizontal=\"Center\" ss:Vertical=\"Center\"/>\n";
+    file << "  <Borders>\n";
+    file << "   <Border ss:Position=\"Bottom\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\"/>\n";
+    file << "   <Border ss:Position=\"Left\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\"/>\n";
+    file << "   <Border ss:Position=\"Right\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\"/>\n";
+    file << "   <Border ss:Position=\"Top\" ss:LineStyle=\"Continuous\" ss:Weight=\"1\"/>\n";
+    file << "  </Borders>\n";
+    file << " </Style>\n";
+
+    // Header style
+    file << " <Style ss:ID=\"Header\">\n";
+    file << "  <Alignment ss:Horizontal=\"Center\" ss:Vertical=\"Center\"/>\n";
+    file << "  <Font ss:Size=\"14\" ss:Bold=\"1\"/>\n";
+    file << " </Style>\n";
+
+    // Box border style
+    file << " <Style ss:ID=\"BoxBorder\">\n";
+    file << "  <Alignment ss:Horizontal=\"Center\" ss:Vertical=\"Center\"/>\n";
+    file << "  <Borders>\n";
+    file << "   <Border ss:Position=\"Bottom\" ss:LineStyle=\"Continuous\" ss:Weight=\"2\"/>\n";
+    file << "   <Border ss:Position=\"Left\" ss:LineStyle=\"Continuous\" ss:Weight=\"2\"/>\n";
+    file << "   <Border ss:Position=\"Right\" ss:LineStyle=\"Continuous\" ss:Weight=\"2\"/>\n";
+    file << "   <Border ss:Position=\"Top\" ss:LineStyle=\"Continuous\" ss:Weight=\"2\"/>\n";
+    file << "  </Borders>\n";
+    file << " </Style>\n";
+    
+    file << "</Styles>\n";
+
+    // Worksheet
+    file << "<Worksheet ss:Name=\"Sudoku Puzzle\">\n";
+    
+    // Set column widths
+    file << " <Table ss:StyleID=\"Default\">\n";
+    for(int i = 0; i < 9; i++) {
+        file << "  <Column ss:Width=\"40\"/>\n";
+    }
+
+    // Header row
+    file << "  <Row ss:Height=\"30\">\n";
+    file << "   <Cell ss:MergeAcross=\"8\" ss:StyleID=\"Header\">";
+    file << "    <Data ss:Type=\"String\">Created with Sudoku Solver</Data>";
+    file << "   </Cell>\n";
+    file << "  </Row>\n";
+
+    // Empty row for spacing
+    file << "  <Row ss:Height=\"20\"/>\n";
+
+    // Puzzle data
+    for(int row = 0; row < 9; row++) {
+        file << "  <Row ss:Height=\"40\">\n";
+        for(int col = 0; col < 9; col++) {
+            string styleID = ((row/3)*3 <= row && row < (row/3)*3 + 3 && 
+                            (col/3)*3 <= col && col < (col/3)*3 + 3) 
+                           ? "BoxBorder" : "Default";
+            
+            file << "   <Cell ss:StyleID=\"" << styleID << "\">";
+            int val = GetValue(col, row);
+            if(val >= 0 && val <= 8) {
+                file << "<Data ss:Type=\"Number\">" << (val + 1) << "</Data>";
+            } else {
+                file << "<Data ss:Type=\"String\"></Data>";
+            }
+            file << "</Cell>\n";
+        }
+        file << "  </Row>\n";
+    }
+
+    file << " </Table>\n";
+    file << "</Worksheet>\n";
+    file << "</Workbook>\n";
+
+    file.close();
+}
+
     void Sudoku::LogBoard(std::ofstream& file, const char* algorithm_name) {
         file << "\n=== " << algorithm_name << " ===\n";
         

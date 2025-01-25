@@ -26,6 +26,7 @@
 #include <vector>
 #include <fstream>
 #include <string>
+using std::string;
 
 class Sudoku {
 public:
@@ -72,6 +73,8 @@ public:
     int Clean();
     bool IsValidSolution();
     int board[9][9][9];
+
+    void ExportToExcelXML(const string& filename);
     
     #ifdef _WIN32
     DebugQueue debugQueue;

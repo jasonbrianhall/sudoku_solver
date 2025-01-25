@@ -356,6 +356,22 @@ int main(int argc, char* argv[]) {
         NewGame.SaveToFile("sudoku_4.txt");
         NewGame.print_debug("Game saved to sudoku_4.txt");
         break;
+      case KEY_F(9):  // F9
+        NewGame.ExportToExcelXML("puzzle1.xml");
+        NewGame.print_debug("Puzzle Saved to puzzle1.xml");
+        break;
+      case KEY_F(10):  // F10
+        NewGame.ExportToExcelXML("puzzle2.xml");
+        NewGame.print_debug("Puzzle Saved to puzzle2.xml");
+        break;
+      case KEY_F(11):  // F11
+        NewGame.ExportToExcelXML("puzzle3.xml");
+        NewGame.print_debug("Puzzle Saved to puzzle3.xml");
+        break;
+      case KEY_F(12):  // F12
+        NewGame.ExportToExcelXML("puzzle4.xml");
+        NewGame.print_debug("Puzzle Saved to puzzle4.xml");
+        break;
       case KEY_F(17):  // Shift-F5 (KEY_F(5) + 12)
         if (NewGame.LoadFromFile("sudoku_1.txt")) {
             NewGame.print_debug("Game loaded from sudoku_1.txt");
