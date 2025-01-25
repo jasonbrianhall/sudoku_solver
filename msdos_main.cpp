@@ -18,14 +18,19 @@ using namespace std;
 #define KEY_RIGHT 77
 #define KEY_UP 72
 #define KEY_DOWN 80
-#define KEY_F1 59
-#define KEY_F2 60
-#define KEY_F3 61
-#define KEY_F4 62
-#define KEY_F5 63
-#define KEY_F6 64
-#define KEY_F7 65
-#define KEY_F8 66
+#define KEY_F1  59
+#define KEY_F2  60
+#define KEY_F3  61
+#define KEY_F4  62
+#define KEY_F5  63
+#define KEY_F6  64
+#define KEY_F7  65
+#define KEY_F8  66
+#define KEY_F9  67
+#define KEY_F10 68
+#define KEY_F11 69
+#define KEY_F12 70
+
 #define SHIFT_F1 84
 #define SHIFT_F2 85
 #define SHIFT_F3 86
@@ -34,6 +39,7 @@ using namespace std;
 #define SHIFT_F6 89
 #define SHIFT_F7 90
 #define SHIFT_F8 91
+
 
 // Color attributes
 #define RED LIGHTRED
@@ -249,6 +255,34 @@ int main(int argc, char* argv[]) {
                             NewGame.SaveToFile("sudoku4.txt");
                             NewGame.print_debug("Game saved to sudoku4.txt");
                             break;
+                        }
+                        break;
+                    case KEY_F9:
+                        {
+                             NewGame.ExportToExcelXML("puzzle1.xml");
+                             NewGame.print_debug("Puzzle Saved to puzzle1.xml");
+                             break;
+                        }
+                        break;
+                    case KEY_F10:
+                        {
+                             NewGame.ExportToExcelXML("puzzle2.xml");
+                             NewGame.print_debug("Puzzle Saved to puzzle2.xml");
+                             break;
+                        }
+                        break;
+                    case KEY_F11:
+                        {
+                             NewGame.ExportToExcelXML("puzzle3.xml");
+                             NewGame.print_debug("Puzzle Saved to puzzle3.xml");
+                             break;
+                        }
+                        break;
+                    case KEY_F12:
+                        {
+                             NewGame.ExportToExcelXML("puzzle4.xml");
+                             NewGame.print_debug("Puzzle Saved to puzzle4.xml");
+                             break;
                         }
                         break;
                     case SHIFT_F5:
