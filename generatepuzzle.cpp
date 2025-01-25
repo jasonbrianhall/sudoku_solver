@@ -18,6 +18,7 @@ PuzzleGenerator::PuzzleGenerator(Sudoku& s) : sudoku(s),
 
 bool PuzzleGenerator::generateValidSolution() {
     while (true) {  // Keep going until we succeed
+        sudoku.print_debug("Attempting to create a valid board...\n");
         sudoku.NewGame();
         
         // Create list of all positions
@@ -44,6 +45,7 @@ bool PuzzleGenerator::generateValidSolution() {
             }
             
             if (!foundValid) {
+                sudoku.print_debug("Attempt failed, starting over...\n");               
                 break;  // Try a new board
             }
             
@@ -61,11 +63,12 @@ bool PuzzleGenerator::generateValidSolution() {
                 }
                 
                 if (allFilled && sudoku.IsValidSolution()) {
+                    sudoku.print_debug("Success, created a unique solution...\n");
                     return true;  // Found a complete valid solution!
                 }
             }
         }
-        
+        sudoku.print_debug("Attempt failed after 50 placments, starting over...\n");
         // If we get here, try again from the start
     }
 }
