@@ -1,5 +1,6 @@
 #include <ncurses.h>
 #include "sudoku.h"
+#define _NCURSES
 
 void Sudoku::print_debug(const char *format, ...) {
     char buffer[256];  // Buffer for formatted string

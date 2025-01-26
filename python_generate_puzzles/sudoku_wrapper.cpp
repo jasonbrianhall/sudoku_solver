@@ -16,3 +16,5 @@ PYBIND11_MODULE(sudoku_solver, m) {
         .def("load_from_file", &Sudoku::LoadFromFile)
         .def("save_to_file", &Sudoku::SaveToFile);
 }
+
+void Sudoku::print_debug(const char *format, ...) {}
