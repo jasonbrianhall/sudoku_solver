@@ -3,7 +3,7 @@ CXXFLAGS = -Wall -Wextra -std=c++11
 LDFLAGS = -lncurses
 
 TARGET = sudoku_solver
-SRCS = main.cpp sudoku.cpp generatepuzzle.cpp
+SRCS = main.cpp sudoku.cpp generatepuzzle.cpp unixprint.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 .PHONY: all clean
