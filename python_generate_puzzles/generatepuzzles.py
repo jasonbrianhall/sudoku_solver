@@ -31,6 +31,8 @@ def main():
                        help='Number of medium puzzles to generate')
     parser.add_argument('--hard', type=int, default=0,
                        help='Number of hard puzzles to generate')
+    parser.add_argument('--expert', type=int, default=0,
+                       help='Number of expert puzzles to generate')
     parser.add_argument('--extreme', type=int, default=0,
                        help='Number of extreme puzzles to generate')
     parser.add_argument('--output', type=str, default='sudoku_puzzles.docx',
@@ -47,6 +49,8 @@ def main():
         puzzle_counts['medium'] = args.medium
     if args.hard > 0:
         puzzle_counts['hard'] = args.hard
+    if args.expert > 0:
+        puzzle_counts['expert'] = args.extreme
     if args.extreme > 0:
         puzzle_counts['extreme'] = args.extreme
 

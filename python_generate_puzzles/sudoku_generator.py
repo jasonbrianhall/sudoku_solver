@@ -8,7 +8,7 @@ from docx.oxml.ns import nsdecls
 from typing import Dict
 
 class SudokuPuzzleGenerator:
-    VALID_DIFFICULTIES = ['easy', 'medium', 'hard', 'extreme']
+    VALID_DIFFICULTIES = ['easy', 'medium', 'hard', 'expert', 'extreme']
     
     def __init__(self):
         self.solver = Sudoku()
