@@ -17,6 +17,8 @@ There is a MS-DOS version written in C++.  It is fully functional but because DO
 - Available in C++ CLI, Windows GUI, and Python (prototype)
 - Sudoku puzzle generation in C++ versions
 - Debug Log in Mono version
+- MS-Word Puzzle Generation written in Python and linked to the C++ Code
+- XML Spreadsheet 2003 Puzzle Generation in Windows, Linux, and MS-DOS Versions
 
 ## Getting Started
 
@@ -38,6 +40,11 @@ There is a MS-DOS version written in C++.  It is fully functional but because DO
 - For Python version (prototype):
   - Python 3.x
   - curses module (typically included in standard Python distributions)
+
+- For MS-Word Puzzle Generation (see separate README.md file)
+  - Python 3.x
+  - g++
+  - Internet access to download mobile code from pypi (python-docx, pybind11, setuptools)
 
 ### Installation
 

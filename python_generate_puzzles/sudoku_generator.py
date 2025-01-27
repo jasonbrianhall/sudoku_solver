@@ -1,110 +1,188 @@
-import random
+from sudoku_solver import Sudoku, PuzzleGenerator
 from docx import Document
-from docx.shared import Inches
-import sudoku_solver
-import tempfile
-import os
+from docx.shared import Pt, Inches
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import parse_xml
+from docx.oxml.ns import nsdecls
+from typing import Dict
 
 class SudokuPuzzleGenerator:
-    def __init__(self):
-        self.solver = sudoku_solver.Sudoku()
-        
-    def generate_puzzle(self, difficulty=0.5):
-        """Generate a new Sudoku puzzle with given difficulty (0.0-1.0)"""
-        self.solver.new_game()
-        
-        # First, create a solved puzzle
-        numbers = list(range(9))
-        # Fill in diagonal boxes first (these don't affect each other)
-        for i in range(0, 9, 3):
-            box_numbers = numbers.copy()
-            random.shuffle(box_numbers)
-            for row in range(3):
-                for col in range(3):
-                    self.solver.set_value(i + row, i + col, box_numbers[row * 3 + col])
-        
-        # Solve the rest
-        if self.solver.solve() != 0:
-            raise Exception("Failed to generate valid puzzle")
-            
-        # Now remove numbers to create the puzzle
-        cells = [(i, j) for i in range(9) for j in range(9)]
-        cells_to_remove = int(difficulty * 50)  # Adjust number based on difficulty
-        random.shuffle(cells)
-        
-        # Store solution
-        solution = [[self.solver.get_value(i, j) for j in range(9)] for i in range(9)]
-        
-        # Remove cells
-        for i, j in cells[:cells_to_remove]:
-            temp = self.solver.get_value(i, j)
-            self.solver.set_value(i, j, -1)  # Clear cell
-            
-            # Check if puzzle still has unique solution
-            if not self._has_unique_solution():
-                self.solver.set_value(i, j, temp)  # Restore value
-                
-        return self._get_current_grid(), solution
+    VALID_DIFFICULTIES = ['easy', 'medium', 'hard', 'extreme']
     
-    def _has_unique_solution(self):
-        """Check if current puzzle state has a unique solution"""
-        # Save current state
-        temp_file = tempfile.NamedTemporaryFile(delete=False)
-        self.solver.save_to_file(temp_file.name)
+    def __init__(self):
+        self.solver = Sudoku()
+        self.generator = PuzzleGenerator(self.solver)
         
-        # Try to solve
-        result = self.solver.solve()
-        if result != 0:
-            return False
+    def generate_puzzle(self, difficulty="easy"):
+        """Generate a new Sudoku puzzle with given difficulty"""
+        if difficulty not in self.VALID_DIFFICULTIES:
+            raise ValueError(f"Invalid difficulty. Must be one of {self.VALID_DIFFICULTIES}")
             
-        # Restore state
-        self.solver.load_from_file(temp_file.name)
-        os.unlink(temp_file.name)
-        return True
+        # Generate the puzzle
+        if not self.generator.generate_puzzle(difficulty):
+            raise Exception("Failed to generate puzzle with difficulty: " + difficulty)
+            
+        # Get unsolved puzzle state
+        puzzle = self._get_current_grid()
+        
+        # Solve to get solution
+        if self.solver.solve() != 0:
+            raise Exception("Failed to solve puzzle")
+            
+        # Get solution grid
+        solution = self._get_current_grid()
+        
+        return puzzle, solution
     
     def _get_current_grid(self):
-        """Get current grid state"""
         return [[self.solver.get_value(i, j) for j in range(9)] for i in range(9)]
 
-    def create_word_document(self, num_puzzles=1, filename="sudoku_puzzles.docx"):
-        """Create a Word document with specified number of puzzles"""
-        doc = Document()
-        doc.add_heading('Sudoku Puzzles', 0)
+    def _set_cell_border(self, cell, top=None, right=None, bottom=None, left=None):
+        """Helper function to set cell border properties"""
+        tc = cell._tc
+        tcPr = tc.get_or_add_tcPr()
         
-        for puzzle_num in range(num_puzzles):
-            puzzle, solution = self.generate_puzzle()
-            
-            # Add puzzle number
-            doc.add_heading(f'Puzzle {puzzle_num + 1}', level=1)
-            
-            # Create puzzle table
-            table = doc.add_table(rows=9, cols=9)
-            table.style = 'Table Grid'
-            
-            # Fill puzzle
-            for i in range(9):
-                for j in range(9):
-                    cell = table.cell(i, j)
-                    value = puzzle[i][j]
-                    cell.text = str(value + 1) if value != -1 else ''
-                    
-            doc.add_paragraph()  # Add space
-            
-            # Add solution if desired
-            doc.add_heading(f'Solution {puzzle_num + 1}', level=2)
-            table = doc.add_table(rows=9, cols=9)
-            table.style = 'Table Grid'
-            
-            # Fill solution
-            for i in range(9):
-                for j in range(9):
-                    cell = table.cell(i, j)
-                    cell.text = str(solution[i][j] + 1)
-                    
-            doc.add_page_break()
-            
-        doc.save(filename)
+        # Create dictionaries for border styles
+        thin_border = {'sz': '4', 'val': 'single', 'color': '000000'}
+        thick_border = {'sz': '40', 'val': 'single', 'color': '000000'}
+        
+        def create_border_element(edge, attrs):
+            return parse_xml(f'<w:{edge} {nsdecls("w")} w:sz="{attrs["sz"]}" w:val="{attrs["val"]}" w:color="{attrs["color"]}"/>')
+        
+        # Set each border
+        if top:
+            tcPr.append(create_border_element('top', thick_border if top == 'thick' else thin_border))
+        if right:
+            tcPr.append(create_border_element('right', thick_border if right == 'thick' else thin_border))
+        if bottom:
+            tcPr.append(create_border_element('bottom', thick_border if bottom == 'thick' else thin_border))
+        if left:
+            tcPr.append(create_border_element('left', thick_border if left == 'thick' else thin_border))
 
-if __name__ == "__main__":
-    generator = SudokuPuzzleGenerator()
-    generator.create_word_document(num_puzzles=5)
+    def _format_table(self, table):
+        """Apply formatting to make the Sudoku grid look proper"""
+        # Center the table on the page
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        
+        # Set table properties
+        table.allow_autofit = False
+        table.width = Inches(4.5)  # Make table square
+        
+        # Set consistent cell size and center alignment
+        for row in table.rows:
+            row.height = Inches(0.5)  # Make cells square
+            for cell in row.cells:
+                cell.width = Inches(0.5)
+                cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                paragraph = cell.paragraphs[0]
+                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                run = paragraph.runs[0] if paragraph.runs else paragraph.add_run()
+                run.font.size = Pt(14)
+                run.font.name = 'Arial'
+
+        # Apply borders
+        for i in range(9):
+            for j in range(9):
+                cell = table.cell(i, j)
+                
+                # Determine border thickness for each side
+                top = 'thick' if i == 0 or i % 3 == 0 else 'thin'
+                bottom = 'thick' if i == 8 or (i + 1) % 3 == 0 else 'thin'
+                left = 'thick' if j == 0 or j % 3 == 0 else 'thin'
+                right = 'thick' if j == 8 or (j + 1) % 3 == 0 else 'thin'
+                
+                # Apply borders to cell
+                self._set_cell_border(cell, top=top, right=right, bottom=bottom, left=left)
+
+    def create_word_document(self, puzzle_counts: Dict[str, int], filename="sudoku_puzzles.docx"):
+        """Create a Word document with specified number of puzzles for each difficulty level
+        
+        Args:
+            puzzle_counts: Dictionary with difficulty levels as keys and number of puzzles as values
+                         e.g., {'easy': 2, 'medium': 3, 'hard': 1, 'extreme': 1}
+            filename: Output filename for the Word document
+        """
+        doc = Document()
+        
+        # Center the main title
+        title = doc.add_heading('Sudoku Puzzles', 0)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Validate difficulties
+        for difficulty in puzzle_counts.keys():
+            if difficulty not in self.VALID_DIFFICULTIES:
+                raise ValueError(f"Invalid difficulty '{difficulty}'. Must be one of {self.VALID_DIFFICULTIES}")
+        
+        # Store puzzles and solutions for later
+        all_puzzles = []  # List of tuples: (difficulty, puzzle_number, puzzle_grid)
+        all_solutions = []  # List of tuples: (difficulty, puzzle_number, solution_grid)
+        
+        # Generate all puzzles first
+        for difficulty, count in puzzle_counts.items():
+            for i in range(count):
+                puzzle, solution = self.generate_puzzle(difficulty)
+                puzzle_num = len(all_puzzles) + 1
+                all_puzzles.append((difficulty, puzzle_num, puzzle))
+                all_solutions.append((difficulty, puzzle_num, solution))
+        
+        # Add all puzzles
+        puzzles_heading = doc.add_heading('Puzzles', 1)
+        puzzles_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        for difficulty, puzzle_num, puzzle in all_puzzles:
+            # Add centered puzzle heading with capitalized difficulty
+            heading = doc.add_heading(f'Puzzle {puzzle_num} ({difficulty.capitalize()})', 2)
+            heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
+            # Add blank line after heading
+            doc.add_paragraph()
+            
+            # Add centered table
+            table = doc.add_table(rows=9, cols=9)
+            table.style = 'Table Grid'
+            
+            for row in range(9):
+                for col in range(9):
+                    cell = table.cell(row, col)
+                    value = puzzle[row][col]
+                    cell.text = str(value + 1) if value >= 0 else ''
+            
+            self._format_table(table)
+            
+            # Add page break after each puzzle except the last one
+            if puzzle_num < len(all_puzzles):
+                doc.add_page_break()
+        
+        # Add page break before solutions section
+        doc.add_page_break()
+        
+        # Add all solutions
+        solutions_heading = doc.add_heading('Solutions', 1)
+        solutions_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        for difficulty, puzzle_num, solution in all_solutions:
+            # Add centered solution heading with capitalized difficulty
+            heading = doc.add_heading(f'Solution {puzzle_num} ({difficulty.capitalize()})', 2)
+            heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
+            # Add blank line after heading
+            doc.add_paragraph()
+            
+            # Add centered table
+            table = doc.add_table(rows=9, cols=9)
+            table.style = 'Table Grid'
+            
+            for row in range(9):
+                for col in range(9):
+                    cell = table.cell(row, col)
+                    value = solution[row][col]
+                    cell.text = str(value + 1) if value >= 0 else ''
+            
+            self._format_table(table)
+            
+            # Add page break after each solution except the last one
+            if puzzle_num < len(all_solutions):
+                doc.add_page_break()
+        
+        doc.save(filename)

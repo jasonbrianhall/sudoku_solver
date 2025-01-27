@@ -3,7 +3,7 @@
 # Check and compile Linux version if g++ is available
 if command -v g++ &> /dev/null; then
     echo "Compiling Linux version..."
-    g++ main.cpp sudoku.cpp generatepuzzle.cpp -lncurses -o sudoku_solver
+    g++ main.cpp sudoku.cpp generatepuzzle.cpp unixprint.cpp -lncurses -o sudoku_solver
 else
     echo "g++ not found - skipping Linux build"
 fi
@@ -11,7 +11,7 @@ fi
 # Check and compile Windows version if cross-compiler is available
 if command -v x86_64-w64-mingw32-g++ &> /dev/null; then
     echo "Compiling Windows version (NCurses, not Mono) ..."
-    x86_64-w64-mingw32-g++ main.cpp sudoku.cpp generatepuzzle.cpp -std=c++14 -lpdcurses -o sudoku_solver.exe
+    x86_64-w64-mingw32-g++ main.cpp sudoku.cpp generatepuzzle.cpp unixprint.cpp -std=c++14 -lpdcurses -o sudoku_solver.exe
 else
     echo "Windows cross-compiler not found - skipping Windows build"
 fi
