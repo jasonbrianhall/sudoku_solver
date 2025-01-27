@@ -1,7 +1,7 @@
 from sudoku_solver import Sudoku, PuzzleGenerator
 from docx import Document
 from docx.shared import Pt, Inches
-from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
@@ -62,6 +62,9 @@ class SudokuPuzzleGenerator:
 
     def _format_table(self, table):
         """Apply formatting to make the Sudoku grid look proper"""
+        # Center the table on the page
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        
         # Set table properties
         table.allow_autofit = False
         table.width = Inches(4.5)  # Make table square
@@ -101,7 +104,10 @@ class SudokuPuzzleGenerator:
             filename: Output filename for the Word document
         """
         doc = Document()
-        doc.add_heading('Sudoku Puzzles', 0)
+        
+        # Center the main title
+        title = doc.add_heading('Sudoku Puzzles', 0)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
         
         # Validate difficulties
         for difficulty in puzzle_counts.keys():
@@ -121,7 +127,9 @@ class SudokuPuzzleGenerator:
                 all_solutions.append((difficulty, puzzle_num, solution))
         
         # Add all puzzles
-        doc.add_heading('Puzzles', 1)
+        puzzles_heading = doc.add_heading('Puzzles', 1)
+        puzzles_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
         for difficulty, puzzle_num, puzzle in all_puzzles:
             # Add centered puzzle heading with capitalized difficulty
             heading = doc.add_heading(f'Puzzle {puzzle_num} ({difficulty.capitalize()})', 2)
@@ -150,7 +158,9 @@ class SudokuPuzzleGenerator:
         doc.add_page_break()
         
         # Add all solutions
-        doc.add_heading('Solutions', 1)
+        solutions_heading = doc.add_heading('Solutions', 1)
+        solutions_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
         for difficulty, puzzle_num, solution in all_solutions:
             # Add centered solution heading with capitalized difficulty
             heading = doc.add_heading(f'Solution {puzzle_num} ({difficulty.capitalize()})', 2)
