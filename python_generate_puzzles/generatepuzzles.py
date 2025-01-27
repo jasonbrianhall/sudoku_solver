@@ -1,7 +1,18 @@
 from sudoku_generator import SudokuPuzzleGenerator
 
-# Create 5 puzzles in a Word document with specified difficulty
+# Create puzzles in a Word document with different difficulty levels
 generator = SudokuPuzzleGenerator()
-generator.create_word_document(num_puzzles=5, 
-                             filename="my_sudoku_puzzles.docx",
-                             difficulty="easy")  # Can be: easy, medium, hard, expert, extreme, ultraextreme
+
+# Specify number of puzzles for each difficulty level
+puzzle_counts = {
+    'easy': 10,    # 10 easy puzzles
+    'medium': 5,   # 5 medium puzzles
+    'hard': 3,     # 3 hard puzzles
+    'extreme': 2   # 2 extreme puzzles
+}
+
+# Generate the document with all puzzles
+generator.create_word_document(
+    puzzle_counts=puzzle_counts,
+    filename="my_sudoku_puzzles.docx"
+)

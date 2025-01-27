@@ -5,15 +5,20 @@ from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
+from typing import Dict
 
 class SudokuPuzzleGenerator:
+    VALID_DIFFICULTIES = ['easy', 'medium', 'hard', 'extreme']
+    
     def __init__(self):
         self.solver = Sudoku()
         self.generator = PuzzleGenerator(self.solver)
         
     def generate_puzzle(self, difficulty="easy"):
-        """Generate a new Sudoku puzzle with given difficulty
-        Available difficulties: easy, medium, hard, expert, extreme, ultraextreme"""
+        """Generate a new Sudoku puzzle with given difficulty"""
+        if difficulty not in self.VALID_DIFFICULTIES:
+            raise ValueError(f"Invalid difficulty. Must be one of {self.VALID_DIFFICULTIES}")
+            
         # Generate the puzzle
         if not self.generator.generate_puzzle(difficulty):
             raise Exception("Failed to generate puzzle with difficulty: " + difficulty)
@@ -39,8 +44,8 @@ class SudokuPuzzleGenerator:
         tcPr = tc.get_or_add_tcPr()
         
         # Create dictionaries for border styles
-        thin_border = {'sz': '4', 'val': 'single', 'color': '000000'}  # Increased from 2 to 4
-        thick_border = {'sz': '16', 'val': 'single', 'color': '000000'}  # Increased from 8 to 16
+        thin_border = {'sz': '4', 'val': 'single', 'color': '000000'}
+        thick_border = {'sz': '16', 'val': 'single', 'color': '000000'}
         
         def create_border_element(edge, attrs):
             return parse_xml(f'<w:{edge} {nsdecls("w")} w:sz="{attrs["sz"]}" w:val="{attrs["val"]}" w:color="{attrs["color"]}"/>')
@@ -87,26 +92,38 @@ class SudokuPuzzleGenerator:
                 # Apply borders to cell
                 self._set_cell_border(cell, top=top, right=right, bottom=bottom, left=left)
 
-    def create_word_document(self, num_puzzles=1, filename="sudoku_puzzles.docx", difficulty="easy"):
-        """Create a Word document with specified number of puzzles
-        difficulty can be: easy, medium, hard, expert, extreme, ultraextreme"""
+    def create_word_document(self, puzzle_counts: Dict[str, int], filename="sudoku_puzzles.docx"):
+        """Create a Word document with specified number of puzzles for each difficulty level
+        
+        Args:
+            puzzle_counts: Dictionary with difficulty levels as keys and number of puzzles as values
+                         e.g., {'easy': 2, 'medium': 3, 'hard': 1, 'extreme': 1}
+            filename: Output filename for the Word document
+        """
         doc = Document()
         doc.add_heading('Sudoku Puzzles', 0)
         
+        # Validate difficulties
+        for difficulty in puzzle_counts.keys():
+            if difficulty not in self.VALID_DIFFICULTIES:
+                raise ValueError(f"Invalid difficulty '{difficulty}'. Must be one of {self.VALID_DIFFICULTIES}")
+        
         # Store puzzles and solutions for later
-        puzzles = []
-        solutions = []
+        all_puzzles = []  # List of tuples: (difficulty, puzzle_number, puzzle_grid)
+        all_solutions = []  # List of tuples: (difficulty, puzzle_number, solution_grid)
         
         # Generate all puzzles first
-        for i in range(num_puzzles):
-            puzzle, solution = self.generate_puzzle(difficulty)
-            puzzles.append(puzzle)
-            solutions.append(solution)
+        for difficulty, count in puzzle_counts.items():
+            for i in range(count):
+                puzzle, solution = self.generate_puzzle(difficulty)
+                puzzle_num = len(all_puzzles) + 1
+                all_puzzles.append((difficulty, puzzle_num, puzzle))
+                all_solutions.append((difficulty, puzzle_num, solution))
         
         # Add all puzzles
         doc.add_heading('Puzzles', 1)
-        for i, puzzle in enumerate(puzzles):
-            doc.add_heading(f'Puzzle {i + 1} ({difficulty})', 2)
+        for difficulty, puzzle_num, puzzle in all_puzzles:
+            doc.add_heading(f'Puzzle {puzzle_num} ({difficulty})', 2)
             
             table = doc.add_table(rows=9, cols=9)
             table.style = 'Table Grid'
@@ -120,7 +137,7 @@ class SudokuPuzzleGenerator:
             self._format_table(table)
             
             # Add page break after each puzzle except the last one
-            if i < len(puzzles) - 1:
+            if puzzle_num < len(all_puzzles):
                 doc.add_page_break()
         
         # Add page break before solutions section
@@ -128,8 +145,8 @@ class SudokuPuzzleGenerator:
         
         # Add all solutions
         doc.add_heading('Solutions', 1)
-        for i, solution in enumerate(solutions):
-            doc.add_heading(f'Solution {i + 1}', 2)
+        for difficulty, puzzle_num, solution in all_solutions:
+            doc.add_heading(f'Solution {puzzle_num} ({difficulty})', 2)
             
             table = doc.add_table(rows=9, cols=9)
             table.style = 'Table Grid'
@@ -143,7 +160,7 @@ class SudokuPuzzleGenerator:
             self._format_table(table)
             
             # Add page break after each solution except the last one
-            if i < len(solutions) - 1:
+            if puzzle_num < len(all_solutions):
                 doc.add_page_break()
         
         doc.save(filename)
