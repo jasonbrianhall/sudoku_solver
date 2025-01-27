@@ -45,7 +45,7 @@ class SudokuPuzzleGenerator:
         
         # Create dictionaries for border styles
         thin_border = {'sz': '4', 'val': 'single', 'color': '000000'}
-        thick_border = {'sz': '16', 'val': 'single', 'color': '000000'}
+        thick_border = {'sz': '40', 'val': 'single', 'color': '000000'}
         
         def create_border_element(edge, attrs):
             return parse_xml(f'<w:{edge} {nsdecls("w")} w:sz="{attrs["sz"]}" w:val="{attrs["val"]}" w:color="{attrs["color"]}"/>')
