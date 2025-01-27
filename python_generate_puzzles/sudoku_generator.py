@@ -123,8 +123,14 @@ class SudokuPuzzleGenerator:
         # Add all puzzles
         doc.add_heading('Puzzles', 1)
         for difficulty, puzzle_num, puzzle in all_puzzles:
-            doc.add_heading(f'Puzzle {puzzle_num} ({difficulty})', 2)
+            # Add centered puzzle heading with capitalized difficulty
+            heading = doc.add_heading(f'Puzzle {puzzle_num} ({difficulty.capitalize()})', 2)
+            heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
             
+            # Add blank line after heading
+            doc.add_paragraph()
+            
+            # Add centered table
             table = doc.add_table(rows=9, cols=9)
             table.style = 'Table Grid'
             
@@ -146,8 +152,14 @@ class SudokuPuzzleGenerator:
         # Add all solutions
         doc.add_heading('Solutions', 1)
         for difficulty, puzzle_num, solution in all_solutions:
-            doc.add_heading(f'Solution {puzzle_num} ({difficulty})', 2)
+            # Add centered solution heading with capitalized difficulty
+            heading = doc.add_heading(f'Solution {puzzle_num} ({difficulty.capitalize()})', 2)
+            heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
             
+            # Add blank line after heading
+            doc.add_paragraph()
+            
+            # Add centered table
             table = doc.add_table(rows=9, cols=9)
             table.style = 'Table Grid'
             
