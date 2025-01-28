@@ -1,10 +1,21 @@
 # Sudoku Solver
 
-An interactive Sudoku solver implemented in both C++ and Python, featuring a user-friendly ncurses interface for puzzle input and visualization. The C++ implementation offers robust solving capabilities with multiple advanced techniques, while the Python version serves as a basic prototype.
+An interactive Sudoku solver and puzzle generator implemented in both C++ and Python, featuring a user-friendly ncurses interface for puzzle input and visualization. The C++ implementation offers robust solving capabilities with multiple advanced techniques, while the Python version serves as a basic prototype and only serves to solve basic puzzles.
 
-There are two main C++ versions: a CLI version written in Ncurses and a GUI version designed for Microsoft Windows. Both C++ versions (Windows and CLI) can also generate puzzles to be solved.
+There are two main C++ versions
+- CLI version written in Ncurses
+- GUI version designed for Microsoft Windows. 
 
-There is a MS-DOS version written in C++.  It is fully functional but because DOSBOX is emulated, can be a little slow.
+* Both C++ versions (Windows and CLI) can also generate puzzles to be solved.  They also have the ability to export puzzles to XML Spreadsheet 2003, which is Excel compatible.
+
+There is a MS-DOS version written in C++.  It is fully functional but because DOSBOX is emulated, can be a little slow (see compile.sh on how to compile it).  It can also generate puzzles since it's based on the C++ Code and export puzzles.
+
+There are three different versions of python.
+- Pure python version that only implements basic solving algorithms (located in python directory)
+- A Python/C++ hybrid CLI based on curses that uses the C++ logic to solve puzzles (located in python_generate_puzzles directory and named sudoku_game.py)
+- An absolutely gorgeous QT5 version written in python  (located in python_generate_puzzles directory and named sudoku_game_qt5.py)
+
+There also is a script in the python puzzle generator directory to generate Sudoku puzzles in MSWORD format named generatepuzzles.py in the python_generate_puzzles directory
 
 ## Features
 
@@ -41,6 +52,11 @@ There is a MS-DOS version written in C++.  It is fully functional but because DO
   - Python 3.x
   - curses module (typically included in standard Python distributions)
 
+- For Python/C++ Hybrid:
+  - Python 3.x
+  - curses module (typically included in standard Python distributions)
+  - Access to pypi for dependencies
+
 - For MS-Word Puzzle Generation (see separate README.md file)
   - Python 3.x
   - g++
@@ -71,9 +87,16 @@ make
 ```
 
 For Windows Version:
-```bash
+```
 msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
 ```
+
+For Python/C++ Version
+```bash
+cd python_generate_puzzles
+./compile.sh
+```
+
 
 The Python version is a prototype with limited functionality and doesn't require compilation. For the best solving experience, use the C++ implementation. The Python version only has basic algorithms implemented, while the C++ versions (Windows and UNIX) can solve extreme puzzles using advanced algorithms.
 
