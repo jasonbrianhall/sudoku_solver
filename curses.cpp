@@ -176,8 +176,8 @@ int clear(void) {
 }
 
 int clrtoeol(void) {
-    printf("\033[K");  // ANSI escape sequence to clear from cursor to end of line
-    fflush(stdout);
+    // First reset attributes to ensure clean clearing
+    printf("\033[0m");
     return OK;
 }
 

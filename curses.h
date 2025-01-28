@@ -77,6 +77,7 @@ extern "C" {
 #define A_BOLD       1
 
 #define OK 0
+#define ERR -1
 
 /* Window structure */
 typedef struct _win_st {

@@ -9,10 +9,11 @@
 
 #define _NCURSES
 
+int debug_line=0;
+
 
 void Sudoku::print_debug(const char *format, ...) {
     char buffer[256];  // Buffer for formatted string
-    debug_line=0;
     // Format the string
     va_list args;
     va_start(args, format);
@@ -20,15 +21,15 @@ void Sudoku::print_debug(const char *format, ...) {
     va_end(args);
     
     // Move to position below grid
-    move(29 + debug_line, 0);
+    move(23 + debug_line, 0);
     
     // Print the formatted string
     printw("%s", buffer);
     
     clrtoeol();  // Clear rest of line
         
-    // Increment line counter, wrap around after 20 lines
-    debug_line = (debug_line + 1) % 20;
+    // Increment line counter, wrap around after 10 lines
+    debug_line = (debug_line + 1) % 10;
 }
 
 
