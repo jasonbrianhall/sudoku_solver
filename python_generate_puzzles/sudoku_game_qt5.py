@@ -5,6 +5,10 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QPushButton,
                            QSizePolicy, QLayout)
 from PyQt5.QtCore import Qt, QSize, QRect, QPoint
 from PyQt5.QtGui import QFont, QPalette, QColor
+
+from PyQt5.QtWidgets import (QDialog, QSpinBox, QDialogButtonBox, QLineEdit, 
+                           QVBoxLayout, QHBoxLayout)
+
 import sys
 from sudoku_solver import Sudoku, PuzzleGenerator
 
@@ -127,6 +131,58 @@ class SudokuButton(QPushButton):
             if isinstance(window, SudokuWindow):
                 window.game.set_value(self.x, self.y, value)
                 window.updateDisplay()
+                               
+class GeneratePuzzlesDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Generate Puzzles")
+        self.setModal(True)
+        
+        layout = QVBoxLayout(self)
+        
+        # Create spinboxes for each difficulty
+        self.spinboxes = {}
+        for difficulty in ['easy', 'medium', 'hard', 'expert', 'extreme']:
+            hlayout = QHBoxLayout()
+            label = QLabel(f"{difficulty.title()} puzzles:")
+            spinbox = QSpinBox()
+            spinbox.setRange(0, 100)
+            spinbox.setValue(0)
+            hlayout.addWidget(label)
+            hlayout.addWidget(spinbox)
+            layout.addLayout(hlayout)
+            self.spinboxes[difficulty] = spinbox
+            
+        # Add export to Word section
+        hlayout = QHBoxLayout()
+        self.filename_edit = QLineEdit("sudoku_puzzles.docx")
+        browse_button = QPushButton("Browse...")
+        browse_button.clicked.connect(self.browse)
+        hlayout.addWidget(QLabel("Output file:"))
+        hlayout.addWidget(self.filename_edit)
+        hlayout.addWidget(browse_button)
+        layout.addLayout(hlayout)
+        
+        # Add buttons
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+        
+    def browse(self):
+        filename, _ = QFileDialog.getSaveFileName(
+            self, "Save Word Document", "", "Word Documents (*.docx)")
+        if filename:
+            if not filename.endswith('.docx'):
+                filename += '.docx'
+            self.filename_edit.setText(filename)
+            
+    def get_puzzle_counts(self):
+        return {diff: spin.value() for diff, spin in self.spinboxes.items()}
+        
+    def get_filename(self):
+        return self.filename_edit.text()
                 
 class SudokuWindow(QMainWindow):
     def __init__(self):
@@ -239,11 +295,11 @@ class SudokuWindow(QMainWindow):
         file_menu.addAction(load_action)
 
         file_menu.addSeparator()
-        
-        export_action = QAction('Export to Word Document...', self)
-        export_action.triggered.connect(self.exportToWord)
-        file_menu.addAction(export_action)
-        
+    
+        generate_doc_action = QAction('Generate Puzzles to Word...', self)
+        generate_doc_action.triggered.connect(self.generatePuzzlesToWord)
+        file_menu.addAction(generate_doc_action)        
+
         # Generate menu
         generate_menu = menubar.addMenu('Generate')
         
@@ -264,6 +320,30 @@ class SudokuWindow(QMainWindow):
                 action.setShortcut(shortcut)
             action.triggered.connect(lambda checked, d=diff: self.generatePuzzle(d))
             generate_menu.addAction(action)
+
+    def generatePuzzlesToWord(self):
+        dialog = GeneratePuzzlesDialog(self)
+        if dialog.exec_() == QDialog.Accepted:
+            puzzle_counts = dialog.get_puzzle_counts()
+            filename = dialog.get_filename()
+        
+            # Check if at least one puzzle was requested
+            if not any(puzzle_counts.values()):
+                QMessageBox.warning(self, "No Puzzles", 
+                                  "Please specify at least one puzzle to generate.")
+                return
+            
+            try:
+                from sudoku_generator import SudokuPuzzleGenerator
+                generator = SudokuPuzzleGenerator()
+                generator.create_word_document(puzzle_counts=puzzle_counts, 
+                                            filename=filename)
+                QMessageBox.information(self, "Success", 
+                                      f"Puzzles successfully generated and saved to:\n{filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", 
+                                   f"Failed to generate puzzles: {str(e)}")
+
 
     def exportToWord(self):
         filename, _ = QFileDialog.getSaveFileName(self, "Export to Word", "", "Word Documents (*.docx)")
