@@ -300,6 +300,21 @@ class SudokuWindow(QMainWindow):
         generate_doc_action.triggered.connect(self.generatePuzzlesToWord)
         file_menu.addAction(generate_doc_action)        
 
+        file_menu.addSeparator()
+    
+        generate_doc_action = QAction('Genete Excel Compatible XML Spreadsheet...', self)
+        generate_doc_action.triggered.connect(self.exportToExcel)
+        file_menu.addAction(generate_doc_action)        
+
+
+        file_menu.addSeparator()  # Add separator before Quit
+        
+        quit_action = QAction('Quit', self)
+        quit_action.setShortcut('Ctrl+Q')  # Standard quit shortcut
+        quit_action.triggered.connect(self.close)  # QMainWindow's close method
+        file_menu.addAction(quit_action)
+
+
         # Generate menu
         generate_menu = menubar.addMenu('Generate')
         
@@ -343,26 +358,6 @@ class SudokuWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Error", 
                                    f"Failed to generate puzzles: {str(e)}")
-
-
-    def exportToWord(self):
-        filename, _ = QFileDialog.getSaveFileName(self, "Export to Word", "", "Word Documents (*.docx)")
-        if filename:
-            if not filename.endswith('.docx'):
-                filename += '.docx'
-            try:
-                # Create a dictionary with counts for current puzzle's difficulty
-                current_difficulty = self.getCurrentDifficulty()  # You'll need to track/determine this
-                puzzle_counts = {current_difficulty: 1}
-                
-                # Use the SudokuPuzzleGenerator to create the document
-                from sudoku_generator import SudokuPuzzleGenerator
-                generator = SudokuPuzzleGenerator()
-                generator.create_word_document(puzzle_counts=puzzle_counts, filename=filename)
-                
-                QMessageBox.information(self, "Success", f"Puzzle exported to {filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export puzzle: {str(e)}")
 
     def handleFunctionKey(self, key):
         difficulty_map = {
@@ -445,6 +440,13 @@ class SudokuWindow(QMainWindow):
     def newGame(self):
         self.game.new_game()
         self.updateDisplay()
+       
+    def exportToExcel(self):
+            filename, _ = QFileDialog.getSaveFileName(self, "Export to Excel XML", "", "Excel XML Files (*.xml)")
+            if filename:
+                if not filename.endswith('.xml'):
+                    filename += '.xml'
+                self.game.export_to_excel_xml(filename)
         
     def saveGame(self):
         filename, _ = QFileDialog.getSaveFileName(self, "Save Game", "", "Sudoku Files (*.sud)")
