@@ -170,6 +170,8 @@ int main(int argc, char* argv[]) {
       input=input+'A'-'a';
     }
     
+    //printf("\n%i\n", input);
+    //return 0;
     switch (input)
     {
       case KEY_LEFT:
