@@ -137,6 +137,7 @@ class SudokuButton(QPushButton):
             if isinstance(window, SudokuWindow):
                 window.game.clear_value(self.x, self.y)
                 window.updateDisplay()
+                
 class GeneratePuzzlesDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -209,13 +210,15 @@ class SudokuWindow(QMainWindow):
         
         # Create toolbar with solving buttons in a flow layout
         solving_methods = [
-            ('Standard\nElimination (S)', self.standardElimination),
-            ('Line\nElimination (L)', self.lineElimination),
-            ('Hidden\nSingles (N)', self.hiddenSingles),
-            ('Hidden\nPairs (H)', self.hiddenPairs),
-            ('Pointing\nPairs (P)', self.pointingPairs),
-            ('X-Wing\n(X)', self.xWing),
-            ('Solve All\n(A)', self.solveAll)
+            ('Standard\nElimination', self.standardElimination),
+            ('Line\nElimination', self.lineElimination),
+            ('Hidden\nSingles', self.hiddenSingles),
+            ('Hidden\nPairs', self.hiddenPairs),
+            ('Pointing\nPairs', self.pointingPairs),
+            ('X-Wing\n', self.xWing),
+            ('XYZ-Wing\n', self.xyWing),
+            ('Sword Fish\n', self.swordfish),
+            ('Solve All\n', self.solveAll)
         ]
         
         toolbar_widget = QWidget()
@@ -437,6 +440,19 @@ class SudokuWindow(QMainWindow):
     def xWing(self):
         self.game.find_x_wing()
         self.updateDisplay()
+
+    def xyWing(self):
+        self.game.find_xy_wing()
+        self.updateDisplay()
+
+    def xyzWing(self):
+        self.game.find_xyz_wing()
+        self.updateDisplay()
+
+    def swordfish(self):
+        self.game.find_sword_fish()
+        self.updateDisplay()
+
         
     def solveAll(self):
         self.game.solve()
