@@ -11,8 +11,45 @@ class SudokuGame:
         self.game = Sudoku()
         self.x_pos = 0
         self.y_pos = 0
-        self.header_lines = 8
+        self.header_lines = 3
         self.show_invalid = False         
+
+    def show_help(self, stdscr):
+        stdscr.clear()
+        
+        stdscr.addstr("Sudoku Help\n\n")
+        
+        stdscr.addstr("Game Controls:\n")
+        stdscr.addstr(" Arrow keys - Move cursor    F5/Shift - Save/Load Slot 1\n")
+        stdscr.addstr(" 1-9       - Fill number     F6/Shift - Save/Load Slot 2\n")
+        stdscr.addstr(" 0         - Clear cell      F7/Shift - Save/Load Slot 3\n")
+        stdscr.addstr(" Q         - Quit game       F8/Shift - Save/Load Slot 4\n")
+        stdscr.addstr("\n")
+        
+        stdscr.addstr("Puzzle Generation:\n")
+        stdscr.addstr(" F1          - Generate Easy puzzle\n")
+        stdscr.addstr(" F2          - Generate Medium puzzle\n")
+        stdscr.addstr(" F3          - Generate Hard puzzle\n")
+        stdscr.addstr(" F4          - Generate Expert puzzle\n")
+        stdscr.addstr(" Shift+F1    - Generate Extreme puzzle\n")
+        stdscr.addstr(" F5-F8       - Save Puzzle\n")
+        stdscr.addstr(" Shift F5-F8 - Load Puzzle\n")
+        stdscr.addstr(" F9-F12      - Save Puzzle as XML Spreadsheet (Excel compatible)\n")
+        stdscr.addstr("\n")
+        
+        stdscr.addstr("Solving Techniques:\n")
+        stdscr.addstr(" S - Standard elimination    N - Hidden singles    Y - Find XY Wing\n")
+        stdscr.addstr(" L - Line elimination        K - Naked sets        ; - Find XYZ Wing\n")
+        stdscr.addstr(" I - Hidden pairs            X - X-Wing            C - Simple Coloring\n")
+        stdscr.addstr(" P - Pointing pairs          F - Swordfish         Z - New Game\n")
+        stdscr.addstr(" A - Run all techniques\n")
+        stdscr.addstr("\n")
+        
+        stdscr.addstr("Press any key to return to game...")
+        
+        stdscr.refresh()
+        stdscr.getch()  # Wait for keypress
+        stdscr.clear()  # Clear help screen before returning
 
     def init_colors(self):
         curses.start_color()
@@ -21,13 +58,8 @@ class SudokuGame:
         curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Inner grid lines
 
     def print_header(self, stdscr):
-        stdscr.addstr("Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasing difficulty)\n")
-        stdscr.addstr("Commands:                          Solving techniques:                                Experimental Techniques\n")
-        stdscr.addstr(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles     Y - Find XY Wing\n")
-        stdscr.addstr(" 1-9 - Fill number                  L - Line elimination        K - Naked sets         ; - Find XYZ Wing\n")
-        stdscr.addstr(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing             C - Simple Coloring\n")
-        stdscr.addstr(" q - Quit                           P - Pointing pairs          F - Swordfish\n")
-        stdscr.addstr(" A - Run all techniques             Z - New Game               F(5-8) - Save Game     Shift F(5-8) - Load Game    F9-12 - Save Puzzle as XML\n\n")
+        stdscr.addstr("Welcome to Sudoku Solver.\n")
+        stdscr.addstr("Press (H) for Help\n")
 
     def draw_grid(self, stdscr):
         for y in range(9):
@@ -105,6 +137,9 @@ class SudokuGame:
         elif ord('1') <= key <= ord('9'):
             self.game.clean()
             self.game.set_value(self.x_pos, self.y_pos, key - ord('1'))
+        elif key in [ord(c) for c in 'Hh']:
+            self.game.show_intro()
+
         elif key in [ord(c) for c in 'Qq']:
             return False
         elif key in [ord(c) for c in 'Ss']:
