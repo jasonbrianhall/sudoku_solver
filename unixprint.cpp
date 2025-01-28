@@ -1,6 +1,10 @@
-#include <ncurses.h>
 #include "sudoku.h"
-#define _NCURSES
+
+#if defined(_WIN32) || defined(WIN32) || defined(__MINGW32__)
+    #include <curses.h>
+#else
+    #include <ncurses.h>
+    #define _NCURSES
 
 void Sudoku::print_debug(const char *format, ...) {
     char buffer[256];  // Buffer for formatted string
@@ -22,4 +26,8 @@ void Sudoku::print_debug(const char *format, ...) {
     // Increment line counter, wrap around after 20 lines
     debug_line = (debug_line + 1) % 20;
 }
+
+
+#endif
+
 
