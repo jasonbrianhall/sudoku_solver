@@ -148,7 +148,7 @@ class SudokuGame:
             self.game.lin_elim()
         elif key in [ord(c) for c in 'Cc']:
             self.game.find_simple_coloring()
-        elif key in [ord(c) for c in 'Hh']:
+        elif key in [ord(c) for c in 'Ii']:
             self.game.find_hidden_pairs()
         elif key in [ord(c) for c in 'Pp']:
             self.game.find_pointing_pairs()
