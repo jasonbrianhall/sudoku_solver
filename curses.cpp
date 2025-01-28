@@ -5,17 +5,79 @@
 #include "curses.h"
 
 #ifdef _WIN32
-#include <conio.h>
 #include <windows.h>
+#include <conio.h>
+#else
+#include <termios.h>
+#include <unistd.h>
 #endif
 
 // Global variables
 WINDOW* stdscr = NULL;
 static int current_attr = A_NORMAL;
 static int color_pairs[64][2] = {{0}};
-static HANDLE hConsole = NULL;
+static int current_cursor_state = CURSOR_NORMAL;
 
-// Implementation
+#ifdef _WIN32
+static HANDLE hConsole = NULL;
+static CONSOLE_CURSOR_INFO original_cursor;
+
+static void set_cursor_style(int style) {
+    if (hConsole == NULL) return;
+    
+    CONSOLE_CURSOR_INFO cursor = {0};
+    switch(style) {
+        case CURSOR_INVISIBLE:
+            cursor.bVisible = FALSE;
+            cursor.dwSize = 1;
+            break;
+        case CURSOR_BLOCK:
+            cursor.bVisible = TRUE;
+            cursor.dwSize = 100;  // 100% of cell height = block cursor
+            break;
+        case CURSOR_NORMAL:
+        default:
+            cursor.bVisible = TRUE;
+            cursor.dwSize = 25;   // 25% of cell height = underscore
+            break;
+    }
+    SetConsoleCursorInfo(hConsole, &cursor);
+    current_cursor_state = style;
+}
+#else
+// Unix implementation of getch
+static struct termios orig_termios;
+
+static void reset_terminal_mode()
+{
+    tcsetattr(0, TCSANOW, &orig_termios);
+}
+
+static void set_conio_terminal_mode()
+{
+    struct termios new_termios;
+
+    /* take two copies - one for now, one for later */
+    tcgetattr(0, &orig_termios);
+    memcpy(&new_termios, &orig_termios, sizeof(new_termios));
+
+    /* register cleanup handler, and set the new terminal mode */
+    atexit(reset_terminal_mode);
+    cfmakeraw(&new_termios);
+    tcsetattr(0, TCSANOW, &new_termios);
+}
+
+static int _getch()
+{
+    int r;
+    unsigned char c;
+    if ((r = read(0, &c, sizeof(c))) < 0) {
+        return r;
+    }
+    return c;
+}
+#endif
+
 WINDOW* initscr(void) {
     if (!stdscr) {
         stdscr = (WINDOW*)malloc(sizeof(WINDOW));
@@ -28,16 +90,23 @@ WINDOW* initscr(void) {
             #ifdef _WIN32
             // Enable ANSI escape sequences in Windows 10+
             hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-            DWORD mode = 0;
-            GetConsoleMode(hConsole, &mode);
-            mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-            SetConsoleMode(hConsole, mode);
+            if (hConsole != INVALID_HANDLE_VALUE) {
+                DWORD mode = 0;
+                GetConsoleMode(hConsole, &mode);
+                mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+                SetConsoleMode(hConsole, mode);
+                
+                // Save original cursor info and set block cursor
+                GetConsoleCursorInfo(hConsole, &original_cursor);
+                set_cursor_style(CURSOR_BLOCK);
+            }
+            #else
+            set_conio_terminal_mode();
+            printf("\033[?25h");  // Show cursor
             #endif
             
-            printf("\033[?1049h");  // Enable alternate screen buffer
             printf("\033[2J");      // Clear screen
             printf("\033[H");       // Move to home position
-            printf("\033[?25l");    // Hide cursor
             fflush(stdout);
         }
     }
@@ -46,15 +115,43 @@ WINDOW* initscr(void) {
 
 int endwin(void) {
     if (stdscr) {
-        printf("\033[?25h");    // Show cursor
-        printf("\033[?1049l");  // Disable alternate screen buffer
+        #ifdef _WIN32
+        if (hConsole != NULL) {
+            // Restore original cursor
+            SetConsoleCursorInfo(hConsole, &original_cursor);
+        }
+        #endif
+        
         printf("\033[0m");      // Reset all attributes
+        printf("\033[2J");      // Clear screen
+        printf("\033[H");       // Move to home position
         fflush(stdout);
         free(stdscr);
         stdscr = NULL;
     }
     return OK;
 }
+
+int curs_set(int visibility) {
+    int old_state = current_cursor_state;
+    #ifdef _WIN32
+    set_cursor_style(visibility);
+    #else
+    switch(visibility) {
+        case CURSOR_INVISIBLE:
+            printf("\033[?25l");
+            break;
+        case CURSOR_NORMAL:
+        case CURSOR_BLOCK:
+            printf("\033[?25h");
+            break;
+    }
+    fflush(stdout);
+    current_cursor_state = visibility;
+    #endif
+    return old_state;
+}
+
 
 int refresh(void) {
     fflush(stdout);

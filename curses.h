@@ -86,7 +86,14 @@ typedef struct _win_st {
     int _attrs;
 } WINDOW;
 
+/* Cursor styles */
+#define CURSOR_INVISIBLE 0
+#define CURSOR_BLOCK    1
+#define CURSOR_NORMAL   2
+
 /* Function declarations */
+int curs_set(int visibility);
+
 WINDOW* initscr(void);
 int endwin(void);
 int refresh(void);
