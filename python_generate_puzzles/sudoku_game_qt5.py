@@ -11,6 +11,19 @@ from PyQt5.QtWidgets import (QDialog, QSpinBox, QDialogButtonBox, QLineEdit,
 
 import sys
 from sudoku_solver import Sudoku, PuzzleGenerator
+from PyQt5.QtCore import QThread
+
+class GeneratorThread(QThread):
+    def __init__(self, puzzle_counts, filename):
+        super().__init__()
+        self.puzzle_counts = puzzle_counts
+        self.filename = filename
+
+    def run(self):
+        from sudoku_generator import SudokuPuzzleGenerator
+        generator = SudokuPuzzleGenerator()
+        generator.create_word_document(puzzle_counts=self.puzzle_counts, filename=self.filename)
+
 
 class QFlowLayout(QLayout):
     def __init__(self, parent=None):
@@ -357,16 +370,12 @@ class SudokuWindow(QMainWindow):
                                   "Please specify at least one puzzle to generate.")
                 return
             
-            try:
-                from sudoku_generator import SudokuPuzzleGenerator
-                generator = SudokuPuzzleGenerator()
-                generator.create_word_document(puzzle_counts=puzzle_counts, 
-                                            filename=filename)
-                QMessageBox.information(self, "Success", 
-                                      f"Puzzles successfully generated and saved to:\n{filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", 
-                                   f"Failed to generate puzzles: {str(e)}")
+            # Create and run thread
+            self.generator_thread = GeneratorThread(puzzle_counts, filename)
+            self.generator_thread.finished.connect(
+                lambda: QMessageBox.information(self, "Success", 
+                                            f"Puzzles successfully generated and saved to:\n{filename}"))
+            self.generator_thread.start()
 
     def handleFunctionKey(self, key):
         difficulty_map = {
