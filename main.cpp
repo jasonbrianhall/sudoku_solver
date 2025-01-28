@@ -21,6 +21,44 @@ using namespace std;
 #include "sudoku.h"
 #include "generatepuzzle.h"
 
+void show_help() {
+    clear();  // Clear the screen
+    
+    printw("Sudoku Help\n\n");
+    
+    printw("Game Controls:\n");
+    printw(" Arrow keys - Move cursor    F5/Shift - Save/Load Slot 1\n");
+    printw(" 1-9       - Fill number     F6/Shift - Save/Load Slot 2\n");
+    printw(" 0         - Clear cell      F7/Shift - Save/Load Slot 3\n");
+    printw(" Q         - Quit game       F8/Shift - Save/Load Slot 4\n");
+    printw("\n");
+    
+    printw("Puzzle Generation:\n");
+    printw(" F1          - Generate Easy puzzle\n");
+    printw(" F2          - Generate Medium puzzle\n");
+    printw(" F3          - Generate Hard puzzle\n");
+    printw(" F4          - Generate Expert puzzle\n");
+    printw(" Shift+F1    - Generate Extreme puzzle\n");
+    printw(" F5-F8       - Save Puzzle\n");
+    printw(" Shift F5-F8 - Load Puzzle\n");
+    printw(" F9-F12      - Save Puzzle as XML Spreadsheet (Excel compatible)\n");
+    printw("\n");
+    
+    printw("Solving Techniques:\n");
+    printw(" S - Standard elimination    N - Hidden singles    Y - Find XY Wing\n");
+    printw(" L - Line elimination        K - Naked sets        ; - Find XYZ Wing\n");
+    printw(" I - Hidden pairs            X - X-Wing            C - Simple Coloring\n");
+    printw(" P - Pointing pairs          F - Swordfish         Z - New Game\n");
+    printw(" A - Run all techniques\n");
+    printw("\n");
+    
+    printw("Press any key to return to game...");
+    
+    refresh();
+    getch();  // Wait for keypress
+    clear();  // Clear help screen before returning
+}
+
 
 void print_usage() {
     cout << "Usage:" << endl;
@@ -68,18 +106,24 @@ int main(int argc, char* argv[]) {
   init_pair(2, COLOR_BLUE, COLOR_BLACK);   // Numbers
   init_pair(3, COLOR_WHITE, COLOR_BLACK);  // Inner grid lines
   
+  int header_lines = 3;
+  
   for(;;)
   {
-    int header_lines = 8;  // Reduced header size with two columns
+    //int header_lines = 8;  // Reduced header size with two columns
     
-    printw("Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasing difficulty)\n");
+    /*printw("Welcome to Sudoku Solver (Press F1-4 or Shift F1 to generate a random puzzle with increasing difficulty)\n");
     printw("Commands:                          Solving techniques:                                Experimental Techniques\n");
     printw(" Arrow keys - Move cursor           S - Standard elimination    N - Hidden singles     Y - Find XY Wing\n");
     printw(" 1-9 - Fill number                  L - Line elimination        K - Naked sets         ; - Find XYZ Wing\n");  
     printw(" 0 - Clear cell                     H - Hidden pairs            X - X-Wing             C - Simple Coloring\n"); 
     printw(" q - Quit                           P - Pointing pairs          F - Swordfish\n");
-    printw(" A - Run all techniques             Z - New Game                F(5-8) - Save Game     Shift F(5-8) - Load Game    F9-12 - Save Puzzle as XML Spreadsheet (Excel Compatible)\n\n");
+    printw(" A - Run all techniques             Z - New Game                F(5-8) - Save Game     Shift F(5-8) - Load Game    F9-12 - Save Puzzle as XML Spreadsheet (Excel Compatible)\n\n"); */
+    printw("Welcome to Sudoku Solver.\n");
+    printw("Press (H) for Help\n");
+
     
+    move(header_lines, 0);
     // Draw the grid
     for(y=0;y<9;y++)
     {
@@ -201,6 +245,9 @@ int main(int argc, char* argv[]) {
         NewGame.Clean();
         NewGame.SetValue(x_pos, y_pos, input - '1');
         break;
+      case 'H':
+        show_help();
+        break;
       case 'Q':
         endwin();
         return 0;
@@ -219,7 +266,7 @@ int main(int argc, char* argv[]) {
         NewGame.FindSimpleColoring();
         NewGame.LogBoard(logfile, "Find Simple Coloring After");
         break;
-      case 'H':  // Hidden pairs
+      case 'I':  // Hidden pairs
         NewGame.LogBoard(logfile, "Find Hidden Pairs Before");
         NewGame.FindHiddenPairs();
         NewGame.LogBoard(logfile, "Find Hidden Pairs After");

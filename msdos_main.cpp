@@ -73,7 +73,7 @@ void show_help() {
     cputs("Solving Techniques:\r\n");
     cputs(" S - Standard elimination    N - Hidden singles    Y - Find XY Wing\r\n");
     cputs(" L - Line elimination        K - Naked sets        ; - Find XYZ Wing\r\n");
-    cputs(" H - Hidden pairs            X - X-Wing            C - Simple Coloring\r\n");
+    cputs(" I - Hidden pairs            X - X-Wing            C - Simple Coloring\r\n");
     cputs(" P - Pointing pairs          F - Swordfish         Z - New Game\r\n");
     cputs(" A - Run all techniques\r\n");
     cputs("\r\n");
@@ -353,6 +353,10 @@ int main(int argc, char* argv[]) {
                     case 'L':
                         NewGame.LinElim();
                         break;
+                    case 'I':
+                        NewGame.FindHiddenPairs();
+                        break;
+
                     case 'C':
                         NewGame.FindSimpleColoring();
                         break;
