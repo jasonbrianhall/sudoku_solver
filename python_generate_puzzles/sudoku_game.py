@@ -127,6 +127,10 @@ class SudokuGame:
             generator = PuzzleGenerator(self.game)
             generator.generate_puzzle("easy")
             self.game.clean()
+        elif key == curses.KEY_F1 + 12:
+            generator = PuzzleGenerator(self.game)
+            generator.generate_puzzle("extreme")
+            self.game.clean()
         elif key == curses.KEY_F2:
             generator = PuzzleGenerator(self.game)
             generator.generate_puzzle("medium")
@@ -147,6 +151,14 @@ class SudokuGame:
             self.game.save_to_file("sudoku_3.txt")
         elif key == curses.KEY_F8:
             self.game.save_to_file("sudoku_4.txt")
+        elif key == curses.KEY_F5+12:
+            self.game.load_from_file("sudoku_1.txt")
+        elif key == curses.KEY_F6+12:
+            self.game.load_from_file("sudoku_2.txt")
+        elif key == curses.KEY_F7+12:
+            self.game.load_from_file("sudoku_3.txt")
+        elif key == curses.KEY_F8+12:
+            self.game.load_from_file("sudoku_4.txt")
         elif key == curses.KEY_F9:
             self.game.export_to_excel_xml("puzzle1.xml")
         elif key == curses.KEY_F10:
@@ -155,7 +167,6 @@ class SudokuGame:
             self.game.export_to_excel_xml("puzzle3.xml")
         elif key == curses.KEY_F12:
             self.game.export_to_excel_xml("puzzle4.xml")
-        # Note: Handling Shift+F keys might require additional configuration
         return True
 
     def get_cursor_position(self):
