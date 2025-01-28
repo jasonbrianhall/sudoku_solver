@@ -75,7 +75,6 @@ extern "C" {
 /* Attributes */
 #define A_NORMAL     0
 #define A_BOLD       1
-#define COLOR_PAIR(n) (n << 8)
 
 #define OK 0
 
@@ -96,6 +95,7 @@ int curs_set(int visibility);
 
 WINDOW* initscr(void);
 int endwin(void);
+int COLOR_PAIR(int);
 int refresh(void);
 int move(int y, int x);
 int clear(void);

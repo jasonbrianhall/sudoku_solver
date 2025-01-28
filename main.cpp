@@ -5,7 +5,7 @@ using namespace std;
 #ifndef _WIN32
     #include <ncurses.h>
 #else
-    #include <curses.h>
+    #include "curses.h"
 #endif
 
 #define _NCURSES

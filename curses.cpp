@@ -15,7 +15,7 @@
 // Global variables
 WINDOW* stdscr = NULL;
 static int current_attr = A_NORMAL;
-static int color_pairs[64][2] = {{0}};
+static int color_pairs[64][2] = {0};
 static int current_cursor_state = CURSOR_NORMAL;
 
 #ifdef _WIN32
@@ -260,27 +260,20 @@ static void set_console_color(int color) {
     #endif
 }
 
-int attron(int attrs) {
-    current_attr |= attrs;
-    if (attrs & A_BOLD) {
-        printf("\033[1m");
+int COLOR_PAIR(int number) {
+    return number;
+}
+
+int attron(int pair) {
+    int foreground, background;
+    if (pair >= 0 && pair < 64) {
+        foreground = color_pairs[pair][0];
+        background = color_pairs[pair][1];
+        printf("\033[%d;%dm", 30 + foreground, 40 + background);
     }
-    if ((attrs >> 8) > 0) {
-        int pair = (attrs >> 8) - 1;
-        if (pair >= 0 && pair < 64) {
-            set_console_color(color_pairs[pair][0]);
-        }
-    }
-    fflush(stdout);
     return OK;
 }
 
-int attroff(int attrs) {
-    current_attr &= ~attrs;
-    printf("\033[0m");
-    if (current_attr & A_BOLD) {
-        printf("\033[1m");
-    }
-    fflush(stdout);
-    return OK;
+int attroff(int pair) {
+    printf("\033[0m");    return OK;
 }
