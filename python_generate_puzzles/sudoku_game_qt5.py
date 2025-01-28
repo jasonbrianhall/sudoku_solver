@@ -216,7 +216,8 @@ class SudokuWindow(QMainWindow):
             ('Hidden\nPairs', self.hiddenPairs),
             ('Pointing\nPairs', self.pointingPairs),
             ('X-Wing\n', self.xWing),
-            ('XYZ-Wing\n', self.xyWing),
+            ('XY-Wing\n', self.xyWing),
+            ('XYZ-Wing\n', self.xyzWing),
             ('Sword Fish\n', self.swordfish),
             ('Solve All\n', self.solveAll)
         ]
