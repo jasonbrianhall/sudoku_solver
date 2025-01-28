@@ -31,6 +31,8 @@ class SudokuGame:
 
     def draw_grid(self, stdscr):
         for y in range(9):
+
+            stdscr.move(self.header_lines + y * 2, 0)
             # Draw horizontal lines
             if y % 3 == 0:
                 stdscr.attron(curses.color_pair(1))
@@ -188,12 +190,12 @@ class SudokuGame:
         curses.curs_set(1)  # Show cursor
         stdscr.keypad(True)
         self.init_colors()
+        stdscr.clear()
+
+        self.print_header(stdscr)
 
         while True:
-            stdscr.clear()
-            self.print_header(stdscr)
-            self.draw_grid(stdscr)
-            
+            self.draw_grid(stdscr)        
             cursor_y, cursor_x = self.get_cursor_position()
             stdscr.move(cursor_y, cursor_x)
             stdscr.refresh()
