@@ -111,7 +111,23 @@ class SudokuButton(QPushButton):
     def setValue(self, value):
         self.value = value
         self.setText(str(value + 1) if value is not None and 0 <= value <= 8 else "")
-
+        
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            # Original behavior - increment
+            super().mousePressEvent(event)
+        elif event.button() == Qt.RightButton:
+            # Decrement value
+            if self.value is None:
+                value = 8  # Start at 9 when right-clicking empty cell
+            else:
+                value = (self.value - 1) % 9
+            self.value = value
+            window = self.window()
+            if isinstance(window, SudokuWindow):
+                window.game.set_value(self.x, self.y, value)
+                window.updateDisplay()
+                
 class SudokuWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -284,16 +300,20 @@ class SudokuWindow(QMainWindow):
         self.updateDisplay()
         
     def saveGame(self):
-        filename, _ = QFileDialog.getSaveFileName(self, "Save Game", "", "Sudoku Files (*.txt)")
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Game", "", "Sudoku Files (*.sud)")
         if filename:
+            if not filename.endswith('.sud'):
+                filename += '.sud'
             self.game.save_to_file(filename)
             
     def loadGame(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Load Game", "", "Sudoku Files (*.txt)")
+        filename, _ = QFileDialog.getOpenFileName(self, "Load Game", "", "Sudoku Files (*.sud)")
         if filename:
+            if not filename.endswith('.sud'):
+                filename += '.sud'
             self.game.load_from_file(filename)
-            self.updateDisplay()
-            
+            self.updateDisplay()     
+                   
     def generatePuzzle(self, difficulty):
         generator = PuzzleGenerator(self.game)
         generator.generate_puzzle(difficulty)
