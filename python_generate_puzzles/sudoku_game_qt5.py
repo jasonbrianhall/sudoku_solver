@@ -131,7 +131,12 @@ class SudokuButton(QPushButton):
             if isinstance(window, SudokuWindow):
                 window.game.set_value(self.x, self.y, value)
                 window.updateDisplay()
-                               
+        elif event.button() == Qt.MiddleButton:
+            # Clear cell
+            window = self.window()
+            if isinstance(window, SudokuWindow):
+                window.game.clear_value(self.x, self.y)
+                window.updateDisplay()
 class GeneratePuzzlesDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
