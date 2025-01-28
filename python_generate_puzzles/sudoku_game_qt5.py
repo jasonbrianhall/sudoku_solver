@@ -237,15 +237,82 @@ class SudokuWindow(QMainWindow):
         load_action.setShortcut('Ctrl+O')
         load_action.triggered.connect(self.loadGame)
         file_menu.addAction(load_action)
+
+        file_menu.addSeparator()
+        
+        export_action = QAction('Export to Word Document...', self)
+        export_action.triggered.connect(self.exportToWord)
+        file_menu.addAction(export_action)
         
         # Generate menu
         generate_menu = menubar.addMenu('Generate')
         
-        difficulties = ['easy', 'medium', 'hard', 'expert', 'extreme']
-        for diff in difficulties:
-            action = QAction(f'Generate {diff.title()} Puzzle', self)
+        difficulties = {
+            'easy': ('Easy (F1)', 'F1'),
+            'medium': ('Medium (F2)', 'F2'),
+            'hard': ('Hard (F3)', 'F3'),
+            'expert': ('Expert (F4)', 'F4'),
+            'extreme': ('Extreme (Shift+F1)', 'Shift+F1')
+        }
+        
+        for diff, (label, shortcut) in difficulties.items():
+            action = QAction(label, self)
+            if shortcut.startswith('Shift+'):
+                key = getattr(Qt, f'Key_{shortcut.split("+")[1]}')
+                action.setShortcut(Qt.ShiftModifier | key)
+            else:
+                action.setShortcut(shortcut)
             action.triggered.connect(lambda checked, d=diff: self.generatePuzzle(d))
             generate_menu.addAction(action)
+
+    def exportToWord(self):
+        filename, _ = QFileDialog.getSaveFileName(self, "Export to Word", "", "Word Documents (*.docx)")
+        if filename:
+            if not filename.endswith('.docx'):
+                filename += '.docx'
+            try:
+                # Create a dictionary with counts for current puzzle's difficulty
+                current_difficulty = self.getCurrentDifficulty()  # You'll need to track/determine this
+                puzzle_counts = {current_difficulty: 1}
+                
+                # Use the SudokuPuzzleGenerator to create the document
+                from sudoku_generator import SudokuPuzzleGenerator
+                generator = SudokuPuzzleGenerator()
+                generator.create_word_document(puzzle_counts=puzzle_counts, filename=filename)
+                
+                QMessageBox.information(self, "Success", f"Puzzle exported to {filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export puzzle: {str(e)}")
+
+    def handleFunctionKey(self, key):
+        difficulty_map = {
+            Qt.Key_F1: 'easy',
+            Qt.Key_F2: 'medium',
+            Qt.Key_F3: 'hard',
+            Qt.Key_F4: 'expert'
+        }
+        # Handle Shift+F1 for extreme
+        if key == Qt.Key_F1 and QApplication.keyboardModifiers() & Qt.ShiftModifier:
+            return 'extreme'
+        return difficulty_map.get(key)
+
+    def keyPressEvent(self, event):
+        difficulty = self.handleFunctionKey(event.key())
+        if difficulty:
+            self.generatePuzzle(difficulty)
+        else:
+            super().keyPressEvent(event)
+
+    def generatePuzzle(self, difficulty):
+        generator = PuzzleGenerator(self.game)
+        generator.generate_puzzle(difficulty)
+        self.game.clean()
+        self.current_difficulty = difficulty  # Track the current puzzle difficulty
+        self.updateDisplay()
+
+    def getCurrentDifficulty(self):
+        # Return the current puzzle's difficulty level
+        return getattr(self, 'current_difficulty', 'medium')  # Default to medium if not set
 
     def cellClicked(self):
         button = self.sender()
