@@ -12,6 +12,7 @@ class SudokuGame:
         self.x_pos = 0
         self.y_pos = 0
         self.header_lines = 8
+        self.show_invalid = False         
 
     def init_colors(self):
         curses.start_color()
@@ -79,6 +80,14 @@ class SudokuGame:
         stdscr.attron(curses.color_pair(1))
         stdscr.addstr("-" * 37)
         stdscr.attroff(curses.color_pair(1))
+
+        if self.show_invalid:
+            stdscr.addstr("\n")  # New line after the grid
+            stdscr.attron(curses.color_pair(1))  # Use red color for warning
+            stdscr.addstr("Invalid solution! Please check your entries.")
+            stdscr.attroff(curses.color_pair(1))
+
+
 
     def handle_input(self, key):
         if key == curses.KEY_LEFT:
@@ -167,6 +176,7 @@ class SudokuGame:
             self.game.export_to_excel_xml("puzzle3.xml")
         elif key == curses.KEY_F12:
             self.game.export_to_excel_xml("puzzle4.xml")
+        self.show_invalid = not self.game.is_valid_solution()            
         return True
 
     def get_cursor_position(self):
