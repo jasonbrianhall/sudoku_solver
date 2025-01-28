@@ -80,48 +80,31 @@ int clear(void) {
 
 // Fixed keyboard input handling
 int getch(void) {
-    #ifdef _WIN32
     int ch = _getch();
-    if (ch == 0 || ch == 0xE0) {
+    if (ch == 0 || ch == 0xE0) {  // Extended keys
         ch = _getch();
+        // Convert Windows scan codes to our key definitions
         switch (ch) {
-            case 72: return KEY_UP;
-            case 80: return KEY_DOWN;
-            case 75: return KEY_LEFT;
-            case 77: return KEY_RIGHT;
-            case 59: return KEY_F(1);
-            case 60: return KEY_F(2);
-            case 61: return KEY_F(3);
-            case 62: return KEY_F(4);
-            case 63: return KEY_F(5);
-            case 64: return KEY_F(6);
-            case 65: return KEY_F(7);
-            case 66: return KEY_F(8);
-            case 67: return KEY_F(9);
-            case 68: return KEY_F(10);
-            case 133: return KEY_F(11);
-            case 134: return KEY_F(12);
+            case 0x48: return KEY_UP;    // Up arrow
+            case 0x50: return KEY_DOWN;   // Down arrow
+            case 0x4B: return KEY_LEFT;   // Left arrow
+            case 0x4D: return KEY_RIGHT;  // Right arrow
+            case 0x3B: return KEY_F(1);   // F1
+            case 0x3C: return KEY_F(2);   // F2
+            case 0x3D: return KEY_F(3);   // F3
+            case 0x3E: return KEY_F(4);   // F4
+            case 0x3F: return KEY_F(5);   // F5
+            case 0x40: return KEY_F(6);   // F6
+            case 0x41: return KEY_F(7);   // F7
+            case 0x42: return KEY_F(8);   // F8
+            case 0x43: return KEY_F(9);   // F9
+            case 0x44: return KEY_F(10);  // F10
+            case 0x85: return KEY_F(11);  // F11
+            case 0x86: return KEY_F(12);  // F12
             default: return ch;
         }
     }
     return ch;
-    #else
-    // Unix implementation
-    int c = getchar();
-    if (c == 27) {
-        c = getchar();
-        if (c == '[') {
-            c = getchar();
-            switch (c) {
-                case 'A': return KEY_UP;
-                case 'B': return KEY_DOWN;
-                case 'C': return KEY_RIGHT;
-                case 'D': return KEY_LEFT;
-            }
-        }
-    }
-    return c;
-    #endif
 }
 
 int wgetch(WINDOW *win) {
