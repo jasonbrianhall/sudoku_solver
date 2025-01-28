@@ -162,7 +162,7 @@ int move(int y, int x) {
     if (stdscr) {
         stdscr->_cury = y;
         stdscr->_curx = x;
-        printf("\033[%d;%dH", y + 1, x + 1);
+        printf("\033[%d;%dH", y+1, x + 1);
         fflush(stdout);
     }
     return OK;
@@ -171,6 +171,12 @@ int move(int y, int x) {
 int clear(void) {
     printf("\033[2J");
     printf("\033[H");
+    fflush(stdout);
+    return OK;
+}
+
+int clrtoeol(void) {
+    printf("\033[K");  // ANSI escape sequence to clear from cursor to end of line
     fflush(stdout);
     return OK;
 }

@@ -4,7 +4,11 @@
     #include "curses.h"
 #else
     #include <ncurses.h>
-    #define _NCURSES
+
+#endif
+
+#define _NCURSES
+
 
 void Sudoku::print_debug(const char *format, ...) {
     char buffer[256];  // Buffer for formatted string
@@ -27,7 +31,5 @@ void Sudoku::print_debug(const char *format, ...) {
     debug_line = (debug_line + 1) % 20;
 }
 
-
-#endif
 
 

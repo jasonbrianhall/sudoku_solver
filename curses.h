@@ -107,6 +107,7 @@ int start_color(void);
 int init_pair(short pair, short f, short b);
 int attron(int attrs);
 int attroff(int attrs);
+int clrtoeol(void);
 
 /* Global variable declarations */
 extern WINDOW* stdscr;

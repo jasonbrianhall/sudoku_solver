@@ -56,6 +56,7 @@
     <ClCompile Include="win_main.cpp" />
     <ClCompile Include="sudoku.cpp" />
     <ClCompile Include="generatepuzzle.cpp"/>
+    <ClCompile Include="winprint.cpp"/>
     <ResourceCompile Include="app.rc" />
     <Image Include="app.ico" />
   </ItemGroup>
