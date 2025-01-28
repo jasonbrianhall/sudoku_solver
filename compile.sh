@@ -10,10 +10,15 @@ fi
 
 # Check and compile Windows version if cross-compiler is available
 if command -v x86_64-w64-mingw32-g++ &> /dev/null; then
-    echo "Compiling Windows version (NCurses, not Mono) ..."
+    echo "Compiling Windows version (Fake NCurses, not Mono) as Static ..."
 
     # This version uses curses.cpp; a miniature version of ncurses I wrote so it can be statically compiled;  -pdcurses doesn't work with -static and then requires 30+ DLLs
     x86_64-w64-mingw32-g++ main.cpp sudoku.cpp generatepuzzle.cpp unixprint.cpp curses.cpp -std=c++14 -static -o sudoku_solver.exe
+
+    echo "Compiling Windows version (PDCurses) ..."
+    x86_64-w64-mingw32-g++ main.cpp sudoku.cpp generatepuzzle.cpp pdcursesprint.cpp curses.cpp -lpdcurses -std=c++14 -o sudoku_solver_pdcurses.exe
+
+
 else
     echo "Windows cross-compiler not found - skipping Windows build"
 fi
