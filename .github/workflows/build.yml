@@ -34,19 +34,18 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pyinstaller
+        pip install pyinstaller pybind11
 
     # Build the standalone executable
     - name: Build C++ Executable
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
 
-    # Build the Python extension
+    # Build the Python extension using setup.py
     - name: Build Python Extension
       working-directory: python_generate_puzzles
       run: |
-        cl /c /O2 /MT /DWIN32 /DNDEBUG /I"${{env.pythonLocation}}\include" sudoku.cpp generatepuzzle.cpp sudoku_wrapper.cpp
-        link /DLL /OUT:sudoku_solver.pyd sudoku.obj generatepuzzle.obj sudoku_wrapper.obj /LIBPATH:"${{env.pythonLocation}}\libs" python310.lib
+        python setup.py build_ext --inplace --force
 
     - name: Create PyInstaller Spec
       working-directory: python_generate_puzzles
