@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QPushButton, 
                            QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, 
                            QMessageBox, QMenuBar, QMenu, QAction, QFileDialog,
@@ -129,27 +130,53 @@ class SudokuButton(QPushButton):
         self.value = value
         self.setText(str(value + 1) if value is not None and 0 <= value <= 8 else "")
         
+    def incrementValue(self):
+        if self.value is None:  # Empty cell
+            value = 0  # Start at 1
+        elif self.value == 8:  # At 9
+            value = None  # Clear the cell
+        else:
+            value = self.value + 1
+        self.updateCell(value)
+        
+    def decrementValue(self):
+        if self.value<0:  # Empty cell
+            value = 8  # Go to 9 (stored as 8)
+        elif self.value == 0:  # At 1
+            value = None  # Clear the cell
+        else:
+            value = self.value - 1
+        self.updateCell(value)
+        
+    def updateCell(self, value):
+        self.value = value
+        window = self.window()
+        if isinstance(window, SudokuWindow):
+            if value is None:
+                window.game.clear_value(self.x, self.y)
+            else:
+                # Ensure value is between 0 and 8 before setting
+                if 0 <= value <= 8:
+                    window.game.set_value(self.x, self.y, value)
+            window.updateDisplay()
+        
+    def wheelEvent(self, event):
+        delta = event.angleDelta().y()
+        if delta > 0:  # Scroll up
+            self.incrementValue()
+        else:  # Scroll down
+            self.decrementValue()
+        event.accept()
+        
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            # Original behavior - increment
-            super().mousePressEvent(event)
+            self.incrementValue()
         elif event.button() == Qt.RightButton:
-            # Decrement value
-            if self.value is None:
-                value = 8  # Start at 9 when right-clicking empty cell
-            else:
-                value = (self.value - 1) % 9
-            self.value = value
-            window = self.window()
-            if isinstance(window, SudokuWindow):
-                window.game.set_value(self.x, self.y, value)
-                window.updateDisplay()
+            self.decrementValue()
         elif event.button() == Qt.MiddleButton:
-            # Clear cell
-            window = self.window()
-            if isinstance(window, SudokuWindow):
-                window.game.clear_value(self.x, self.y)
-                window.updateDisplay()
+            self.updateCell(None)
+        # Mark the event as handled
+        event.accept()
                 
 class GeneratePuzzlesDialog(QDialog):
     def __init__(self, parent=None):

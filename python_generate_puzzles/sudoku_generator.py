@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from sudoku_solver import Sudoku, PuzzleGenerator
 from docx import Document
 from docx.shared import Pt, Inches
