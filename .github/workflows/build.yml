@@ -40,10 +40,37 @@ jobs:
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
 
-    - name: Copy C++ Build to Python Directory
-      run: |
-        copy x64\Release\SudokuSolver.dll "python_generate_puzzles\sudoku_solver.pyd"
+    - name: Verify Build Output and Directory Structure
       shell: cmd
+      run: |
+        echo "Current directory:"
+        cd
+        echo.
+        echo "Directory structure:"
+        dir /s /b
+        echo.
+        echo "Content of x64 folder:"
+        dir /s x64
+        echo.
+        echo "All DLL files in workspace:"
+        dir /s *.dll
+
+    - name: Copy C++ Build to Python Directory
+      shell: cmd
+      run: |
+        echo "Creating destination directory if it doesn't exist..."
+        if not exist "python_generate_puzzles" mkdir python_generate_puzzles
+        echo.
+        echo "Attempting to copy files..."
+        if exist "x64\Release\sudoku_solver.dll" (
+          copy /Y "x64\Release\sudoku_solver.dll" "python_generate_puzzles\sudoku_solver.pyd"
+        ) else if exist "x64\Release\SudokuSolver.dll" (
+          copy /Y "x64\Release\SudokuSolver.dll" "python_generate_puzzles\sudoku_solver.pyd"
+        ) else (
+          echo "DLL file not found in expected location"
+          dir /s *.dll
+          exit 1
+        )
 
     - name: Build Python Extension
       working-directory: python_generate_puzzles
@@ -119,23 +146,5 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           Automated release from CI build
-          Commit: ${{ github.sha }}
-          Build number: ${{ github.run_number }}
-
-    - name: Create Dev Build
-      if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-      id: create_dev_build
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          x64/Release/SudokuSolver.exe
-          python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
-        tag_name: bleedingedge-v${{ github.run_number }}
-        name: Dev Build ${{ github.run_number }}
-        draft: false
-        prerelease: true
-        token: ${{ secrets.GITHUB_TOKEN }}
-        body: |
-          Development build
           Commit: ${{ github.sha }}
           Build number: ${{ github.run_number }}
