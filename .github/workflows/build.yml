@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: write # Required for creating releases
+      contents: write
     
     steps:
     - uses: actions/checkout@v4
@@ -23,16 +23,92 @@ jobs:
     - name: Setup Developer Command Prompt
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Build Solution
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install Python dependencies
+      working-directory: python_generate_puzzles
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller pybind11
+
+    # Build the standalone executable
+    - name: Build C++ Executable
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
+
+    # Build the Python extension using setup.py
+    - name: Build Python Extension
+      working-directory: python_generate_puzzles
+      run: |
+        python setup.py build_ext --inplace --force
+
+    - name: Create PyInstaller Spec
+      working-directory: python_generate_puzzles
+      shell: cmd
+      run: |
+        echo # -*- mode: python ; coding: utf-8 -*- > sudoku.spec
+        echo. >> sudoku.spec
+        echo block_cipher = None >> sudoku.spec
+        echo. >> sudoku.spec
+        echo a = Analysis( >> sudoku.spec
+        echo     ['sudoku_game_qt5.py'], >> sudoku.spec
+        echo     pathex=[], >> sudoku.spec
+        echo     binaries=[], >> sudoku.spec
+        echo     datas=[], >> sudoku.spec
+        echo     hiddenimports=['PyQt5.sip'], >> sudoku.spec
+        echo     hookspath=[], >> sudoku.spec
+        echo     hooksconfig={}, >> sudoku.spec
+        echo     runtime_hooks=[], >> sudoku.spec
+        echo     excludes=[], >> sudoku.spec
+        echo     win_no_prefer_redirects=False, >> sudoku.spec
+        echo     win_private_assemblies=False, >> sudoku.spec
+        echo     cipher=block_cipher, >> sudoku.spec
+        echo     noarchive=False, >> sudoku.spec
+        echo ) >> sudoku.spec
+        echo. >> sudoku.spec
+        echo a.binaries += [('sudoku_solver.pyd', './sudoku_solver.pyd', 'BINARY')] >> sudoku.spec
+        echo. >> sudoku.spec
+        echo pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher) >> sudoku.spec
+        echo. >> sudoku.spec
+        echo exe = EXE( >> sudoku.spec
+        echo     pyz, >> sudoku.spec
+        echo     a.scripts, >> sudoku.spec
+        echo     a.binaries, >> sudoku.spec
+        echo     a.zipfiles, >> sudoku.spec
+        echo     a.datas, >> sudoku.spec
+        echo     [], >> sudoku.spec
+        echo     name='sudoku_solver_qt5_python', >> sudoku.spec
+        echo     debug=False, >> sudoku.spec
+        echo     bootloader_ignore_signals=False, >> sudoku.spec
+        echo     strip=False, >> sudoku.spec
+        echo     upx=True, >> sudoku.spec
+        echo     upx_exclude=[], >> sudoku.spec
+        echo     runtime_tmpdir=None, >> sudoku.spec
+        echo     console=False, >> sudoku.spec
+        echo     disable_windowed_traceback=False, >> sudoku.spec
+        echo     target_arch=None, >> sudoku.spec
+        echo     codesign_identity=None, >> sudoku.spec
+        echo     entitlements_file=None, >> sudoku.spec
+        echo ) >> sudoku.spec
+
+    - name: Build Python Executable
+      working-directory: python_generate_puzzles
+      run: |
+        pyinstaller --clean sudoku.spec
 
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        files: x64/Release/SudokuSolver.exe
+        files: |
+          x64/Release/SudokuSolver.exe
+          python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
         tag_name: v${{ github.run_number }}
         name: Release ${{ github.run_number }}
         draft: false
@@ -48,7 +124,9 @@ jobs:
       id: create_dev_build
       uses: softprops/action-gh-release@v1
       with:
-        files: x64/Release/SudokuSolver.exe
+        files: |
+          x64/Release/SudokuSolver.exe
+          python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
         tag_name: bleedingedge-v${{ github.run_number }}
         name: Dev Build ${{ github.run_number }}
         draft: false
