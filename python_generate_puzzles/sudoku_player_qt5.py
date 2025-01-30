@@ -33,14 +33,15 @@ class SudokuButton(QPushButton):
         self.value = value
         # Only set as original if it has a non-zero value
         self.original = is_original and value is not None and value > 0
-        
+    
         # Don't display zero values
         if value > 0:
             self.setText(str(value + 1))
-            self.setStyleSheet("QWidget { font-weight: bold; color: black; }")
+            if is_original:
+                self.setStyleSheet(self.styleSheet() + "QWidget { font-weight: bold; }")
         else:
             self.setText("")
-            self.setStyleSheet("")
+            self.setStyleSheet(self.styleSheet().replace("font-weight: bold;", ""))
             
     def setMistake(self, is_mistake):
         self.is_mistake = is_mistake
@@ -121,39 +122,44 @@ class SudokuWindow(QMainWindow):
     def initUI(self):
         self.setWindowTitle('Sudoku Game')
         self.setMinimumSize(600, 700)
-        
+    
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
-        
+    
         # Create menu bar
         self.createMenus()
-        
+    
         # Create top bar with timer and check mistakes button
         top_bar = QHBoxLayout()
-        
+    
         self.check_mistakes_btn = QPushButton('Check for Mistakes')
         self.check_mistakes_btn.clicked.connect(self.checkMistakes)
         top_bar.addWidget(self.check_mistakes_btn)
-        
+    
         self.timer_label = QLabel('Time: 00:00')
         self.timer_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         top_bar.addWidget(self.timer_label)
-        
+    
         main_layout.addLayout(top_bar)
-        
+    
         # Create grid layout for Sudoku board
         grid_widget = QWidget()
         grid_widget.setStyleSheet("background-color: white;")
         self.grid = QGridLayout(grid_widget)
-        self.grid.setSpacing(0)
-        
+        self.grid.setSpacing(0)  # Remove space between cells
+        self.grid.setContentsMargins(0, 0, 0, 0)  # Remove margins
+    
         # Create buttons for each cell
         self.buttons = [[None for _ in range(9)] for _ in range(9)]
         for y in range(9):
             for x in range(9):
-                button = SudokuButton(x, y, grid_widget)  # Pass parent widget
+                button = SudokuButton(x, y, grid_widget)
+            
+                # Build the style string
                 style = "QWidget { border: 1px solid gray; "
+            
+                # Add thick borders for 3x3 grid
                 if x % 3 == 0:
                     style += "border-left: 2px solid black; "
                 if x == 8:
@@ -162,22 +168,24 @@ class SudokuWindow(QMainWindow):
                     style += "border-top: 2px solid black; "
                 if y == 8:
                     style += "border-bottom: 2px solid black; "
-                style += "}"
+                
+                style += "background-color: white; }"
                 button.setStyleSheet(style)
+            
                 self.grid.addWidget(button, y, x)
                 self.buttons[y][x] = button
-        
+    
         # Make grid squares
         for i in range(9):
             self.grid.setColumnStretch(i, 1)
             self.grid.setRowStretch(i, 1)
-            
+    
         main_layout.addWidget(grid_widget)
-        
+    
         # Status label
         self.status_label = QLabel()
         self.status_label.setStyleSheet("color: red;")
-        main_layout.addWidget(self.status_label)
+        main_layout.addWidget(self.status_label)        
 
     def createMenus(self):
         menubar = self.menuBar()
