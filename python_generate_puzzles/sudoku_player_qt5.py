@@ -259,6 +259,16 @@ class SudokuWindow(QMainWindow):
             
         file_menu.addSeparator()
         
+        
+        # Add Clear Board action
+        clear_action = QAction('Restart Puzzle', self)
+        clear_action.setShortcut('Ctrl+R')  # R for Reset
+        clear_action.triggered.connect(self.clearBoard)
+        file_menu.addAction(clear_action)
+
+        file_menu.addSeparator()
+
+
         quit_action = QAction('Quit', self)
         quit_action.setShortcut('Ctrl+Q')
         quit_action.triggered.connect(self.close)
@@ -293,6 +303,29 @@ class SudokuWindow(QMainWindow):
             action.triggered.connect(slot)
             cheat_menu.addAction(action)
 
+    def clearBoard(self):
+            # Reset game to original state and clear mistake highlights
+            for y in range(9):
+                for x in range(9):
+                    # Clear any mistake highlights
+                    self.buttons[y][x].setMistake(False)
+                    
+                    # Reset values to original state
+                    value = self.original_puzzle[y][x]
+                    if value == -1:
+                        self.game.clear_value(x, y)
+                    else:   
+                        self.game.set_value(x, y, value)
+        
+            # Update display
+            self.updateDisplay()
+        
+            # Reset timer
+            self.timer.stop()
+            self.elapsed_time = 0
+            self.timer_label.setText('Time: 00:00')
+            self.timer.start(1000)
+            
     def standardElimination(self):
         self.game.std_elim()
         self.updateDisplay()
