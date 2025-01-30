@@ -73,10 +73,32 @@ class SudokuButton(QPushButton):
             
     def setMistake(self, is_mistake):
         self.is_mistake = is_mistake
+    
+        # Build the style string
+        style = "QWidget { border: 1px solid gray; "
+    
+        # Add thick borders for 3x3 grid based on position
+        if self.x % 3 == 0:
+            style += "border-left: 2px solid black; "
+        if self.x == 8:
+            style += "border-right: 2px solid black; "
+        if self.y % 3 == 0:
+            style += "border-top: 2px solid black; "
+        if self.y == 8:
+            style += "border-bottom: 2px solid black; "
+    
+        # Add background color based on mistake state
         if is_mistake:
-            self.setStyleSheet("QWidget { background-color: #ffcccc; }")
-        elif not self.original:
-            self.setStyleSheet("")
+            style += "background-color: #ffcccc; "
+        else:
+            style += "background-color: white; "
+    
+        # Add font weight if original
+        if self.original:
+            style += "font-weight: bold; "
+        
+        style += "}"
+        self.setStyleSheet(style)
             
     def incrementValue(self):
         if self.value is None:  # Empty cell
