@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QTabWidget, QTableWidget,
                            QTableWidgetItem, QHeaderView, QInputDialog, QLineEdit,
                            QLabel, QWidget)
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QColor, QBrush
 
 class LeaderboardTab(QWidget):
     def __init__(self, difficulty, records, parent=None):
@@ -27,6 +28,13 @@ class LeaderboardTab(QWidget):
         header.setSectionResizeMode(1, QHeaderView.Stretch)
         header.setSectionResizeMode(2, QHeaderView.Stretch)
         header.setSectionResizeMode(3, QHeaderView.Stretch)
+        
+        # Define medal colors using QColor
+        colors = [
+            QColor("#FFD700"),  # Gold
+            QColor("#C0C0C0"),  # Silver
+            QColor("#CD7F32")   # Bronze
+        ]
         
         # Populate table
         self.table.setRowCount(len(records))
@@ -53,11 +61,11 @@ class LeaderboardTab(QWidget):
             date_item.setTextAlignment(Qt.AlignCenter)
             self.table.setItem(i, 3, date_item)
             
-            # Highlight gold, silver, bronze
+            # Highlight gold, silver, bronze using QBrush
             if i < 3:
-                colors = ["#FFD700", "#C0C0C0", "#CD7F32"]
+                brush = QBrush(colors[i])
                 for col in range(4):
-                    self.table.item(i, col).setBackground(colors[i])
+                    self.table.item(i, col).setBackground(brush)
         
         layout.addWidget(self.table)
 
