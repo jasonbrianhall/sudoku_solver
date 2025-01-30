@@ -35,7 +35,7 @@ class SudokuButton(QPushButton):
         self.original = is_original and value is not None and value > 0
     
         # Don't display zero values
-        if value > 0:
+        if value >= 0:
             self.setText(str(value + 1))
             if is_original:
                 self.setStyleSheet(self.styleSheet() + "QWidget { font-weight: bold; }")
@@ -219,6 +219,69 @@ class SudokuWindow(QMainWindow):
         best_times_action.setShortcut('Ctrl+B')
         best_times_action.triggered.connect(self.showBestTimes)
         view_menu.addAction(best_times_action)
+
+        # Add Cheat menu
+        cheat_menu = menubar.addMenu('Cheat')
+    
+        # Add all solving techniques
+        solving_techniques = [
+            ('Standard Elimination', self.standardElimination, 'Ctrl+E'),
+            ('Line Elimination', self.lineElimination, 'Ctrl+L'),
+            ('Hidden Singles', self.hiddenSingles, 'Ctrl+H'),
+            ('Hidden Pairs', self.hiddenPairs, 'Ctrl+P'),
+            ('Pointing Pairs', self.pointingPairs, 'Ctrl+T'),
+            ('X-Wing', self.xWing, 'Ctrl+X'),
+            ('XY-Wing', self.xyWing, 'Ctrl+Y'),
+            ('XYZ-Wing', self.xyzWing, 'Ctrl+Z'),
+            ('Sword Fish', self.swordfish, 'Ctrl+F'),
+            ('Solve All', self.solveAll, 'Ctrl+S')
+        ]
+
+        for label, slot, shortcut in solving_techniques:
+            action = QAction(label, self)
+            action.setShortcut(shortcut)
+            action.triggered.connect(slot)
+            cheat_menu.addAction(action)
+
+    def standardElimination(self):
+        self.game.std_elim()
+        self.updateDisplay()
+
+    def lineElimination(self):
+        self.game.lin_elim()
+        self.updateDisplay()
+
+    def hiddenSingles(self):
+        self.game.find_hidden_singles()
+        self.updateDisplay()
+
+    def hiddenPairs(self):
+        self.game.find_hidden_pairs()
+        self.updateDisplay()
+
+    def pointingPairs(self):
+        self.game.find_pointing_pairs()
+        self.updateDisplay()
+
+    def xWing(self):
+        self.game.find_x_wing()
+        self.updateDisplay()
+
+    def xyWing(self):
+        self.game.find_xy_wing()
+        self.updateDisplay()
+
+    def xyzWing(self):
+        self.game.find_xyz_wing()
+        self.updateDisplay()
+
+    def swordfish(self):
+        self.game.find_sword_fish()
+        self.updateDisplay()
+
+    def solveAll(self):
+        self.game.solve()
+        self.updateDisplay()
 
     def showBestTimes(self):
         dialog = LeaderboardDialog(self)
