@@ -275,35 +275,35 @@ class SudokuWindow(QMainWindow):
                 if current_value !=-1 and current_value != self.solution[y][x]:
                     self.buttons[y][x].setMistake(True)
 
-def checkCompletion(self):
-    if self.game.is_valid_solution():
-        filled = all(self.game.get_value(x, y) >= 0 
+    def checkCompletion(self):
+        if self.game.is_valid_solution():
+            filled = all(self.game.get_value(x, y) >= 0 
                     for x in range(9) for y in range(9))
-        if filled:
-            self.timer.stop()
-            made_top_10, rank, initials = save_best_time(
-                self, 
-                self.current_difficulty, 
-                self.elapsed_time
-            )
+            if filled:
+                self.timer.stop()
+                made_top_10, rank, initials = save_best_time(
+                    self, 
+                    self.current_difficulty, 
+                    self.elapsed_time
+                )
         
-            minutes = self.elapsed_time // 60
-            seconds = self.elapsed_time % 60
-            time_str = f"{minutes:02d}:{seconds:02d}"
+                minutes = self.elapsed_time // 60
+                seconds = self.elapsed_time % 60
+                time_str = f"{minutes:02d}:{seconds:02d}"
         
-            message = f"You solved the puzzle in {time_str}!"
-            if made_top_10:
-                message += f"\nCongratulations {initials}! "
-                message += f"You made the leaderboard at rank #{rank}!"
+                message = f"You solved the puzzle in {time_str}!"
+                if made_top_10:
+                    message += f"\nCongratulations {initials}! "
+                    message += f"You made the leaderboard at rank #{rank}!"
             
-            QMessageBox.information(self, "Puzzle Completed!", message)
+                QMessageBox.information(self, "Puzzle Completed!", message)
             
-            # Show the leaderboard if made top 10
-            if made_top_10:
-                self.showBestTimes()
+                # Show the leaderboard if made top 10
+                if made_top_10:
+                    self.showBestTimes()
             
-            # Generate a new puzzle with the same difficulty
-            self.generatePuzzle(self.current_difficulty)
+                # Generate a new puzzle with the same difficulty
+                self.generatePuzzle(self.current_difficulty)
             
 def main():
     app = QApplication(sys.argv)
