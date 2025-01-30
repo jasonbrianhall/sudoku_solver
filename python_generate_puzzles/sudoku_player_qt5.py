@@ -23,6 +23,34 @@ class SudokuButton(QPushButton):
         self.is_mistake = False
         self.clicked.connect(self.handleClick)  # Connect the click signal
         self.current_difficulty = 'easy'
+
+        # Enable focus and hover events
+        self.setFocusPolicy(Qt.StrongFocus)
+        
+    def enterEvent(self, event):
+        # When mouse enters the button, give it keyboard focus
+        if not self.original:
+            self.setFocus()
+        super().enterEvent(event)
+        
+    def leaveEvent(self, event):
+        # When mouse leaves, clear focus
+        self.clearFocus()
+        super().leaveEvent(event)
+        
+    def keyPressEvent(self, event):
+        if not self.original:
+            key = event.text()
+            if key.isdigit():
+                num = int(key)
+                if 1 <= num <= 9:
+                    # Convert 1-9 input to 0-8 internal value
+                    self.updateCell(num - 1)
+                else:
+                    self.updateCell(None)
+            elif event.key() == Qt.Key_Delete or event.key() == Qt.Key_Backspace:
+                self.updateCell(None)
+        super().keyPressEvent(event)
         
     def handleClick(self):
         # Called when button is clicked normally
@@ -78,7 +106,7 @@ class SudokuButton(QPushButton):
                 else:
                     if value>=0:
                         window.game.set_value(self.x, self.y, value)
-                if value >= 0:
+                if not value==None and value >= 0:
                     self.setText(str(value + 1))
                 else:
                     self.setText("")

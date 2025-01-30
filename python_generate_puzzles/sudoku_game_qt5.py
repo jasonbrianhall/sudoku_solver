@@ -125,6 +125,33 @@ class SudokuButton(QPushButton):
         self.setMinimumSize(QSize(50, 50))
         self.setFont(QFont('Arial', 14))
         self.value = None
+
+        # Enable focus and hover events
+        self.setFocusPolicy(Qt.StrongFocus)
+        
+    def enterEvent(self, event):
+        # When mouse enters the button, give it keyboard focus
+        self.setFocus()
+        super().enterEvent(event)
+        
+    def leaveEvent(self, event):
+        # When mouse leaves, clear focus
+        self.clearFocus()
+        super().leaveEvent(event)
+        
+    def keyPressEvent(self, event):
+        key = event.text()
+        if key.isdigit():
+            num = int(key)
+            if 1 <= num <= 9:
+                # Convert 1-9 input to 0-8 internal value
+                self.updateCell(num - 1)
+            else:
+                self.updateCell(None)
+        elif event.key() == Qt.Key_Delete or event.key() == Qt.Key_Backspace:
+            self.updateCell(None)
+        super().keyPressEvent(event)
+
         
     def setValue(self, value):
         self.value = value
