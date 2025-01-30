@@ -329,42 +329,59 @@ class SudokuWindow(QMainWindow):
     def standardElimination(self):
         self.game.std_elim()
         self.updateDisplay()
+        self.checkCompletion()
+
 
     def lineElimination(self):
         self.game.lin_elim()
         self.updateDisplay()
+        self.checkCompletion()
+
 
     def hiddenSingles(self):
         self.game.find_hidden_singles()
         self.updateDisplay()
+        self.checkCompletion()
 
     def hiddenPairs(self):
         self.game.find_hidden_pairs()
         self.updateDisplay()
+        self.checkCompletion()
+
 
     def pointingPairs(self):
         self.game.find_pointing_pairs()
         self.updateDisplay()
+        self.checkCompletion()
+
 
     def xWing(self):
         self.game.find_x_wing()
         self.updateDisplay()
+        self.checkCompletion()
+
 
     def xyWing(self):
         self.game.find_xy_wing()
         self.updateDisplay()
+        self.checkCompletion()
 
     def xyzWing(self):
         self.game.find_xyz_wing()
         self.updateDisplay()
+        self.checkCompletion()
+
 
     def swordfish(self):
         self.game.find_sword_fish()
         self.updateDisplay()
+        self.checkCompletion()
+
 
     def solveAll(self):
         self.game.solve()
         self.updateDisplay()
+        self.checkCompletion()
 
     def showBestTimes(self):
         dialog = LeaderboardDialog(self)
