@@ -8,7 +8,6 @@ from PyQt5.QtGui import QFont
 
 import sys
 from sudoku_solver import Sudoku, PuzzleGenerator
-from besttimes import LeaderboardDialog, save_best_time
 
 class SudokuButton(QPushButton):
     def __init__(self, x, y, parent=None):
@@ -22,7 +21,6 @@ class SudokuButton(QPushButton):
         self.original = False
         self.is_mistake = False
         self.clicked.connect(self.handleClick)  # Connect the click signal
-        self.current_difficulty = 'easy'
         
     def handleClick(self):
         # Called when button is clicked normally
@@ -32,12 +30,15 @@ class SudokuButton(QPushButton):
     def setValue(self, value, is_original=False):
         self.value = value
         # Only set as original if it has a non-zero value
-        self.original = is_original and value is not None and value > 0
+        self.original = is_original and value >= 0
         
-        # Don't display zero values
-        if value > 0:
+        # Don't display negative values
+        if value >= 0:
             self.setText(str(value + 1))
-            self.setStyleSheet("QWidget { font-weight: bold; color: black; }")
+            if self.original:
+                self.setStyleSheet("QWidget { font-weight: bold; color: black; }")
+            else:
+                self.setStyleSheet("")
         else:
             self.setText("")
             self.setStyleSheet("")
@@ -50,23 +51,23 @@ class SudokuButton(QPushButton):
             self.setStyleSheet("")
             
     def incrementValue(self):
-        if self.value is None:  # Empty cell
-            value = 0  # Start at 1
-        elif self.value == 8:  # At 9
-            value = -1  # Clear the cell
-        else:
-            value = self.value + 1
-        self.updateCell(value)
-        
-    def decrementValue(self):
-        if self.value is None or self.value<0:  # Empty cell
-            value = 8  # Start at 1
-        elif self.value == 0:  # At 1
-            value = -1  # Clear the cell
-        else:
-            value = self.value - 1
-        self.updateCell(value)
+        if not self.original:
+            if self.value is None or self.value == 8:
+                self.updateCell(-1)  # Wrap around to 1 (stored as 0)
+            else:
+                self.updateCell(self.value + 1)
             
+    def decrementValue(self):
+        if not self.original:
+            if self.value is None or self.value == 0:
+                self.value=-1
+            else:
+                if self.value<=-1:
+                     self.value=8
+                else:
+                     self.value--
+                
+        
     def updateCell(self, value):
         if not self.original:
             self.value = value
@@ -75,9 +76,9 @@ class SudokuButton(QPushButton):
                 if value is None:
                     window.game.clear_value(self.x, self.y)
                 else:
-                    if value>=0:
+                    if 0 <= value <= 8:
                         window.game.set_value(self.x, self.y, value)
-                if value >= 0:
+                if value is not None:
                     self.setText(str(value + 1))
                 else:
                     self.setText("")
@@ -205,20 +206,8 @@ class SudokuWindow(QMainWindow):
         quit_action.setShortcut('Ctrl+Q')
         quit_action.triggered.connect(self.close)
         file_menu.addAction(quit_action)
-        
-        view_menu = menubar.addMenu('View')
-        best_times_action = QAction('Best Times', self)
-        best_times_action.setShortcut('Ctrl+B')
-        best_times_action.triggered.connect(self.showBestTimes)
-        view_menu.addAction(best_times_action)
-
-    def showBestTimes(self):
-        dialog = LeaderboardDialog(self)
-        dialog.exec_()
-
 
     def generatePuzzle(self, difficulty):
-        self.current_difficulty = difficulty
         # Stop existing timer if running
         self.timer.stop()
         self.elapsed_time = 0
@@ -233,7 +222,7 @@ class SudokuWindow(QMainWindow):
         for x in range(9):
             for y in range(9):
                 value = self.game.get_value(x, y)
-                if value != -1:
+                if value is not None:
                     temp_game.set_value(x, y, value)
         temp_game.solve()
         self.solution = [[temp_game.get_value(x, y) for x in range(9)] for y in range(9)]
@@ -251,7 +240,7 @@ class SudokuWindow(QMainWindow):
         for y in range(9):
             for x in range(9):
                 value = self.game.get_value(x, y)
-                is_original = self.original_puzzle[y][x] !=-1
+                is_original = self.original_puzzle[y][x] is not None
                 self.buttons[y][x].setValue(value, is_original)
 
     def updateTimer(self):
@@ -264,7 +253,7 @@ class SudokuWindow(QMainWindow):
         for y in range(9):
             for x in range(9):
                 current_value = self.game.get_value(x, y)
-                if current_value !=-1 and current_value != self.solution[y][x]:
+                if current_value is not None and current_value != self.solution[y][x]:
                     self.buttons[y][x].setMistake(True)
 
     def checkCompletion(self):
@@ -273,26 +262,9 @@ class SudokuWindow(QMainWindow):
                         for x in range(9) for y in range(9))
             if filled:
                 self.timer.stop()
-                made_top_10, rank, initials = save_best_time(
-                    self, 
-                    self.current_difficulty, 
-                    self.elapsed_time
-                )
-            
-                minutes = self.elapsed_time // 60
-                seconds = self.elapsed_time % 60
-                time_str = f"{minutes:02d}:{seconds:02d}"
-            
-                message = f"You solved the puzzle in {time_str}!"
-                if made_top_10:
-                    message += f"\nCongratulations {initials}! "
-                    message += f"You made the leaderboard at rank #{rank}!"
-                
-                QMessageBox.information(self, "Puzzle Completed!", message)
-            
-                # Show the leaderboard after a top 10 finish
-                if made_top_10:
-                    self.showBestTimes()
+                QMessageBox.information(self, "Congratulations!", 
+                                      f"You solved the puzzle in {self.timer_label.text()[6:]}!")
+
 def main():
     app = QApplication(sys.argv)
     window = SudokuWindow()
