@@ -10,10 +10,11 @@ There are two main C++ versions
 
 There is a MS-DOS version written in C++.  It is fully functional but because DOSBOX is emulated, can be a little slow (see compile.sh on how to compile it).  It can also generate puzzles since it's based on the C++ Code and export puzzles.
 
-There are three different versions of python.
+There are four different versions of python.
 - Pure python version that only implements basic solving algorithms (located in python directory)
 - A Python/C++ hybrid CLI based on curses that uses the C++ logic to solve puzzles (located in python_generate_puzzles directory and named sudoku_game.py)
 - An absolutely gorgeous QT5 version written in python  (located in python_generate_puzzles directory and named sudoku_game_qt5.py)
+- A python user game where the user tries to solves timed Sudoku puzzles (sudoku_player_qt5.py)
 
 There also is a script in the python puzzle generator directory to generate Sudoku puzzles in MSWORD format named generatepuzzles.py in the python_generate_puzzles directory
 
