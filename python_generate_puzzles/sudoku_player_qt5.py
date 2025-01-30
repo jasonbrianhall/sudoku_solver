@@ -94,7 +94,7 @@ class SudokuButton(QPushButton):
                 self.decrementValue()
         elif event.button() == Qt.MiddleButton:
             if not self.original:
-                self.updateCell(None)
+                self.updateCell(-1)
         event.accept()
         
     def wheelEvent(self, event):
