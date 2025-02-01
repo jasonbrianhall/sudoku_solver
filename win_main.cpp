@@ -370,6 +370,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         grid[i, j]->BackColor = Color::White;
         gridContainer->Controls->Add(grid[i, j]);\
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
+        grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
       }
     }
 
@@ -467,6 +468,19 @@ ref class MainForm : public System::Windows::Forms::Form {
           sudoku->Clean();
           sudoku->SetValue(row, col, currentValue);
           textBox->Text = (currentValue + 1).ToString();
+      }
+  }
+  
+  void Cell_MouseDown(Object^ sender, MouseEventArgs^ e) {
+      if (e->Button == System::Windows::Forms::MouseButtons::Middle) {
+          TextBox^ textBox = safe_cast<TextBox^>(sender);
+          array<int>^ position = safe_cast<array<int>^>(textBox->Tag);
+          int row = position[0];
+          int col = position[1];
+        
+          // Clear the cell
+          sudoku->ClearValue(row, col);
+          textBox->Text = "";
       }
   }
 
