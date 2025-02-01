@@ -523,7 +523,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         dataObj->SetData(DataFormats::Text, plainText);
 
         // Use BeginInvoke to marshal the clipboard operation to the UI thread
-        this->BeginInvoke(gcnew Action<DataObject^>(gcnew Action<DataObject^>(this, &MainForm::SafeSetClipboard)), dataObj);
+        this->BeginInvoke(gcnew Action<DataObject^>(this, &MainForm::SafeSetClipboard), dataObj);
         
         UpdateStatus("Board copied to clipboard");
     }
