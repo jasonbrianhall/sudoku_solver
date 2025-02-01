@@ -1077,6 +1077,7 @@ ref class MainForm : public System::Windows::Forms::Form {
 };
 }  // namespace SudokuGame
 
+[STAThread]
 int main(array<String ^> ^ args) {
   Application::EnableVisualStyles();
   Application::SetCompatibleTextRenderingDefault(false);
