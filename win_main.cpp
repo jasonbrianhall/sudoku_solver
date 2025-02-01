@@ -477,35 +477,44 @@ ref class MainForm : public System::Windows::Forms::Form {
         return result;
     }
 
- void CopyBoard_Click(Object^ sender, EventArgs^ e) {
+void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     try {
-        // Create a simple text representation
-        String^ text = "";
+        // Create HTML table representation
+        String^ htmlContent = GetBoardAsText();
+
+        // Create DataObject to hold multiple formats
+        DataObject^ dataObj = gcnew DataObject();
+        
+        // Add HTML format
+        String^ htmlFormat = "<html><body>" + htmlContent + "</body></html>";
+        dataObj->SetData(DataFormats::Html, htmlFormat);
+        
+        // Also add plain text format as fallback
+        String^ plainText = "";
         for (int i = 0; i < 9; i++) {
             // Add horizontal separator
             if (i % 3 == 0 && i != 0) {
-                text += "+---+---+---+---+---+---+\r\n";
+                plainText += "+---+---+---+---+---+---+\r\n";
             }
             
             for (int j = 0; j < 9; j++) {
                 // Add vertical separator
                 if (j % 3 == 0) {
-                    text += "|";
+                    plainText += "|";
                 }
                 
                 String^ value = grid[i, j]->Text;
-                text += String::IsNullOrEmpty(value) ? " . " : " " + value + " ";
+                plainText += String::IsNullOrEmpty(value) ? " . " : " " + value + " ";
             }
-            text += "|\r\n";
-            
-            // Add bottom border
-            if (i == 8) {
-                text += "+---+---+---+\r\n";
-            }
+            plainText += "|\r\n";
         }
+        plainText += "+---+---+---+---+---+---+\r\n";
+        
+        dataObj->SetData(DataFormats::Text, plainText);
 
-        // Try direct clipboard set
-        Clipboard::SetText(text);
+        // Use BeginInvoke to marshal the clipboard operation to the UI thread
+        this->BeginInvoke(gcnew Action<DataObject^>(gcnew Action<DataObject^>(this, &MainForm::SafeSetClipboard)), dataObj);
+        
         UpdateStatus("Board copied to clipboard");
     }
     catch (Exception^ ex) {
@@ -513,6 +522,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         System::Diagnostics::Debug::WriteLine(ex->ToString());
     }
 }
+
 
   void Cell_MouseWheel(Object^ sender, MouseEventArgs^ e) {
       TextBox^ textBox = safe_cast<TextBox^>(sender);
