@@ -281,6 +281,12 @@ ref class MainForm : public System::Windows::Forms::Form {
         gcnew EventHandler(this, &MainForm::Solve_Click)));
     toolStrip->Items->Add(gcnew ToolStripSeparator());
 
+    toolStrip->Items->Add(gcnew ToolStripButton(
+        "Copy Board (Word)", nullptr,
+        gcnew EventHandler(this, &MainForm::CopyBoard_Click)));
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
+
+
     instructionsBox = gcnew TextBox();
     instructionsBox->Multiline = true;
     instructionsBox->ReadOnly = true;
@@ -342,10 +348,6 @@ ref class MainForm : public System::Windows::Forms::Form {
         "XYZ-Wing (;)", nullptr,
         gcnew EventHandler(this, &MainForm::XYZWing_Click)));
 
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Copy Board (Word)", nullptr,
-        gcnew EventHandler(this, &MainForm::CopyBoard_Click)));
-    toolStrip->Items->Add(gcnew ToolStripSeparator());
 
 
     this->Controls->Add(toolStrip);
@@ -475,40 +477,42 @@ ref class MainForm : public System::Windows::Forms::Form {
         return result;
     }
 
-    void CopyBoard_Click(Object^ sender, EventArgs^ e) {
-        String^ boardText = GetBoardAsText();
-        try {
-            // Create a DataObject that holds both the HTML and text versions
-            DataObject^ dataObj = gcnew DataObject();
-        
-            // The HTML format needs a header to be recognized properly
-            String^ htmlHeader = "Version:1.0\r\nStartHTML:00000000\r\nEndHTML:00000000\r\nStartFragment:00000000\r\nEndFragment:00000000\r\n";
-            String^ htmlFormat = htmlHeader + "<html><body><!--StartFragment-->" + boardText + "<!--EndFragment--></body></html>";
-        
-            // Add both formats to the DataObject
-            dataObj->SetData(DataFormats::Html, htmlFormat);
-        
-            // Set the plain text version as a fallback
-            String^ plainText = "";
-            for (int i = 0; i < 9; i++) {
-                for (int j = 0; j < 9; j++) {
-                    String^ value = grid[i, j]->Text;
-                    plainText += String::IsNullOrEmpty(value) ? "." : value;
-                    plainText += "\t";
-                }
-                plainText += "\r\n";
+ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
+    try {
+        // Create a simple text representation
+        String^ text = "";
+        for (int i = 0; i < 9; i++) {
+            // Add horizontal separator
+            if (i % 3 == 0 && i != 0) {
+                text += "+---+---+---+---+---+---+\r\n";
             }
-            dataObj->SetData(DataFormats::Text, plainText);
-        
-            // Copy to clipboard
-            Clipboard::SetDataObject(dataObj, true);
-            UpdateStatus("Board copied to clipboard (paste into Word for formatted table)");
+            
+            for (int j = 0; j < 9; j++) {
+                // Add vertical separator
+                if (j % 3 == 0) {
+                    text += "|";
+                }
+                
+                String^ value = grid[i, j]->Text;
+                text += String::IsNullOrEmpty(value) ? " . " : " " + value + " ";
+            }
+            text += "|\r\n";
+            
+            // Add bottom border
+            if (i == 8) {
+                text += "+---+---+---+\r\n";
+            }
         }
-        catch (Exception^ ex) {
-            UpdateStatus("Failed to copy board to clipboard");
-        }
-    }
 
+        // Try direct clipboard set
+        Clipboard::SetText(text);
+        UpdateStatus("Board copied to clipboard");
+    }
+    catch (Exception^ ex) {
+        UpdateStatus("Failed to copy board to clipboard: " + ex->Message);
+        System::Diagnostics::Debug::WriteLine(ex->ToString());
+    }
+}
 
   void Cell_MouseWheel(Object^ sender, MouseEventArgs^ e) {
       TextBox^ textBox = safe_cast<TextBox^>(sender);
