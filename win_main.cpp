@@ -468,8 +468,6 @@ ref class MainForm : public System::Windows::Forms::Form {
           sudoku->SetValue(row, col, currentValue);
           textBox->Text = (currentValue + 1).ToString();
       }
-    
-      e->Handled = true;
   }
 
   void UpdateStatus(String ^ message) {
