@@ -281,12 +281,6 @@ ref class MainForm : public System::Windows::Forms::Form {
         gcnew EventHandler(this, &MainForm::Solve_Click)));
     toolStrip->Items->Add(gcnew ToolStripSeparator());
 
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Copy Board (Word)", nullptr,
-        gcnew EventHandler(this, &MainForm::CopyBoard_Click)));
-    toolStrip->Items->Add(gcnew ToolStripSeparator());
-
-
     instructionsBox = gcnew TextBox();
     instructionsBox->Multiline = true;
     instructionsBox->ReadOnly = true;
@@ -348,6 +342,12 @@ ref class MainForm : public System::Windows::Forms::Form {
         "XYZ-Wing (;)", nullptr,
         gcnew EventHandler(this, &MainForm::XYZWing_Click)));
 
+    toolStrip->Items->Add(gcnew ToolStripButton(
+        "Copy Board (Word)", nullptr,
+        gcnew EventHandler(this, &MainForm::CopyBoard_Click)));
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
+
+
     this->Controls->Add(toolStrip);
 
     // Initialize grid
@@ -376,7 +376,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         grid[i, j]->KeyDown +=
             gcnew KeyEventHandler(this, &MainForm::Cell_KeyDown);
         grid[i, j]->BackColor = Color::White;
-        gridContainer->Controls->Add(grid[i, j]);\
+        gridContainer->Controls->Add(grid[i, j]);
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
       }
