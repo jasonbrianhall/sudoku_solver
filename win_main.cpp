@@ -205,6 +205,8 @@ ref class MainForm : public System::Windows::Forms::Form {
     ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
     ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
 
+
+
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "New Game (Z)", nullptr, gcnew EventHandler(this, &MainForm::NewGame_Click)));
 
@@ -279,6 +281,12 @@ ref class MainForm : public System::Windows::Forms::Form {
         gcnew EventHandler(this, &MainForm::Solve_Click)));
     toolStrip->Items->Add(gcnew ToolStripSeparator());
 
+    toolStrip->Items->Add(gcnew ToolStripButton(
+        "Copy Board (Word)", nullptr,
+        gcnew EventHandler(this, &MainForm::CopyBoard_Click)));
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
+
+
     instructionsBox = gcnew TextBox();
     instructionsBox->Multiline = true;
     instructionsBox->ReadOnly = true;
@@ -288,7 +296,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->Size = System::Drawing::Size(700, 100);
 
     instructionsBox->Text = L"Instructions:\r\n\r\n"
-        L"  - Use the mouse cursor to move around the board.\r\n"
+        L"  - Use the mouse cursor to move around the board (scroll button will change the value and middle mouse will clear)\r\n"
         L"  - Use the keypad to enter numbers (0 to clear the current cell).\r\n"
         L"  - Press 'A' to solve the puzzle.\r\n"
         L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles.\r\n"
@@ -438,6 +446,69 @@ ref class MainForm : public System::Windows::Forms::Form {
       }
     }
   }
+
+    String^ GetBoardAsText() {
+        String^ result = "<table border='1' style='border-collapse: collapse; border: 2px solid black;'>";
+    
+        // Generate the HTML table
+        for (int i = 0; i < 9; i++) {
+            result += "<tr style='height: 30px;'>";
+            for (int j = 0; j < 9; j++) {
+                // Add cell with appropriate borders
+                String^ borderStyle = "border: 1px solid #ccc;";
+                if (i % 3 == 0) borderStyle += "border-top: 2px solid black;";
+                if (i == 8) borderStyle += "border-bottom: 2px solid black;";
+                if (j % 3 == 0) borderStyle += "border-left: 2px solid black;";
+                if (j == 8) borderStyle += "border-right: 2px solid black;";
+
+                result += "<td style='width: 30px; text-align: center; " + borderStyle + "'>";
+            
+                // Get cell value
+                String^ value = grid[i, j]->Text;
+                result += String::IsNullOrEmpty(value) ? "&nbsp;" : value;
+            
+                result += "</td>";
+            }
+            result += "</tr>";
+        }
+        result += "</table>";
+        return result;
+    }
+
+    void CopyBoard_Click(Object^ sender, EventArgs^ e) {
+        String^ boardText = GetBoardAsText();
+        try {
+            // Create a DataObject that holds both the HTML and text versions
+            DataObject^ dataObj = gcnew DataObject();
+        
+            // The HTML format needs a header to be recognized properly
+            String^ htmlHeader = "Version:1.0\r\nStartHTML:00000000\r\nEndHTML:00000000\r\nStartFragment:00000000\r\nEndFragment:00000000\r\n";
+            String^ htmlFormat = htmlHeader + "<html><body><!--StartFragment-->" + boardText + "<!--EndFragment--></body></html>";
+        
+            // Add both formats to the DataObject
+            dataObj->SetData(DataFormats::Html, htmlFormat);
+        
+            // Set the plain text version as a fallback
+            String^ plainText = "";
+            for (int i = 0; i < 9; i++) {
+                for (int j = 0; j < 9; j++) {
+                    String^ value = grid[i, j]->Text;
+                    plainText += String::IsNullOrEmpty(value) ? "." : value;
+                    plainText += "\t";
+                }
+                plainText += "\r\n";
+            }
+            dataObj->SetData(DataFormats::Text, plainText);
+        
+            // Copy to clipboard
+            Clipboard::SetDataObject(dataObj, true);
+            UpdateStatus("Board copied to clipboard (paste into Word for formatted table)");
+        }
+        catch (Exception^ ex) {
+            UpdateStatus("Failed to copy board to clipboard");
+        }
+    }
+
 
   void Cell_MouseWheel(Object^ sender, MouseEventArgs^ e) {
       TextBox^ textBox = safe_cast<TextBox^>(sender);
