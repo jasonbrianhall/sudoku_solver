@@ -368,7 +368,8 @@ ref class MainForm : public System::Windows::Forms::Form {
         grid[i, j]->KeyDown +=
             gcnew KeyEventHandler(this, &MainForm::Cell_KeyDown);
         grid[i, j]->BackColor = Color::White;
-        gridContainer->Controls->Add(grid[i, j]);
+        gridContainer->Controls->Add(grid[i, j]);\
+        grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
       }
     }
 
@@ -435,6 +436,40 @@ ref class MainForm : public System::Windows::Forms::Form {
         grid[i, j]->Text = (value >= 0) ? (value + 1).ToString() : "";
       }
     }
+  }
+
+  void Cell_MouseWheel(Object^ sender, MouseEventArgs^ e) {
+      TextBox^ textBox = safe_cast<TextBox^>(sender);
+      array<int>^ position = safe_cast<array<int>^>(textBox->Tag);
+      int row = position[0];
+      int col = position[1];
+    
+      // Get current value
+      int currentValue = -1;  // -1 represents blank
+      if (!String::IsNullOrEmpty(textBox->Text)) {
+          Int32::TryParse(textBox->Text, currentValue);
+          currentValue--;  // Convert to 0-8 range
+      }  
+    
+      // Calculate new value based on wheel direction
+      if (e->Delta > 0) {  // Mouse wheel up
+          currentValue = (currentValue + 1) % 10;  // 10 states: -1 to 8
+      } else {  // Mouse wheel down
+          currentValue = (currentValue - 1);
+          if (currentValue < -1) currentValue = 8;
+      }
+    
+      // Update the cell
+      if (currentValue == -1) {
+          sudoku->ClearValue(row, col);
+          textBox->Text = "";
+      } else {
+          sudoku->Clean();
+          sudoku->SetValue(row, col, currentValue);
+          textBox->Text = (currentValue + 1).ToString();
+      }
+    
+      e->Handled = true;
   }
 
   void UpdateStatus(String ^ message) {
