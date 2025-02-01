@@ -436,6 +436,16 @@ ref class MainForm : public System::Windows::Forms::Form {
       }
   }
 
+private: void SafeSetClipboard(DataObject^ data) {
+    try {
+        Clipboard::SetDataObject(data, true, 3, 100); // Retry up to 3 times with 100ms delay
+    }
+    catch (Exception^ ex) {
+        UpdateStatus("Failed to set clipboard: " + ex->Message);
+    }
+}
+
+
   void ClearDebugBox() {
       debugBox->Clear();
   }
@@ -1067,6 +1077,8 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     }
   }
 
+
+
  public:
   MainForm() {
     sudoku = gcnew SudokuWrapper();
@@ -1087,14 +1099,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 };
 }  // namespace SudokuGame
 
-private: void SafeSetClipboard(DataObject^ data) {
-    try {
-        Clipboard::SetDataObject(data, true, 3, 100); // Retry up to 3 times with 100ms delay
-    }
-    catch (Exception^ ex) {
-        UpdateStatus("Failed to set clipboard: " + ex->Message);
-    }
-}
 
 [STAThread]
 int main(array<String ^> ^ args) {
