@@ -491,37 +491,64 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     try {
         // Create DataObject to hold formats
         DataObject^ dataObj = gcnew DataObject();
-        
-        // Create HTML table as primary format with proper styling
-        String^ htmlFormat = "<html><head><style>"
-            "table { border-collapse: collapse; }"
-            "td { width: 30px; height: 30px; text-align: center; border: 1px solid #ccc; padding: 5px; }"
-            "td.thick-right { border-right: 2px solid black; }"
-            "td.thick-bottom { border-bottom: 2px solid black; }"
-            "td.thick-left { border-left: 2px solid black; }"
-            "td.thick-top { border-top: 2px solid black; }"
-            "</style></head><body><table>";
 
+        // Create HTML content
+        String^ htmlContent = "<table style='border-collapse: collapse; border: 2px solid black;'>";
         for (int i = 0; i < 9; i++) {
-            htmlFormat += "<tr>";
+            htmlContent += "<tr>";
             for (int j = 0; j < 9; j++) {
-                String^ classes = "";
-                if (j % 3 == 0) classes += " thick-left";
-                if (j == 8) classes += " thick-right";
-                if (i % 3 == 0) classes += " thick-top";
-                if (i == 8) classes += " thick-bottom";
+                String^ style = "width: 30px; height: 30px; text-align: center; ";
                 
-                htmlFormat += "<td class='" + classes->Trim() + "'>";
+                // Add border styles
+                if (j % 3 == 0) style += "border-left: 2px solid black; ";
+                else style += "border-left: 1px solid #ccc; ";
+                
+                if (j == 8) style += "border-right: 2px solid black; ";
+                
+                if (i % 3 == 0) style += "border-top: 2px solid black; ";
+                else style += "border-top: 1px solid #ccc; ";
+                
+                if (i == 8) style += "border-bottom: 2px solid black; ";
+                else style += "border-bottom: 1px solid #ccc; ";
+                
+                htmlContent += "<td style='" + style + "'>";
                 String^ value = grid[i, j]->Text;
-                htmlFormat += String::IsNullOrEmpty(value) ? "&nbsp;" : value;
-                htmlFormat += "</td>";
+                htmlContent += String::IsNullOrEmpty(value) ? "&nbsp;" : value;
+                htmlContent += "</td>";
             }
-            htmlFormat += "</tr>";
+            htmlContent += "</tr>";
         }
-        htmlFormat += "</table></body></html>";
+        htmlContent += "</table>";
+
+        // Create the HTML clipboard format header
+        String^ htmlHeader = "Version:0.9\r\n" +
+            "StartHTML:<<<<<1>>>>>\r\n" +
+            "EndHTML:<<<<<2>>>>>\r\n" +
+            "StartFragment:<<<<<3>>>>>\r\n" +
+            "EndFragment:<<<<<4>>>>>\r\n";
+
+        String^ htmlStart = "<html><body><!--StartFragment-->";
+        String^ htmlEnd = "<!--EndFragment--></body></html>";
         
-        // Set HTML as primary format
-        dataObj->SetData(DataFormats::Html, htmlFormat);
+        String^ fullHtml = htmlStart + htmlContent + htmlEnd;
+        
+        // Calculate positions
+        int startHtml = htmlHeader->Length;
+        int startFragment = startHtml + htmlStart->Length;
+        int endFragment = startFragment + htmlContent->Length;
+        int endHtml = endFragment + htmlEnd->Length;
+        
+        // Replace position markers
+        htmlHeader = htmlHeader->Replace("<<<<<1>>>>>", startHtml.ToString("D8"));
+        htmlHeader = htmlHeader->Replace("<<<<<2>>>>>", endHtml.ToString("D8"));
+        htmlHeader = htmlHeader->Replace("<<<<<3>>>>>", startFragment.ToString("D8"));
+        htmlHeader = htmlHeader->Replace("<<<<<4>>>>>", endFragment.ToString("D8"));
+        
+        // Combine everything
+        String^ clipboardHtml = htmlHeader + fullHtml;
+        
+        // Set HTML format
+        dataObj->SetData(DataFormats::Html, clipboardHtml);
         
         // Add plain text as fallback
         String^ plainText = "";
