@@ -554,7 +554,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         String^ plainText = "";
         for (int i = 0; i < 9; i++) {
             if (i % 3 == 0) {
-                plainText += "+---+---+---+---+---+---+\r\n";
+                plainText += "+----+----+----+----+----+----+\r\n";
             }
             for (int j = 0; j < 9; j++) {
                 if (j % 3 == 0) plainText += "|";
@@ -563,7 +563,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
             }
             plainText += "|\r\n";
         }
-        plainText += "+---+---+---+---+---+---+\r\n";
+        plainText +=         "+----+----+----+----+----+----+\r\n";
         dataObj->SetData(DataFormats::Text, plainText);
 
         // Use BeginInvoke to marshal the clipboard operation to the UI thread
