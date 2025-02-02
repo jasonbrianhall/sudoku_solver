@@ -2,3 +2,7 @@ setuptools
 python-docx 
 pybind11
 pyqt5  # For QT5 GUI
+opencv-python-headless
+numpy
+pytesseract
+
