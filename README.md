@@ -227,11 +227,12 @@ c++ | cpp | python | ncurses | terminal ui | tui | command line interface | cli 
 
 ### Technical Features
 - Algorithms: backtracking | constraint programming | optimization | elimination algorithm
-- Interface: terminal-based | command-line | ncurses-interface | interactive-ui
+- Interface: terminal-based | command-line | ncurses-interface | interactive-ui | Mono GUI | QT5
 - Architecture: object-oriented | modular design | clean code
 
 ### Development
 - Languages: C++ | Python3 | Modern C++
+- Libraries: Mono | QT5 | NCurses | PDCurses
 - Type: Open Source | FOSS | Free Software
 - Platform: Linux | Unix | macOS | Cross-Platform | MS-DOS | Windows
 - Category: Game Development | Developer Tools | Educational
