@@ -13,6 +13,10 @@ from PyQt5.QtWidgets import (QDialog, QSpinBox, QDialogButtonBox, QLineEdit,
 import sys
 from sudoku_solver import Sudoku, PuzzleGenerator
 from PyQt5.QtCore import QThread
+from sudoku_ocr import SudokuOCR
+import tempfile
+import os
+
 
 class GeneratorThread(QThread):
     def __init__(self, puzzle_counts, filename):
@@ -376,6 +380,17 @@ class SudokuWindow(QMainWindow):
         generate_doc_action.triggered.connect(self.generatePuzzlesToWord)
         file_menu.addAction(generate_doc_action)        
 
+        load_action = QAction('OCR from Screenshot...', self)
+        load_action.setShortcut('Ctrl+I')
+        load_action.triggered.connect(self.importFromScreenshot)
+        file_menu.addAction(load_action)
+
+        load_action = QAction('OCR from Image...', self)
+        load_action.setShortcut('Ctrl+I')
+        load_action.triggered.connect(self.importFromImageFile)
+        file_menu.addAction(load_action)
+
+
         file_menu.addSeparator()
     
         generate_doc_action = QAction('Genete Excel Compatible XML Spreadsheet...', self)
@@ -411,6 +426,158 @@ class SudokuWindow(QMainWindow):
                 action.setShortcut(shortcut)
             action.triggered.connect(lambda checked, d=diff: self.generatePuzzle(d))
             generate_menu.addAction(action)
+
+    def importFromImageFile(self):
+        """Import Sudoku puzzle from an image file with enhanced error handling."""
+    
+        # Define supported image formats
+        formats = {
+            "PNG Files (*.png)": ".png",
+            "JPEG Files (*.jpg *.jpeg)": ".jpg",
+            "Bitmap Files (*.bmp)": ".bmp",
+            "All Image Files (*.png *.jpg *.jpeg *.bmp)": ""
+        }
+    
+        filter_string = ";;".join(formats.keys())
+    
+        filename, selected_filter = QFileDialog.getOpenFileName(
+            self,
+            "Import Sudoku from Image",
+            "",  # Start in current directory
+            filter_string
+        )
+    
+        if not filename:
+            return  # User cancelled
+        
+        try:
+            # Verify file exists
+            if not os.path.exists(filename):
+                raise FileNotFoundError(f"Image file not found: {filename}")
+            
+            # Verify file is an image
+            image = QImage(filename)
+            if image.isNull():
+                raise ValueError("Selected file is not a valid image")
+            
+            # Initialize OCR with the image file
+            ocr = SudokuOCR(filename)
+        
+            # Process the image and get the grid
+            grid = ocr.process()
+        
+            if not grid or len(grid) != 9 or any(len(row) != 9 for row in grid):
+                raise ValueError("Failed to detect a valid 9x9 Sudoku grid in the image")
+        
+            # Clear current game
+            self.game.new_game()
+        
+            # Track how many numbers were successfully imported
+            numbers_imported = 0
+        
+            # Load the extracted grid into the game
+            for y in range(9):
+                for x in range(9):
+                    value = grid[y][x]
+                    if value != 0:  # Only set non-empty cells
+                        if 1 <= value <= 9:       
+                            # Convert from 1-9 to 0-8 for internal representation
+                            self.game.set_value(x, y, value - 1)
+                            numbers_imported += 1
+                        else:
+                            raise ValueError(f"Invalid number detected: {value}")
+        
+            # Update the display
+            self.updateDisplay()
+        
+            # Show success message with statistics
+            QMessageBox.information(
+                self,
+                "Import Successful",
+                f"Successfully imported Sudoku puzzle!\n\n"
+                f"Numbers detected: {numbers_imported}\n"
+                f"Empty cells: {81 - numbers_imported}"
+            )
+        
+        except FileNotFoundError as e:
+            QMessageBox.critical(
+                self,
+                "File Error",
+                f"Could not find or open the image file:\n{str(e)}"
+            )
+        except ValueError as e:
+            QMessageBox.critical(
+                self,
+                "Import Error",
+                f"Invalid image or Sudoku grid:\n{str(e)}"
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Unexpected Error",
+                f"An unexpected error occurred while importing:\n{str(e)}\n\n"
+                "Please ensure the image is clear and contains a valid Sudoku puzzle."
+            )
+
+    def importFromScreenshot(self):
+        """Import Sudoku puzzle from the clipboard (screenshot)."""
+        clipboard = QApplication.clipboard()
+        image = clipboard.image()
+    
+        if image.isNull():
+            QMessageBox.warning(
+                self,
+                "No Screenshot",
+                "No image found in clipboard. Please take a screenshot first."
+            )
+            return
+        
+        try:
+            # Save the clipboard image to a temporary file
+        
+            temp_dir = tempfile.gettempdir()
+            temp_path = os.path.join(temp_dir, 'sudoku_screenshot.png')
+            image.save(temp_path, 'PNG')
+        
+            # Initialize OCR with the temporary image
+            ocr = SudokuOCR(temp_path)
+        
+            # Process the image and get the grid
+            grid = ocr.process()
+        
+            # Clean up temporary file
+            try:
+                os.remove(temp_path)
+            except:
+                pass  # Ignore cleanup errors
+        
+            # Clear current game
+            self.game.new_game()
+        
+            # Load the extracted grid into the game
+            for y in range(9):
+                for x in range(9):
+                    value = grid[y][x]
+                    if value != 0:  # Only set non-empty cells
+                        # Convert from 1-9 to 0-8 for internal representation
+                        self.game.set_value(x, y, value - 1)
+        
+            # Update the display
+            self.updateDisplay()
+        
+            QMessageBox.information(
+                self,
+                "Import Successful",
+                "Sudoku puzzle has been imported from your screenshot."
+            )
+        
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Import Error",
+                f"Failed to import Sudoku puzzle from screenshot:\n{str(e)}"
+            )
+
 
     def generatePuzzlesToWord(self):
         dialog = GeneratePuzzlesDialog(self)
