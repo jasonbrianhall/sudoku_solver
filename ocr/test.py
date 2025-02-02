@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 import cv2
 import numpy as np
+import os
 import argparse
 
-def crop_grid(input_path, output_path):
+def process_sudoku(input_path, output_dir):
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
     # Load image and convert to grayscale
     image = cv2.imread(input_path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -22,19 +26,37 @@ def crop_grid(input_path, output_path):
     # Get the bounding rectangle
     x, y, w, h = cv2.boundingRect(largest_contour)
     
-    # Crop the image
+    # Crop the image to the grid
     cropped = image[y:y+h, x:x+w]
     
-    # Save the result
-    cv2.imwrite(output_path, cropped)
+    # Calculate cell dimensions from cropped image
+    cell_height = h // 9
+    cell_width = w // 9
+    
+    # Extract each cell from the cropped grid
+    for i in range(9):
+        for j in range(9):
+            # Calculate cell coordinates
+            y1 = i * cell_height
+            y2 = (i + 1) * cell_height
+            x1 = j * cell_width
+            x2 = (j + 1) * cell_width
+            
+            # Extract cell
+            cell = cropped[y1:y2, x1:x2]
+            
+            # Save cell
+            filename = f"{output_dir}/cell_{i}_{j}.png"
+            cv2.imwrite(filename, cell)
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('input_file')
-    parser.add_argument('output_file')
+    parser = argparse.ArgumentParser(description='Crop Sudoku and split into cells')
+    parser.add_argument('input_file', help='Input Sudoku image')
+    parser.add_argument('output_dir', help='Output directory for cells')
     args = parser.parse_args()
     
-    crop_grid(args.input_file, args.output_file)
+    process_sudoku(args.input_file, args.output_dir)
+    print(f"Extracted 81 cells to {args.output_dir}")
 
 if __name__ == "__main__":
     main()
