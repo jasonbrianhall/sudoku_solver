@@ -205,6 +205,8 @@ ref class MainForm : public System::Windows::Forms::Form {
     ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
     ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
 
+
+
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "New Game (Z)", nullptr, gcnew EventHandler(this, &MainForm::NewGame_Click)));
 
@@ -279,6 +281,12 @@ ref class MainForm : public System::Windows::Forms::Form {
         gcnew EventHandler(this, &MainForm::Solve_Click)));
     toolStrip->Items->Add(gcnew ToolStripSeparator());
 
+    toolStrip->Items->Add(gcnew ToolStripButton(
+        "Copy Board", nullptr,
+        gcnew EventHandler(this, &MainForm::CopyBoard_Click)));
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
+
+
     instructionsBox = gcnew TextBox();
     instructionsBox->Multiline = true;
     instructionsBox->ReadOnly = true;
@@ -288,7 +296,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->Size = System::Drawing::Size(700, 100);
 
     instructionsBox->Text = L"Instructions:\r\n\r\n"
-        L"  - Use the mouse cursor to move around the board.\r\n"
+        L"  - Use the mouse cursor to move around the board (scroll button will change the value and middle mouse will clear)\r\n"
         L"  - Use the keypad to enter numbers (0 to clear the current cell).\r\n"
         L"  - Press 'A' to solve the puzzle.\r\n"
         L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles.\r\n"
@@ -340,6 +348,8 @@ ref class MainForm : public System::Windows::Forms::Form {
         "XYZ-Wing (;)", nullptr,
         gcnew EventHandler(this, &MainForm::XYZWing_Click)));
 
+
+
     this->Controls->Add(toolStrip);
 
     // Initialize grid
@@ -368,7 +378,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         grid[i, j]->KeyDown +=
             gcnew KeyEventHandler(this, &MainForm::Cell_KeyDown);
         grid[i, j]->BackColor = Color::White;
-        gridContainer->Controls->Add(grid[i, j]);\
+        gridContainer->Controls->Add(grid[i, j]);
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
       }
@@ -426,6 +436,16 @@ ref class MainForm : public System::Windows::Forms::Form {
       }
   }
 
+private: void SafeSetClipboard(DataObject^ data) {
+    try {
+        Clipboard::SetDataObject(data, true, 3, 100); // Retry up to 3 times with 100ms delay
+    }
+    catch (Exception^ ex) {
+        UpdateStatus("Failed to set clipboard: " + ex->Message);
+    }
+}
+
+
   void ClearDebugBox() {
       debugBox->Clear();
   }
@@ -438,6 +458,125 @@ ref class MainForm : public System::Windows::Forms::Form {
       }
     }
   }
+
+    String^ GetBoardAsText() {
+        String^ result = "<table border='1' style='border-collapse: collapse; border: 2px solid black;'>";
+    
+        // Generate the HTML table
+        for (int i = 0; i < 9; i++) {
+            result += "<tr style='height: 30px;'>";
+            for (int j = 0; j < 9; j++) {
+                // Add cell with appropriate borders
+                String^ borderStyle = "border: 1px solid #ccc;";
+                if (i % 3 == 0) borderStyle += "border-top: 2px solid black;";
+                if (i == 8) borderStyle += "border-bottom: 2px solid black;";
+                if (j % 3 == 0) borderStyle += "border-left: 2px solid black;";
+                if (j == 8) borderStyle += "border-right: 2px solid black;";
+
+                result += "<td style='width: 30px; text-align: center; " + borderStyle + "'>";
+            
+                // Get cell value
+                String^ value = grid[i, j]->Text;
+                result += String::IsNullOrEmpty(value) ? "&nbsp;" : value;
+            
+                result += "</td>";
+            }
+            result += "</tr>";
+        }
+        result += "</table>";
+        return result;
+    }
+
+void CopyBoard_Click(Object^ sender, EventArgs^ e) {
+    try {
+        // Create DataObject to hold formats
+        DataObject^ dataObj = gcnew DataObject();
+
+        // Create HTML content
+        String^ htmlContent = "<table style='border-collapse: collapse; border: 2px solid black;'>";
+        for (int i = 0; i < 9; i++) {
+            htmlContent += "<tr>";
+            for (int j = 0; j < 9; j++) {
+                String^ style = "width: 30px; height: 30px; text-align: center; ";
+                
+                // Add border styles
+                if (j % 3 == 0) style += "border-left: 2px solid black; ";
+                else style += "border-left: 1px solid #ccc; ";
+                
+                if (j == 8) style += "border-right: 2px solid black; ";
+                
+                if (i % 3 == 0) style += "border-top: 2px solid black; ";
+                else style += "border-top: 1px solid #ccc; ";
+                
+                if (i == 8) style += "border-bottom: 2px solid black; ";
+                else style += "border-bottom: 1px solid #ccc; ";
+                
+                htmlContent += "<td style='" + style + "'>";
+                String^ value = grid[i, j]->Text;
+                htmlContent += String::IsNullOrEmpty(value) ? "&nbsp;" : value;
+                htmlContent += "</td>";
+            }
+            htmlContent += "</tr>";
+        }
+        htmlContent += "</table>";
+
+        // Create the HTML clipboard format header
+        String^ htmlHeader = "Version:0.9\r\n" +
+            "StartHTML:<<<<<1>>>>>\r\n" +
+            "EndHTML:<<<<<2>>>>>\r\n" +
+            "StartFragment:<<<<<3>>>>>\r\n" +
+            "EndFragment:<<<<<4>>>>>\r\n";
+
+        String^ htmlStart = "<html><body><!--StartFragment-->";
+        String^ htmlEnd = "<!--EndFragment--></body></html>";
+        
+        String^ fullHtml = htmlStart + htmlContent + htmlEnd;
+        
+        // Calculate positions
+        int startHtml = htmlHeader->Length;
+        int startFragment = startHtml + htmlStart->Length;
+        int endFragment = startFragment + htmlContent->Length;
+        int endHtml = endFragment + htmlEnd->Length;
+        
+        // Replace position markers
+        htmlHeader = htmlHeader->Replace("<<<<<1>>>>>", startHtml.ToString("D8"));
+        htmlHeader = htmlHeader->Replace("<<<<<2>>>>>", endHtml.ToString("D8"));
+        htmlHeader = htmlHeader->Replace("<<<<<3>>>>>", startFragment.ToString("D8"));
+        htmlHeader = htmlHeader->Replace("<<<<<4>>>>>", endFragment.ToString("D8"));
+        
+        // Combine everything
+        String^ clipboardHtml = htmlHeader + fullHtml;
+        
+        // Set HTML format
+        dataObj->SetData(DataFormats::Html, clipboardHtml);
+        
+        // Add plain text as fallback
+        String^ plainText = "";
+        for (int i = 0; i < 9; i++) {
+            if (i % 3 == 0) {
+                plainText += "+---+---+---+---+---+---+\r\n";
+            }
+            for (int j = 0; j < 9; j++) {
+                if (j % 3 == 0) plainText += "|";
+                String^ value = grid[i, j]->Text;
+                plainText += String::IsNullOrEmpty(value) ? " . " : " " + value + " ";
+            }
+            plainText += "|\r\n";
+        }
+        plainText += "+---+---+---+---+---+---+\r\n";
+        dataObj->SetData(DataFormats::Text, plainText);
+
+        // Use BeginInvoke to marshal the clipboard operation to the UI thread
+        this->BeginInvoke(gcnew Action<DataObject^>(this, &MainForm::SafeSetClipboard), dataObj);
+        
+        UpdateStatus("Board copied to clipboard");
+    }
+    catch (Exception^ ex) {
+        UpdateStatus("Failed to copy board to clipboard: " + ex->Message);
+        System::Diagnostics::Debug::WriteLine(ex->ToString());
+    }
+}
+
 
   void Cell_MouseWheel(Object^ sender, MouseEventArgs^ e) {
       TextBox^ textBox = safe_cast<TextBox^>(sender);
@@ -982,6 +1121,8 @@ ref class MainForm : public System::Windows::Forms::Form {
     }
   }
 
+
+
  public:
   MainForm() {
     sudoku = gcnew SudokuWrapper();
@@ -1002,6 +1143,8 @@ ref class MainForm : public System::Windows::Forms::Form {
 };
 }  // namespace SudokuGame
 
+
+[STAThread]
 int main(array<String ^> ^ args) {
   Application::EnableVisualStyles();
   Application::SetCompatibleTextRenderingDefault(false);
