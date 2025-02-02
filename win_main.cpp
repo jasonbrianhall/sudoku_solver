@@ -204,6 +204,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     menuStrip = gcnew MenuStrip();
     ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
     ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
+    ToolStripMenuItem^ copyBoardMenu = gcnew ToolStripMenuItem("Copy Board");
 
 
 
@@ -269,6 +270,10 @@ ref class MainForm : public System::Windows::Forms::Form {
     // Add Menus to MenuStrip
     menuStrip->Items->Add(fileMenu);
     menuStrip->Items->Add(generateBoardMenu);
+    menuStrip->Items->Add(copyBoardMenu);
+
+    copyBoardMenu->Click += gcnew EventHandler(this, &MainForm::CopyBoard_Click);
+    //copyBoardMenu->Click += gcnew EventHandler(this, &MainForm::CopyBoard_Click);
 
     // Attach MenuStrip to the Form
     this->MainMenuStrip = menuStrip;
@@ -281,10 +286,10 @@ ref class MainForm : public System::Windows::Forms::Form {
         gcnew EventHandler(this, &MainForm::Solve_Click)));
     toolStrip->Items->Add(gcnew ToolStripSeparator());
 
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Copy Board (Word)", nullptr,
+    /*toolStrip->Items->Add(gcnew ToolStripButton(
+        "Copy Board", nullptr,
         gcnew EventHandler(this, &MainForm::CopyBoard_Click)));
-    toolStrip->Items->Add(gcnew ToolStripSeparator());
+    toolStrip->Items->Add(gcnew ToolStripSeparator());*/
 
 
     instructionsBox = gcnew TextBox();
@@ -487,39 +492,56 @@ private: void SafeSetClipboard(DataObject^ data) {
         return result;
     }
 
-void CopyBoard_Click(Object^ sender, EventArgs^ e) {
+vvoid CopyBoard_Click(Object^ sender, EventArgs^ e) {
     try {
-        // Create HTML table representation
-        String^ htmlContent = GetBoardAsText();
-
-        // Create DataObject to hold multiple formats
+        // Create DataObject to hold formats
         DataObject^ dataObj = gcnew DataObject();
         
-        // Add HTML format
-        String^ htmlFormat = "<html><body>" + htmlContent + "</body></html>";
+        // Create HTML table as primary format with proper styling
+        String^ htmlFormat = "<html><head><style>"
+            "table { border-collapse: collapse; }"
+            "td { width: 30px; height: 30px; text-align: center; border: 1px solid #ccc; padding: 5px; }"
+            "td.thick-right { border-right: 2px solid black; }"
+            "td.thick-bottom { border-bottom: 2px solid black; }"
+            "td.thick-left { border-left: 2px solid black; }"
+            "td.thick-top { border-top: 2px solid black; }"
+            "</style></head><body><table>";
+
+        for (int i = 0; i < 9; i++) {
+            htmlFormat += "<tr>";
+            for (int j = 0; j < 9; j++) {
+                String^ classes = "";
+                if (j % 3 == 0) classes += " thick-left";
+                if (j == 8) classes += " thick-right";
+                if (i % 3 == 0) classes += " thick-top";
+                if (i == 8) classes += " thick-bottom";
+                
+                htmlFormat += "<td class='" + classes->Trim() + "'>";
+                String^ value = grid[i, j]->Text;
+                htmlFormat += String::IsNullOrEmpty(value) ? "&nbsp;" : value;
+                htmlFormat += "</td>";
+            }
+            htmlFormat += "</tr>";
+        }
+        htmlFormat += "</table></body></html>";
+        
+        // Set HTML as primary format
         dataObj->SetData(DataFormats::Html, htmlFormat);
         
-        // Also add plain text format as fallback
+        // Add plain text as fallback
         String^ plainText = "";
         for (int i = 0; i < 9; i++) {
-            // Add horizontal separator
-            if (i % 3 == 0 && i != 0) {
+            if (i % 3 == 0) {
                 plainText += "+---+---+---+---+---+---+\r\n";
             }
-            
             for (int j = 0; j < 9; j++) {
-                // Add vertical separator
-                if (j % 3 == 0) {
-                    plainText += "|";
-                }
-                
+                if (j % 3 == 0) plainText += "|";
                 String^ value = grid[i, j]->Text;
                 plainText += String::IsNullOrEmpty(value) ? " . " : " " + value + " ";
             }
             plainText += "|\r\n";
         }
         plainText += "+---+---+---+---+---+---+\r\n";
-        
         dataObj->SetData(DataFormats::Text, plainText);
 
         // Use BeginInvoke to marshal the clipboard operation to the UI thread
