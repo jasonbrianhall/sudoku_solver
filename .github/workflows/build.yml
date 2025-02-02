@@ -164,6 +164,7 @@ jobs:
           x64/Release/SudokuSolver.exe
           python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
           python_generate_puzzles/dist/sudoku_puzzler.exe
+          README.md
         tag_name: v${{ github.run_number }}
         name: Release ${{ github.run_number }}
         draft: false
@@ -183,6 +184,7 @@ jobs:
           x64/Release/SudokuSolver.exe
           python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
           python_generate_puzzles/dist/sudoku_puzzler.exe
+          README.md
         tag_name: bleedingedge-v${{ github.run_number }}
         name: Dev Build ${{ github.run_number }}
         draft: false

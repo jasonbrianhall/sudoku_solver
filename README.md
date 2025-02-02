@@ -6,7 +6,7 @@ There are two main C++ versions
 - CLI version written in Ncurses
 - GUI version designed for Microsoft Windows. 
 
-* Both C++ versions (Windows and CLI) can also generate puzzles to be solved.  They also have the ability to export puzzles to XML Spreadsheet 2003, which is Excel compatible.
+* Both C++ versions (Windows and CLI) can also generate puzzles to be solved.  They also have the ability to export puzzles to XML Spreadsheet 2003, which is Excel compatible.  The Mono version also has a copy board feature which would allow you to copy the board into Excel and Word.
 
 There is a MS-DOS version written in C++.  It is fully functional but because DOSBOX is emulated, can be a little slow (see compile.sh on how to compile it).  It can also generate puzzles since it's based on the C++ Code and export puzzles.
 
@@ -133,7 +133,8 @@ sudoku_solver
 - Shift F5-F8: Quick Load
 - A: Automatically solve the puzzle
 - Other keys for various algorithms (documented in interface)
-
+- For the GUI versions, the scroll button up and down will cycle between values and the middle button will clear the value.
+- In the QT5 version, left and right buttons increment and decrement values (the QT version should work in MAC but some MACs have single button mice so this feature would be limited).  
 
 ### Solving Techniques (C++ version)
 
@@ -186,7 +187,7 @@ The solver has been tested successfully against https://sudoku.com/extreme/ puzz
 
 ### Performance
 
-The C++ implementation offers comprehensive solving capabilities suitable for most standard and advanced Sudoku puzzles. The Python version is a prototype and may struggle with more complex puzzles.
+The C++ implementation offers comprehensive solving capabilities suitable for expert puzzles. The Pure Python version is a prototype and may struggle with more complex puzzles while the C++/Python hybrids will handle all puzzle types the C++ implementation can handle.  On modern CPUs, the solving time for an expert puzzle is less then a blink of an eye.
 
 ## Contributing
 
@@ -199,6 +200,10 @@ Contributions are welcome! Here are some ways you can help:
 5. Write tests
 6. Improve documentation
 7. Port advanced features to Python version
+
+## History
+
+I started writing this program around 2010 in C++ when I was in a position working long hours and nothing to do after work.  The original version basically did standard elimination, line elimination, and hidden singles and could only solve easy and some medium puzzles.  Fast forward to 2024 where I got bored one day and started doing research on more advanced solving techniques.  I updated the CLI version to try to use the more advanced techniques I've read about and implemented into the CLI version.  After that, I started writing a Mono GUI version for the software which provided me some relief from boredom and allowed me to cheat on the tournaments in sudoku.com.   Later, I decided, why can't I integrate python with C++ to create a modern QT5 GUI version while maintaining the speed of C++, so the QT5 versions were born.  I still add some improvements here and there as I see fit but considering the lack of downloads and feedback, I'm just doing it for the love of Sudoku and to keep my boredom at bay.
 
 ## License
 
