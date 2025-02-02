@@ -204,7 +204,6 @@ ref class MainForm : public System::Windows::Forms::Form {
     menuStrip = gcnew MenuStrip();
     ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
     ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
-    ToolStripMenuItem^ copyBoardMenu = gcnew ToolStripMenuItem("Copy Board");
 
 
 
@@ -270,10 +269,6 @@ ref class MainForm : public System::Windows::Forms::Form {
     // Add Menus to MenuStrip
     menuStrip->Items->Add(fileMenu);
     menuStrip->Items->Add(generateBoardMenu);
-    menuStrip->Items->Add(copyBoardMenu);
-
-    copyBoardMenu->Click += gcnew EventHandler(this, &MainForm::CopyBoard_Click);
-    //copyBoardMenu->Click += gcnew EventHandler(this, &MainForm::CopyBoard_Click);
 
     // Attach MenuStrip to the Form
     this->MainMenuStrip = menuStrip;
@@ -286,10 +281,10 @@ ref class MainForm : public System::Windows::Forms::Form {
         gcnew EventHandler(this, &MainForm::Solve_Click)));
     toolStrip->Items->Add(gcnew ToolStripSeparator());
 
-    /*toolStrip->Items->Add(gcnew ToolStripButton(
+    toolStrip->Items->Add(gcnew ToolStripButton(
         "Copy Board", nullptr,
         gcnew EventHandler(this, &MainForm::CopyBoard_Click)));
-    toolStrip->Items->Add(gcnew ToolStripSeparator());*/
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
 
 
     instructionsBox = gcnew TextBox();
@@ -492,7 +487,7 @@ private: void SafeSetClipboard(DataObject^ data) {
         return result;
     }
 
-vvoid CopyBoard_Click(Object^ sender, EventArgs^ e) {
+void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     try {
         // Create DataObject to hold formats
         DataObject^ dataObj = gcnew DataObject();
