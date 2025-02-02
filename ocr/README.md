@@ -9,6 +9,7 @@ A Python tool that extracts Sudoku puzzles from images using Optical Character R
 - Perspective correction for skewed images
 - Digit extraction using Tesseract OCR
 - Output format compatible with external Sudoku solvers
+- Tested against sudoku.com, your miles may vary
 
 ## Prerequisites
 
