@@ -3,7 +3,7 @@
 echo -en "*** WARNING ****\n\n"
 echo "Requires about 16 GB of RAM to compile; crashes my Raspberry PI"
 echo -en "which has 8 GB of RAM\n\n"
-echo -en "Plase run this script in a virtual environment (python -m venv ~/venv/python3; . ~/venv/bin/activate\n\n"
+echo -en "Plase run this script in a virtual environment (python -m venv ~/venv/python3; . ~/venv/python3/bin/activate\n\n"
 echo -en "*** WARNING ***\n\n"
 
 echo "Installing Dependencies"
