@@ -14,6 +14,11 @@ import sys
 from sudoku_solver import Sudoku, PuzzleGenerator
 from PyQt5.QtCore import QThread
 
+from PyQt5.QtWidgets import QAction
+from PyQt5.QtGui import QClipboard
+from PyQt5.QtCore import QMimeData
+
+
 class GeneratorThread(QThread):
     def __init__(self, puzzle_counts, filename):
         super().__init__()
@@ -287,6 +292,7 @@ class SudokuWindow(QMainWindow):
             ('XYZ-Wing\n', self.xyzWing),
             ('Sword Fish\n', self.swordfish),
             ('Solve All\n', self.solveAll)
+
         ]
         
         toolbar_widget = QWidget()
@@ -389,6 +395,13 @@ class SudokuWindow(QMainWindow):
         quit_action.setShortcut('Ctrl+Q')  # Standard quit shortcut
         quit_action.triggered.connect(self.close)  # QMainWindow's close method
         file_menu.addAction(quit_action)
+
+        #('Copy Board\n', self.copy_board)
+        edit_menu = menubar.addMenu('Edit')
+        Edit_action = QAction('Copy Board', self)
+        Edit_action.setShortcut('Ctrl+C')  # Standard quit shortcut
+        Edit_action.triggered.connect(self.copy_board)  # QMainWindow's close method
+        edit_menu.addAction(Edit_action)
 
 
         # Generate menu
@@ -553,6 +566,87 @@ class SudokuWindow(QMainWindow):
         generator.generate_puzzle(difficulty)
         self.game.clean()
         self.updateDisplay()
+        
+    def add_copy_action(self):
+        # Add Copy action to File menu
+        copy_action = QAction('Copy Board', self)
+        copy_action.setShortcut('Ctrl+C')
+        copy_action.triggered.connect(self.copy_board)
+        self.file_menu.addAction(copy_action)  # Add to existing file_menu
+
+    def copy_board(self):
+        try:
+            # Create HTML content
+            html_content = "<div style='font-family: Arial, sans-serif;'>"
+            html_content += "<h2 style='text-align: center; color: #333;'>Sudoku Puzzle</h2>"
+            html_content += "<table style='border-collapse: collapse; border: 2px solid black; margin: 0 auto;'>"
+        
+            for y in range(9):
+                html_content += "<tr>"
+                for x in range(9):
+                    # Define cell style
+                    style = "width: 30px; height: 30px; text-align: center; "
+                
+                    # Add border styles
+                    if x % 3 == 0:
+                        style += "border-left: 2px solid black; "
+                    else:
+                        style += "border-left: 1px solid #ccc; "
+                   
+                    if x == 8:
+                        style += "border-right: 2px solid black; "
+                
+                    if y % 3 == 0:
+                        style += "border-top: 2px solid black; "
+                    else:
+                        style += "border-top: 1px solid #ccc; "
+                
+                    if y == 8:
+                        style += "border-bottom: 2px solid black; "
+                    else:
+                        style += "border-bottom: 1px solid #ccc; "
+                
+                    value = self.game.get_value(x, y)
+                    if not value==None and value>=0 and value<=8:
+                         cell_value = str(value + 1)
+                    else:
+                         cell_value = "&nbsp;"
+                
+                    html_content += f"<td style='{style}'>{cell_value}</td>"
+                html_content += "</tr>"
+            html_content += "</table></div>"
+
+            # Create plain text content
+            plain_text = "Sudoku Puzzle\n"
+            for y in range(9):
+                if y % 3 == 0:
+                    plain_text += "+----+----+----+----+----+----+\n"
+                for x in range(9):
+                    if x % 3 == 0:
+                        plain_text += "|"
+                    value = self.game.get_value(x, y)
+                    if not value==None and value>=0 and value<=8:
+                         cell_value = str(value + 1)
+                    else:
+                         cell_value = "."
+                    plain_text += f" {cell_value} "
+                plain_text += "|\n"
+            plain_text += "+----+----+----+----+----+----+\n"
+
+            # Create mime data with both formats
+            mime_data = QMimeData()
+            mime_data.setHtml(html_content)
+            mime_data.setText(plain_text)
+
+            # Set the clipboard data
+            clipboard = QApplication.clipboard()
+            clipboard.setMimeData(mime_data)
+        
+            # Update status
+            self.status_label.setText("Board copied to clipboard")
+        
+        except Exception as e:
+            self.status_label.setText(f"Failed to copy board: {str(e)}")        
 
 def main():
     app = QApplication(sys.argv)

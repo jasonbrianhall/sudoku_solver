@@ -493,7 +493,10 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         DataObject^ dataObj = gcnew DataObject();
 
         // Create HTML content
-        String^ htmlContent = "<table style='border-collapse: collapse; border: 2px solid black;'>";
+        String^ htmlContent = "<div style='font-family: Arial, sans-serif;'>";
+        htmlContent += "<h2 style='text-align: center; color: #333;'>Sudoku Puzzle</h2></div>";
+        htmlContent += "<table style='border-collapse: collapse; border: 2px solid black; margin: 0 auto;'>";
+        htmlContent += "<table style='border-collapse: collapse; border: 2px solid black;'>";
         for (int i = 0; i < 9; i++) {
             htmlContent += "<tr>";
             for (int j = 0; j < 9; j++) {
@@ -551,7 +554,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         dataObj->SetData(DataFormats::Html, clipboardHtml);
         
         // Add plain text as fallback
-        String^ plainText = "";
+        String^ plainText = "Sudoku Puzzle\r\n";
         for (int i = 0; i < 9; i++) {
             if (i % 3 == 0) {
                 plainText += "+----+----+----+----+----+----+\r\n";
