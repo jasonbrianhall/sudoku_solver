@@ -291,8 +291,8 @@ class SudokuWindow(QMainWindow):
             ('XY-Wing\n', self.xyWing),
             ('XYZ-Wing\n', self.xyzWing),
             ('Sword Fish\n', self.swordfish),
-            ('Solve All\n', self.solveAll),
-            ('Copy Board\n', self.copy_board)
+            ('Solve All\n', self.solveAll)
+
         ]
         
         toolbar_widget = QWidget()
@@ -395,6 +395,13 @@ class SudokuWindow(QMainWindow):
         quit_action.setShortcut('Ctrl+Q')  # Standard quit shortcut
         quit_action.triggered.connect(self.close)  # QMainWindow's close method
         file_menu.addAction(quit_action)
+
+        #('Copy Board\n', self.copy_board)
+        edit_menu = menubar.addMenu('Edit')
+        Edit_action = QAction('Copy Board', self)
+        Edit_action.setShortcut('Ctrl+C')  # Standard quit shortcut
+        Edit_action.triggered.connect(self.copy_board)  # QMainWindow's close method
+        edit_menu.addAction(Edit_action)
 
 
         # Generate menu
