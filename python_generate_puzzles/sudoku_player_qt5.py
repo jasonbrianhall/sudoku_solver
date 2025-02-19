@@ -23,7 +23,7 @@ class SudokuButton(QPushButton):
         self.is_mistake = False
         self.clicked.connect(self.handleClick)  # Connect the click signal
         self.current_difficulty = 'easy'
-
+        self.cheat=False
         # Enable focus and hover events
         self.setFocusPolicy(Qt.StrongFocus)
         
@@ -327,58 +327,68 @@ class SudokuWindow(QMainWindow):
             self.timer.start(1000)
             
     def standardElimination(self):
+        self.cheat=True
         self.game.std_elim()
         self.updateDisplay()
         self.checkCompletion()
 
 
     def lineElimination(self):
+        self.cheat=True
         self.game.lin_elim()
         self.updateDisplay()
         self.checkCompletion()
 
 
     def hiddenSingles(self):
+        self.cheat=True
         self.game.find_hidden_singles()
         self.updateDisplay()
         self.checkCompletion()
 
     def hiddenPairs(self):
+        self.cheat=True
         self.game.find_hidden_pairs()
         self.updateDisplay()
         self.checkCompletion()
 
 
     def pointingPairs(self):
+        self.cheat=True
         self.game.find_pointing_pairs()
         self.updateDisplay()
         self.checkCompletion()
 
 
     def xWing(self):
+        self.cheat=True
         self.game.find_x_wing()
         self.updateDisplay()
         self.checkCompletion()
 
 
     def xyWing(self):
+        self.cheat=True
         self.game.find_xy_wing()
         self.updateDisplay()
         self.checkCompletion()
 
     def xyzWing(self):
+        self.cheat=True
         self.game.find_xyz_wing()
         self.updateDisplay()
         self.checkCompletion()
 
 
     def swordfish(self):
+        self.cheat=True
         self.game.find_sword_fish()
         self.updateDisplay()
         self.checkCompletion()
 
 
     def solveAll(self):
+        self.cheat=True
         self.game.solve()
         self.updateDisplay()
         self.checkCompletion()
@@ -389,6 +399,7 @@ class SudokuWindow(QMainWindow):
 
 
     def generatePuzzle(self, difficulty):
+        self.cheat=False
         self.current_difficulty = difficulty
         # Stop existing timer if running
         self.timer.stop()
@@ -439,30 +450,32 @@ class SudokuWindow(QMainWindow):
                     self.buttons[y][x].setMistake(True)
 
     def checkCompletion(self):
+        made_top_10=False
         if self.game.is_valid_solution():
             filled = all(self.game.get_value(x, y) >= 0 
                     for x in range(9) for y in range(9))
             if filled:
                 self.timer.stop()
-                made_top_10, rank, initials = save_best_time(
-                    self, 
-                    self.current_difficulty, 
-                    self.elapsed_time
-                )
+                if not self.cheat:
+                    made_top_10, rank, initials = save_best_time(
+                        self, 
+                        self.current_difficulty, 
+                        self.elapsed_time
+                    )
         
                 minutes = self.elapsed_time // 60
                 seconds = self.elapsed_time % 60
                 time_str = f"{minutes:02d}:{seconds:02d}"
         
                 message = f"You solved the puzzle in {time_str}!"
-                if made_top_10:
+                if made_top_10 and not self.cheat:
                     message += f"\nCongratulations {initials}! "
                     message += f"You made the leaderboard at rank #{rank}!"
             
                 QMessageBox.information(self, "Puzzle Completed!", message)
             
                 # Show the leaderboard if made top 10
-                if made_top_10:
+                if made_top_10 and not self.cheat:
                     self.showBestTimes()
             
                 # Generate a new puzzle with the same difficulty
