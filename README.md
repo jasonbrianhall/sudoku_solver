@@ -73,18 +73,13 @@ cd sudoku_solver
 
 2. Compile the C++ version:
 ```bash
-chmod +x compile.sh
-./compile.sh
+make
 ```
 
 Or manually compile:
 ```bash
+cd linux_cli
 g++ main.cpp sudoku.cpp generatepuzzle.cpp -lncurses -o sudoku_solver
-```
-
-Or with Make Script:
-```bash
-make
 ```
 
 For Windows Version:
@@ -95,7 +90,7 @@ msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
 For Python/C++ Version
 ```bash
 cd python_generate_puzzles
-./compile.sh
+make
 ```
 
 
@@ -107,18 +102,31 @@ The Python version is a prototype with limited functionality and doesn't require
 
 For C++ version:
 ```bash
+cd linux_cli
 ./sudoku_solver
 ```
 
 For Python version (prototype):
 ```bash
-python3 sudoku_solver.py
+cd python
+python sudoku_solver.py
 ```
 
 For Windows Version:
 ```cmd
 sudoku_solver
 ```
+
+For Qt5 Versions (five different versions):
+```bash
+cd python_generate_puzzles
+./sudoku_game.py                                                                                             # CLI Version Sudoku Solver (with advanced algorithms)
+./sudoku_game_qt5_ocr.py                                                                                     # OCR QT5 Sudoku Solver (includes generatepuzzles logic)
+./sudoku_game_qt5.py                                                                                         # QT5 Sudoku Solver without OCR (includes generatepuzzles logic)
+./generatepuzzles.py --easy 10 --medium 5 --hard 3 --expert 3 --extreme 2 --output my_sudoku_puzzles.docx    # A puzzle generator to create puzzle books in MSWord using the parameters
+./sudoku_player_qt5.py                                                                                       # A player version of sudoku where players try to solve sudoku puzzles and get high scores
+```
+
 
 ### Controls
 
