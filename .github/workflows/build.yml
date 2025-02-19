@@ -38,6 +38,7 @@ jobs:
 
     # Build the standalone executable
     - name: Build C++ Executable
+      working-directory: windows
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
 
@@ -161,7 +162,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          x64/Release/SudokuSolver.exe
+          windows/x64/Release/SudokuSolver.exe
           python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
           python_generate_puzzles/dist/sudoku_puzzler.exe
           README.md
@@ -181,7 +182,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          x64/Release/SudokuSolver.exe
+          windows/x64/Release/SudokuSolver.exe
           python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
           python_generate_puzzles/dist/sudoku_puzzler.exe
           README.md
