@@ -1,1 +1,1 @@
-../generatepuzzle.h
+../shared/generatepuzzle.h

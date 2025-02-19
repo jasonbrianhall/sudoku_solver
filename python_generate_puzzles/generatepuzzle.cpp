@@ -1,1 +1,1 @@
-../generatepuzzle.cpp
+../shared/generatepuzzle.cpp
