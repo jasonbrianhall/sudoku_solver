@@ -31,6 +31,7 @@ get-csdpmi:
 
 # Target to build for MS-DOS using DJGPP in Docker
 msdos: pull-djgpp get-csdpmi
+	cp ../shared/* .
 	docker run --rm -v $(PWD):/src:z -u $(USER_ID):$(GROUP_ID) $(DJGPP_IMAGE) /bin/sh -c "cd /src && g++ $(SRCS) -o $(DOS_TARGET)"
 	cp csdpmi/bin/CWSDPMI.EXE .
 

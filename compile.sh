@@ -1,27 +1,25 @@
 #!/bin/bash
 
-# Check and compile Linux version if g++ is available
-if command -v g++ &> /dev/null; then
-    echo "Compiling Linux version..."
-    g++ main.cpp sudoku.cpp generatepuzzle.cpp unixprint.cpp -lncurses -o sudoku_solver
-else
-    echo "g++ not found - skipping Linux build"
-fi
+echo "Compile Linux Version"
+pushd linux_cli
+make
+popd
 
-# Check and compile Windows version if cross-compiler is available
-if command -v x86_64-w64-mingw32-g++ &> /dev/null; then
+echo "Compiling MSDOS Version"
+pushd msdos
+make
+popd
 
-    mkdir win_sudoku_pdcurses -p
+echo "Compiling Various Python Versions"
+pushd python_generate_puzzles
+make
+popd
 
-    echo "Compiling Windows version (PDCurses) ..."
-    x86_64-w64-mingw32-g++ main.cpp sudoku.cpp generatepuzzle.cpp pdcursesprint.cpp -lpdcurses -std=c++14 -o win_sudoku_pdcurses/sudoku_solver_pdcurses.exe
-    ./collect_dlls.sh win_sudoku_pdcurses/sudoku_solver_pdcurses.exe  /usr/x86_64-w64-mingw32/sys-root/mingw/bin win_sudoku_pdcurses
+echo "Compiling Windows CLI Versions"
+pushd windows_cli
+make
+popd
 
-else
-    echo "Windows cross-compiler not found - skipping Windows build"
-fi
+echo -en "\n\nTo compile the windows form version, open SudokuSolver.vcxproj in Visual Studio
+or run \"msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj\" from a Visual Studio command prompt\n\n"
 
-if command -v docker &> /dev/null; then
-    echo "Compiling MSDOS version..."
-    make -f Makefile_MSDOS msdos
-fi
