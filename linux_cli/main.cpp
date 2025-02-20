@@ -27,10 +27,10 @@ void show_help() {
     printw("Sudoku Help\n\n");
     
     printw("Game Controls:\n");
-    printw(" Arrow keys - Move cursor    F5/Shift - Save/Load Slot 1\n");
-    printw(" 1-9       - Fill number     F6/Shift - Save/Load Slot 2\n");
-    printw(" 0         - Clear cell      F7/Shift - Save/Load Slot 3\n");
-    printw(" Q         - Quit game       F8/Shift - Save/Load Slot 4\n");
+    printw(" Arrow keys  - Move cursor     F5/Shift - Save/Load Slot 1\n");
+    printw(" 1-9         - Fill number     F6/Shift - Save/Load Slot 2\n");
+    printw(" 0           - Clear cell      F7/Shift - Save/Load Slot 3\n");
+    printw(" Q           - Quit game       F8/Shift - Save/Load Slot 4\n");
     printw("\n");
     
     printw("Puzzle Generation:\n");
