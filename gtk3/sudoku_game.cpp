@@ -163,6 +163,117 @@ static gboolean on_cell_key_press(GtkWidget *widget, GdkEventKey *event, gpointe
     return FALSE;  // Let other handlers process the event
 }
 
+static void show_about_dialog(GtkWidget *widget, gpointer user_data) {
+    SudokuApp *app = static_cast<SudokuApp*>(user_data);
+    
+    GtkWidget *dialog = gtk_about_dialog_new();
+    gtk_about_dialog_set_program_name(GTK_ABOUT_DIALOG(dialog), "Sudoku Game");
+    gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "1.0");
+    gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), "© Jason Brian Hall");
+    gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), 
+        "A simple Sudoku game implementation with GTK+.");
+    gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), 
+        "https://github.com/jasonbrianhall/sudoku_solver");
+    gtk_about_dialog_set_website_label(GTK_ABOUT_DIALOG(dialog), "GitHub Repository");
+    gtk_about_dialog_set_license_type(GTK_ABOUT_DIALOG(dialog), GTK_LICENSE_MIT_X11);
+    gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(dialog), 
+        (const gchar*[]){"Jason Brian Hall", NULL});
+    
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(app->window));
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+}
+
+// Helper function to show the How to Play dialog
+static void show_how_to_play(GtkWidget *widget, gpointer user_data) {
+    SudokuApp *app = static_cast<SudokuApp*>(user_data);
+    
+    GtkWidget *dialog = gtk_dialog_new_with_buttons(
+        "How to Play Sudoku",
+        GTK_WINDOW(app->window),
+        GTK_DIALOG_MODAL,
+        "Close", GTK_RESPONSE_CLOSE,
+        NULL
+    );
+    
+    // Set dialog size
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 500, 400);
+    
+    // Create a scrolled window for the content
+    GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    GtkWidget *scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
+                                  GTK_POLICY_AUTOMATIC,
+                                  GTK_POLICY_AUTOMATIC);
+    gtk_box_pack_start(GTK_BOX(content_area), scrolled_window, TRUE, TRUE, 0);
+    
+    // Create a text view for the instructions
+    GtkWidget *text_view = gtk_text_view_new();
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_WORD);
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
+    gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(text_view), FALSE);
+    gtk_container_add(GTK_CONTAINER(scrolled_window), text_view);
+    
+    // Get the buffer and add the text
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+    
+    const char *instructions = 
+        "SUDOKU RULES:\n\n"
+        "1. Each puzzle consists of a 9x9 grid containing cells that must be filled with numbers from 1 to 9.\n\n"
+        "2. At the start of the game, the puzzle will have some cells already filled in. These are the clues.\n\n"
+        "3. The objective is to fill in the empty cells so that:\n"
+        "   • Each row contains all numbers from 1 to 9 without repetition\n"
+        "   • Each column contains all numbers from 1 to 9 without repetition\n"
+        "   • Each 3x3 box (outlined by thicker borders) contains all numbers from 1 to 9\n\n"
+        "CONTROLS:\n\n"
+        "• Mouse Controls:\n"
+        "   - Left-click: Increase the number in a cell (cycles through 1-9 and empty)\n"
+        "   - Right-click: Decrease the number in a cell\n"
+        "   - Middle-click: Clear the cell\n"
+        "   - Scroll wheel: Increase/decrease the number\n\n"
+        "• Keyboard Controls:\n"
+        "   - Arrow keys: Navigate between cells\n"
+        "   - Tab/Shift+Tab: Navigate forward/backward through cells\n"
+        "   - Home/End: Move to first/last cell in current row\n"
+        "   - Page Up/Down: Move to top/bottom of current column\n"
+        "   - Numbers 1-9: Enter that number in the current cell\n"
+        "   - 0, Space, Delete, Backspace: Clear the current cell\n\n"
+        "• Function Keys:\n"
+        "   - F1: New easy puzzle\n"
+        "   - F2: New medium puzzle\n"
+        "   - F3: New hard puzzle\n"
+        "   - F4: New expert puzzle\n"
+        "   - Shift+F1: New extreme puzzle\n\n"
+        "• Shortcuts:\n"
+        "   - Ctrl+C: Copy the board to clipboard\n"
+        "   - Ctrl+H: Get a hint (fills a random empty cell)\n"
+        "   - Ctrl+K: Check your solution\n\n"
+        "DIFFICULTY LEVELS:\n\n"
+        "• Easy: For beginners, with many clues provided\n"
+        "• Medium: A balanced challenge\n"
+        "• Hard: Requires more advanced techniques\n"
+        "• Expert: For experienced players\n"
+        "• Extreme: The ultimate Sudoku challenge\n\n"
+        "FEATURES:\n\n"
+        "• Get Hint: Reveals a correct number in a random empty cell\n"
+        "• Check Solution: Verifies if your current solution is correct\n"
+        "• Save/Load: Save your progress and continue later\n"
+        "• Export to Excel: Export your puzzle to Excel XML format\n\n"
+        "Happy solving!";
+    
+    gtk_text_buffer_set_text(buffer, instructions, -1);
+    
+    // Set margins to make the text more readable
+    gtk_text_view_set_left_margin(GTK_TEXT_VIEW(text_view), 12);
+    gtk_text_view_set_right_margin(GTK_TEXT_VIEW(text_view), 12);
+    gtk_text_view_set_top_margin(GTK_TEXT_VIEW(text_view), 12);
+    gtk_text_view_set_bottom_margin(GTK_TEXT_VIEW(text_view), 12);
+    
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+}
+
 // Scroll event handler for cells
 static gboolean on_cell_scroll(GtkWidget *widget, GdkEventScroll *event, gpointer user_data) {
     SudokuApp *app = static_cast<SudokuApp*>(user_data);
@@ -1041,6 +1152,21 @@ for (const auto& diff : difficulty_levels) {
     g_signal_connect(check_item, "activate", G_CALLBACK(check_solution_callback), app);
     gtk_menu_shell_append(GTK_MENU_SHELL(edit_menu), check_item);
     
+// Help menu
+GtkWidget *help_menu = gtk_menu_new();
+GtkWidget *help_item = gtk_menu_item_new_with_label("Help");
+gtk_menu_item_set_submenu(GTK_MENU_ITEM(help_item), help_menu);
+gtk_menu_shell_append(GTK_MENU_SHELL(menubar), help_item);
+
+// Help menu items
+GtkWidget *how_to_play_item = gtk_menu_item_new_with_label("How to Play");
+g_signal_connect(how_to_play_item, "activate", G_CALLBACK(show_how_to_play), app);
+gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), how_to_play_item);
+
+GtkWidget *about_item = gtk_menu_item_new_with_label("About");
+g_signal_connect(about_item, "activate", G_CALLBACK(show_about_dialog), app);
+gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_item);
+
     // Create info bar (difficulty, timer, etc.)
     GtkWidget *info_bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
     gtk_box_pack_start(GTK_BOX(main_box), info_bar, FALSE, FALSE, 0);
