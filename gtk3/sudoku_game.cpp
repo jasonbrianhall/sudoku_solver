@@ -143,6 +143,14 @@ static gboolean on_cell_key_press(GtkWidget *widget, GdkEventKey *event, gpointe
         gtk_label_set_text(GTK_LABEL(app->status_label), "");
         return TRUE;
     }
+
+    // Handle 0 key to clear cell (both regular and keypad 0)
+    if (event->keyval == GDK_KEY_0 || event->keyval == GDK_KEY_KP_0) {
+        app->game->ClearValue(data->x, data->y);
+        update_display(app);
+        gtk_label_set_text(GTK_LABEL(app->status_label), "Cell cleared");
+        return TRUE;
+    }
     
     // Handle backspace or delete to clear cell
     if (event->keyval == GDK_KEY_BackSpace || event->keyval == GDK_KEY_Delete) {
