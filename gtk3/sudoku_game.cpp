@@ -369,7 +369,7 @@ static void start_new_game(SudokuApp *app, const char *difficulty) {
     // Generate a new puzzle
     app->generator->generatePuzzle(difficulty);
     app->game->Clean();
-    app->current_difficulty = difficulty;
+    app->current_difficulty = difficulty;  // Store the difficulty string
     
     // Mark original cells
     mark_original_cells(app);
@@ -382,9 +382,26 @@ static void start_new_game(SudokuApp *app, const char *difficulty) {
     update_timer(app);
     app->timer_id = g_timeout_add(1000, timer_callback, app);  // Update every second
     
-    // Update difficulty label
+    // Update difficulty label - Fix for the garbled text
     std::string diff_text = "Difficulty: ";
-    diff_text += difficulty;
+    
+    // Convert difficulty to display text with proper capitalization
+    std::string display_diff;
+    if (strcmp(difficulty, "easy") == 0) {
+        display_diff = "Easy";
+    } else if (strcmp(difficulty, "medium") == 0) {
+        display_diff = "Medium";
+    } else if (strcmp(difficulty, "hard") == 0) {
+        display_diff = "Hard";
+    } else if (strcmp(difficulty, "expert") == 0) {
+        display_diff = "Expert";
+    } else if (strcmp(difficulty, "extreme") == 0) {
+        display_diff = "Extreme";
+    } else {
+        display_diff = difficulty;  // Use as is if not recognized
+    }
+    
+    diff_text += display_diff;
     gtk_label_set_text(GTK_LABEL(app->difficulty_label), diff_text.c_str());
     
     // Clear status
@@ -545,10 +562,18 @@ static void check_solution(SudokuApp *app) {
 
 // Menu callback for new game
 static void new_game_difficulty(GtkWidget *widget, gpointer user_data) {
-    const char *difficulty = static_cast<const char*>(user_data);
-    SudokuApp *app = static_cast<SudokuApp*>(g_object_get_data(G_OBJECT(widget), "app"));
+    // Get the app pointer directly from user_data
+    SudokuApp *app = static_cast<SudokuApp*>(user_data);
     
-    start_new_game(app, difficulty);
+    // Get the difficulty string from the widget's data
+    const char *difficulty = static_cast<const char*>(g_object_get_data(G_OBJECT(widget), "difficulty"));
+    
+    if (app && difficulty) {
+        // Call start_new_game with the proper parameters
+        start_new_game(app, difficulty);
+    } else {
+        g_warning("Failed to get app or difficulty data");
+    }
 }
 
 // Menu callback for export to Excel
@@ -789,22 +814,30 @@ static void activate(GtkApplication *gtk_app, gpointer user_data) {
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(new_game_item), new_game_menu);
     gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), new_game_item);
     
-    // Add difficulty options to New Game submenu
-    std::map<std::string, std::string> difficulties = {
-        {"easy", "Easy (F1)"},
-        {"medium", "Medium (F2)"},
-        {"hard", "Hard (F3)"},
-        {"expert", "Expert (F4)"},
-        {"extreme", "Extreme (Shift+F1)"}
-    };
+struct {
+    const char* id;
+    const char* label;
+} difficulty_levels[] = {
+    {"easy", "Easy (F1)"},
+    {"medium", "Medium (F2)"},
+    {"hard", "Hard (F3)"},
+    {"expert", "Expert (F4)"},
+    {"extreme", "Extreme (Shift+F1)"}
+};
+
+// Create difficulty menu items in the specified order
+for (const auto& diff : difficulty_levels) {
+    GtkWidget *diff_item = gtk_menu_item_new_with_label(diff.label);
     
-    for (const auto& diff : difficulties) {
-        GtkWidget *diff_item = gtk_menu_item_new_with_label(diff.second.c_str());
-        // Store app pointer in the widget
-        g_object_set_data(G_OBJECT(diff_item), "app", app);
-        g_signal_connect(diff_item, "activate", G_CALLBACK(new_game_difficulty), (gpointer)diff.first.c_str());
-        gtk_menu_shell_append(GTK_MENU_SHELL(new_game_menu), diff_item);
-    }
+    // Store the difficulty string in the widget using a persistent copy
+    g_object_set_data_full(G_OBJECT(diff_item), "difficulty", 
+                          g_strdup(diff.id), g_free);
+    
+    // Connect the signal passing app as user_data
+    g_signal_connect(diff_item, "activate", G_CALLBACK(new_game_difficulty), app);
+    
+    gtk_menu_shell_append(GTK_MENU_SHELL(new_game_menu), diff_item);
+}
     
     GtkWidget *save_item = gtk_menu_item_new_with_label("Save Game");
     g_signal_connect(save_item, "activate", G_CALLBACK(save_game), app);
