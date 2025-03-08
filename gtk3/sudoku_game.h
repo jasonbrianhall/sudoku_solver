@@ -22,7 +22,7 @@ struct SudokuApp {
     GtkWidget *hint_button;
     GtkWidget *check_button;
     std::vector<std::vector<GtkWidget*>> buttons;
-    
+    GtkWidget *currently_focused_button;
     Sudoku *game;
     PuzzleGenerator *generator;
     std::string current_difficulty;
@@ -69,3 +69,5 @@ static void on_check_button_clicked(GtkWidget *widget, gpointer user_data);
 static void copy_board_callback(GtkWidget *widget, gpointer user_data);
 static void hint_callback(GtkWidget *widget, gpointer user_data);
 static void check_solution_callback(GtkWidget *widget, gpointer user_data);
+
+static void set_button_focus(SudokuApp *app, int x, int y);
