@@ -233,6 +233,7 @@ static gboolean on_cell_button_press(GtkWidget *widget, GdkEventButton *event, g
 }
 
 // Global keyboard handler for function keys and shortcuts
+// Enhanced keyboard navigation for the Sudoku game
 static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
     SudokuApp *app = static_cast<SudokuApp*>(user_data);
     
@@ -255,12 +256,53 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
                 
             case GDK_KEY_Left:
             case GDK_KEY_KP_Left:
-                set_button_focus(app, current_x - 1, current_y);
+                // Move to previous cell, wrap to end of previous row if at start
+                if (current_x > 0) {
+                    set_button_focus(app, current_x - 1, current_y);
+                } else if (current_y > 0) {
+                    // Wrap to end of previous row
+                    set_button_focus(app, 8, current_y - 1);
+                } else {
+                    // Wrap to bottom-right if at top-left
+                    set_button_focus(app, 8, 8);
+                }
                 return TRUE;
                 
             case GDK_KEY_Right:
             case GDK_KEY_KP_Right:
-                set_button_focus(app, current_x + 1, current_y);
+                // Move to next cell, wrap to start of next row if at end
+                if (current_x < 8) {
+                    set_button_focus(app, current_x + 1, current_y);
+                } else if (current_y < 8) {
+                    // Wrap to start of next row
+                    set_button_focus(app, 0, current_y + 1);
+                } else {
+                    // Wrap to top-left if at bottom-right
+                    set_button_focus(app, 0, 0);
+                }
+                return TRUE;
+                
+            case GDK_KEY_Tab:
+                // Similar to right key but with Shift+Tab support
+                if ((event->state & GDK_SHIFT_MASK) != 0) {
+                    // Shift+Tab: move backward
+                    if (current_x > 0) {
+                        set_button_focus(app, current_x - 1, current_y);
+                    } else if (current_y > 0) {
+                        set_button_focus(app, 8, current_y - 1);
+                    } else {
+                        set_button_focus(app, 8, 8);
+                    }
+                } else {
+                    // Tab: move forward
+                    if (current_x < 8) {
+                        set_button_focus(app, current_x + 1, current_y);
+                    } else if (current_y < 8) {
+                        set_button_focus(app, 0, current_y + 1);
+                    } else {
+                        set_button_focus(app, 0, 0);
+                    }
+                }
                 return TRUE;
                 
             case GDK_KEY_Home:
@@ -282,6 +324,34 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
                 // Move to bottom of current column
                 set_button_focus(app, current_x, 8);
                 return TRUE;
+                
+            // Add support for number keys directly
+            case GDK_KEY_1:
+            case GDK_KEY_2:
+            case GDK_KEY_3:
+            case GDK_KEY_4:
+            case GDK_KEY_5:
+            case GDK_KEY_6:
+            case GDK_KEY_7:
+            case GDK_KEY_8:
+            case GDK_KEY_9:
+            case GDK_KEY_KP_1:
+            case GDK_KEY_KP_2:
+            case GDK_KEY_KP_3:
+            case GDK_KEY_KP_4:
+            case GDK_KEY_KP_5:
+            case GDK_KEY_KP_6:
+            case GDK_KEY_KP_7:
+            case GDK_KEY_KP_8:
+            case GDK_KEY_KP_9:
+                // Let the cell handle the key press
+                return FALSE;
+                
+            case GDK_KEY_BackSpace:
+            case GDK_KEY_Delete:
+            case GDK_KEY_space:
+                // Let the cell handle clearing
+                return FALSE;
         }
     }
     
@@ -306,33 +376,7 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
     
     // Handle Ctrl+C for copying the board
     if (event->keyval == GDK_KEY_c && (event->state & GDK_CONTROL_MASK) != 0) {
-        // Create plain text content
-        std::string plain_text = "Sudoku Puzzle\n";
-        for (int y = 0; y < 9; y++) {
-            if (y % 3 == 0) {
-                plain_text += "+-----+-----+-----+\n";
-            }
-            for (int x = 0; x < 9; x++) {
-                if (x % 3 == 0) {
-                    plain_text += "|";
-                }
-                int value = app->game->GetValue(x, y);
-                if (value >= 0 && value <= 8) {
-                    plain_text += " " + std::to_string(value + 1) + " ";
-                } else {
-                    plain_text += " . ";
-                }
-            }
-            plain_text += "|\n";
-        }
-        plain_text += "+-----+-----+-----+\n";
-        
-        // Copy to clipboard
-        GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-        gtk_clipboard_set_text(clipboard, plain_text.c_str(), -1);
-        
-        // Update status
-        gtk_label_set_text(GTK_LABEL(app->status_label), "Board copied to clipboard");
+        copy_board_callback(nullptr, app);
         return TRUE;
     }
     
@@ -358,10 +402,20 @@ static void set_button_focus(SudokuApp *app, int x, int y) {
     if (y < 0) y = 0;
     if (y > 8) y = 8;
     
+    // Remove focus styling from previously focused button
+    if (app->currently_focused_button != nullptr) {
+        GtkStyleContext *prev_context = gtk_widget_get_style_context(app->currently_focused_button);
+        gtk_style_context_remove_class(prev_context, "focused-cell");
+    }
+    
     // Set focus to the button
     GtkWidget *button = app->buttons[y][x];
     gtk_widget_grab_focus(button);
     app->currently_focused_button = button;
+    
+    // Add focus styling
+    GtkStyleContext *context = gtk_widget_get_style_context(button);
+    gtk_style_context_add_class(context, "focused-cell");
 }
 
 // Starts a new game with the specified difficulty
@@ -820,7 +874,46 @@ static void check_solution_callback(GtkWidget *widget, gpointer user_data) {
 
 static gboolean on_button_focus_in(GtkWidget *widget, GdkEvent *event, gpointer user_data) {
     SudokuApp *app = static_cast<SudokuApp*>(user_data);
+    
+    // Remove focus styling from previously focused button
+    if (app->currently_focused_button != nullptr) {
+        GtkStyleContext *prev_context = gtk_widget_get_style_context(app->currently_focused_button);
+        gtk_style_context_remove_class(prev_context, "focused-cell");
+    }
+    
+    // Set the new focused button and apply focus styling
     app->currently_focused_button = widget;
+    
+    // Add focus styling to current button
+    GtkStyleContext *context = gtk_widget_get_style_context(widget);
+    gtk_style_context_add_class(context, "focused-cell");
+    
+    // Announce focus change for screen readers
+    ButtonData *data = button_data[widget];
+    int cell_value = app->game->GetValue(data->x, data->y);
+    std::string announcement;
+    
+    // Format announcement text based on cell value and position
+    if (cell_value >= 0 && cell_value <= 8) {
+        announcement = "Cell at row " + std::to_string(data->y + 1) + 
+                       ", column " + std::to_string(data->x + 1) + 
+                       " contains " + std::to_string(cell_value + 1);
+    } else {
+        announcement = "Empty cell at row " + std::to_string(data->y + 1) + 
+                       ", column " + std::to_string(data->x + 1);
+    }
+    
+    // Set the status text for screen readers
+    gtk_label_set_text(GTK_LABEL(app->status_label), announcement.c_str());
+    
+    return FALSE;
+}
+
+static gboolean on_button_focus_out(GtkWidget *widget, GdkEvent *event, gpointer user_data) {
+    // Remove focus styling when focus leaves
+    GtkStyleContext *context = gtk_widget_get_style_context(widget);
+    gtk_style_context_remove_class(context, "focused-cell");
+    
     return FALSE;
 }
 
@@ -973,7 +1066,7 @@ for (const auto& diff : difficulty_levels) {
     gtk_frame_set_shadow_type(GTK_FRAME(grid_frame), GTK_SHADOW_IN);
     gtk_box_pack_start(GTK_BOX(main_box), grid_frame, TRUE, TRUE, 0);
     
-    // Set up CSS styling for the grid
+    // Set up CSS styling for the grid (UPDATED with focus styles)
     GtkCssProvider *provider = gtk_css_provider_new();
     const char *css =
         "button { border-radius: 0; border: 1px solid gray; min-width: 50px; min-height: 50px; font-size: 20px; }"
@@ -984,7 +1077,14 @@ for (const auto& diff : difficulty_levels) {
         ".error-text { color: red; }"
         ".original-cell { font-weight: bold; color: black; }"
         ".user-cell { color: blue; }"
-        ".hint-cell { color: green; font-weight: bold; }";
+        ".hint-cell { color: green; font-weight: bold; }"
+        ".focused-cell { "
+        "   outline: 3px solid #ff8800; "  /* Bright orange outline */
+        "   outline-offset: -3px; "        /* Keep the outline inside the button */
+        "   background-color: #fff8e8; "   /* Light orange background */
+        "   box-shadow: 0 0 8px #ff8800; " /* Glow effect */
+        "   z-index: 100; "                /* Keep the focused cell on top */
+        "}";
     
     gtk_css_provider_load_from_data(provider, css, -1, NULL);
     gtk_style_context_add_provider_for_screen(
@@ -1027,8 +1127,9 @@ for (const auto& diff : difficulty_levels) {
             g_signal_connect(button, "scroll-event", G_CALLBACK(on_cell_scroll), app);
             g_signal_connect(button, "button-press-event", G_CALLBACK(on_cell_button_press), app);
             
-            // Track focus changes
+            // Track focus changes with enhanced focus handlers
             g_signal_connect(button, "focus-in-event", G_CALLBACK(on_button_focus_in), app);
+            g_signal_connect(button, "focus-out-event", G_CALLBACK(on_button_focus_out), app);
             
             // Apply CSS classes for borders
             if (x % 3 == 0) apply_css_to_widget(button, "left-border");
@@ -1058,6 +1159,9 @@ for (const auto& diff : difficulty_levels) {
     
     // Start with a medium difficulty game
     start_new_game(app, "medium");
+    
+    // Set initial focus to center cell for better keyboard usability
+    set_button_focus(app, 4, 4);
 }
 
 int main(int argc, char *argv[]) {
