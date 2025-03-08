@@ -77,7 +77,8 @@ static void update_timer(SudokuApp *app) {
     int minutes = (app->seconds_elapsed % 3600) / 60;
     int seconds = app->seconds_elapsed % 60;
     
-    char time_text[20];
+    // Increase buffer size to ensure it can handle the maximum potential output size
+    char time_text[30]; // Increased from 20 to 30 to be safe
     snprintf(time_text, sizeof(time_text), "Time: %02d:%02d:%02d", hours, minutes, seconds);
     gtk_label_set_text(GTK_LABEL(app->time_label), time_text);
 }
