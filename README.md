@@ -2,9 +2,10 @@
 
 An interactive Sudoku solver and puzzle generator implemented in both C++ and Python, featuring a user-friendly ncurses interface for puzzle input and visualization. The C++ implementation offers robust solving capabilities with multiple advanced techniques, while the Python version serves as a basic prototype and only serves to solve basic puzzles.
 
-There are two main C++ versions
-- CLI version written in Ncurses
-- GUI version designed for Microsoft Windows. 
+There are three main C++ versions
+- CLI Solver version written in Ncurses
+- GUI Solver version designed for Microsoft Windows. 
+- GUI Sudoku Game version written in GTK3 and can compile for both MS Windows and Linux (not a solver but does solve it's own puzzles)
 
 * Both C++ versions (Windows and CLI) can also generate puzzles to be solved.  They also have the ability to export puzzles to XML Spreadsheet 2003, which is Excel compatible.  The Mono version also has a copy board feature which would allow you to copy the board into Excel and Word.
 
@@ -18,7 +19,7 @@ There are four different versions of python.
 
 There also is a script in the python puzzle generator directory to generate Sudoku puzzles in MSWORD format named generatepuzzles.py in the python_generate_puzzles directory
 
-## Features
+## Features (varies by version)
 
 - Interactive puzzle input with arrow key navigation
 - Real-time validity checking of moves
@@ -31,6 +32,7 @@ There also is a script in the python puzzle generator directory to generate Sudo
 - Debug Log in Mono version
 - MS-Word Puzzle Generation written in Python and linked to the C++ Code
 - XML Spreadsheet 2003 Puzzle Generation in Windows, Linux, and MS-DOS Versions
+- Sudoku Interactive Game
 
 ## Getting Started
 
@@ -240,7 +242,7 @@ c++ | cpp | python | ncurses | terminal ui | tui | command line interface | cli 
 
 ### Development
 - Languages: C++ | Python3 | Modern C++
-- Libraries: Mono | QT5 | NCurses | PDCurses
+- Libraries: Mono | QT5 | NCurses | PDCurses | GTK3+
 - Type: Open Source | FOSS | Free Software
 - Platform: Linux | Unix | macOS | Cross-Platform | MS-DOS | Windows
 - Category: Game Development | Developer Tools | Educational
@@ -254,7 +256,7 @@ c++ | cpp | python | ncurses | terminal ui | tui | command line interface | cli 
 - Author: Jason Hall (jasonbrianhall@gmail.com)
 - License: MIT
 - Version: 1.0
-- Last Updated: 2025-01
+- Last Updated: 2025-03
 
 ---
 
