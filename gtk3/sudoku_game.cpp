@@ -236,6 +236,55 @@ static gboolean on_cell_button_press(GtkWidget *widget, GdkEventButton *event, g
 static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
     SudokuApp *app = static_cast<SudokuApp*>(user_data);
     
+    // If a specific cell has focus, handle arrow keys for navigation
+    if (app->currently_focused_button != nullptr) {
+        ButtonData *data = button_data[app->currently_focused_button];
+        int current_x = data->x;
+        int current_y = data->y;
+        
+        switch (event->keyval) {
+            case GDK_KEY_Up:
+            case GDK_KEY_KP_Up:
+                set_button_focus(app, current_x, current_y - 1);
+                return TRUE;
+            
+            case GDK_KEY_Down:
+            case GDK_KEY_KP_Down:
+                set_button_focus(app, current_x, current_y + 1);
+                return TRUE;
+                
+            case GDK_KEY_Left:
+            case GDK_KEY_KP_Left:
+                set_button_focus(app, current_x - 1, current_y);
+                return TRUE;
+                
+            case GDK_KEY_Right:
+            case GDK_KEY_KP_Right:
+                set_button_focus(app, current_x + 1, current_y);
+                return TRUE;
+                
+            case GDK_KEY_Home:
+                // Move to first cell in current row
+                set_button_focus(app, 0, current_y);
+                return TRUE;
+                
+            case GDK_KEY_End:
+                // Move to last cell in current row
+                set_button_focus(app, 8, current_y);
+                return TRUE;
+                
+            case GDK_KEY_Page_Up:
+                // Move to top of current column
+                set_button_focus(app, current_x, 0);
+                return TRUE;
+                
+            case GDK_KEY_Page_Down:
+                // Move to bottom of current column
+                set_button_focus(app, current_x, 8);
+                return TRUE;
+        }
+    }
+    
     // Handle function keys for generating puzzles of different difficulties
     if (event->keyval == GDK_KEY_F1) {
         if ((event->state & GDK_SHIFT_MASK) != 0) {
@@ -300,6 +349,19 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
     }
     
     return FALSE;  // Let other handlers process the event
+}
+
+static void set_button_focus(SudokuApp *app, int x, int y) {
+    // Validate coordinates
+    if (x < 0) x = 0;
+    if (x > 8) x = 8;
+    if (y < 0) y = 0;
+    if (y > 8) y = 8;
+    
+    // Set focus to the button
+    GtkWidget *button = app->buttons[y][x];
+    gtk_widget_grab_focus(button);
+    app->currently_focused_button = button;
 }
 
 // Starts a new game with the specified difficulty
@@ -711,6 +773,12 @@ static void check_solution_callback(GtkWidget *widget, gpointer user_data) {
     check_solution(app);
 }
 
+static gboolean on_button_focus_in(GtkWidget *widget, GdkEvent *event, gpointer user_data) {
+    SudokuApp *app = static_cast<SudokuApp*>(user_data);
+    app->currently_focused_button = widget;
+    return FALSE;
+}
+
 // GTK application activation handler
 static void activate(GtkApplication *gtk_app, gpointer user_data) {
     // Initialize application structure
@@ -722,6 +790,7 @@ static void activate(GtkApplication *gtk_app, gpointer user_data) {
     app->game_started = false;
     app->timer_id = 0;
     app->seconds_elapsed = 0;
+    app->currently_focused_button = nullptr; // Initialize keyboard focus tracking
     
     // Set all original cells to empty initially
     memset(app->original_cells, -1, sizeof(app->original_cells));
@@ -896,6 +965,9 @@ for (const auto& diff : difficulty_levels) {
             GtkStyleContext *button_context = gtk_widget_get_style_context(button);
             gtk_style_context_add_class(button_context, "sudoku-cell");
             
+            // Make button focusable for keyboard navigation
+            gtk_widget_set_can_focus(button, TRUE);
+            
             // Add button to grid
             gtk_grid_attach(GTK_GRID(grid), button, x, y, 1, 1);
             app->buttons[y][x] = button;
@@ -909,6 +981,9 @@ for (const auto& diff : difficulty_levels) {
             g_signal_connect(button, "key-press-event", G_CALLBACK(on_cell_key_press), app);
             g_signal_connect(button, "scroll-event", G_CALLBACK(on_cell_scroll), app);
             g_signal_connect(button, "button-press-event", G_CALLBACK(on_cell_button_press), app);
+            
+            // Track focus changes
+            g_signal_connect(button, "focus-in-event", G_CALLBACK(on_button_focus_in), app);
             
             // Apply CSS classes for borders
             if (x % 3 == 0) apply_css_to_widget(button, "left-border");
@@ -928,7 +1003,7 @@ for (const auto& diff : difficulty_levels) {
     GtkWidget *instructions = gtk_label_new(
         "Instructions: Click cells to cycle through numbers, or use keyboard (1-9). "
         "Right-click to decrement, middle-click to clear. "
-        "Use F1-F4 for new puzzles of different difficulties."
+        "Use arrow keys to navigate cells. Use F1-F4 for new puzzles of different difficulties."
     );
     gtk_label_set_line_wrap(GTK_LABEL(instructions), TRUE);
     gtk_box_pack_start(GTK_BOX(main_box), instructions, FALSE, FALSE, 5);
