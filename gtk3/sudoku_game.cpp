@@ -177,9 +177,8 @@ static void show_about_dialog(GtkWidget *widget, gpointer user_data) {
         "https://github.com/jasonbrianhall/sudoku_solver");
     gtk_about_dialog_set_website_label(GTK_ABOUT_DIALOG(dialog), "GitHub Repository");
     gtk_about_dialog_set_license_type(GTK_ABOUT_DIALOG(dialog), GTK_LICENSE_MIT_X11);
-    gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(dialog), 
-        (const gchar*[]){"Jason Brian Hall", NULL});
-    
+    const gchar* authors[] = {"Jason Brian Hall", NULL};
+        gtk_about_dialog_set_authors(GTK_ABOUT_DIALOG(dialog), authors);    
     gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(app->window));
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);

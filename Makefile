@@ -27,6 +27,7 @@ help:
 
 linux:
 	cd linux_cli && make
+	cd gtk3 && make
 
 msdos:
 	cd msdos && make
@@ -36,6 +37,7 @@ python:
 
 windows:
 	cd windows_cli && make
+	cd gtk3 && make windows
 
 clean:
 	cd linux_cli && make clean
