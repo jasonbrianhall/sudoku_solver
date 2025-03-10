@@ -734,13 +734,72 @@ static void check_solution(SudokuApp *app) {
         }
     }
     
-    if (!all_filled) {
-        gtk_label_set_text(GTK_LABEL(app->status_label), "The puzzle is not complete yet");
+    // Make a backup of the current board
+    int backup[9][9][9];
+    memcpy(backup, app->game->board, sizeof(backup));
+    
+    // Create a clean board with only original (clue) cells
+    Sudoku clean_game;  // Create a fresh Sudoku instance
+    
+    // Copy only the original cells to the clean game
+    for (int y = 0; y < 9; y++) {
+        for (int x = 0; x < 9; x++) {
+            ButtonData *data = button_data[app->buttons[y][x]];
+            if (data->original) {
+                // Copy this cell's value to the clean game
+                clean_game.SetValue(x, y, app->game->GetValue(x, y));
+            }
+        }
+    }
+    
+    // Try to solve the puzzle from only the clue cells
+    if (clean_game.Solve() != 0) {
+        gtk_label_set_text(GTK_LABEL(app->status_label), "Could not validate puzzle solution");
         return;
     }
     
-    // Check if the solution is valid
-    if (app->game->IsValidSolution()) {
+    // Check for incorrect entries and highlight them
+    bool has_errors = false;
+    int error_count = 0;
+    
+    // Clear any previous error styling
+    for (int y = 0; y < 9; y++) {
+        for (int x = 0; x < 9; x++) {
+            GtkWidget *button = app->buttons[y][x];
+            GtkStyleContext *context = gtk_widget_get_style_context(button);
+            gtk_style_context_remove_class(context, "error-cell");
+        }
+    }
+    
+    // Check each non-empty, non-original cell
+    for (int y = 0; y < 9; y++) {
+        for (int x = 0; x < 9; x++) {
+            GtkWidget *button = app->buttons[y][x];
+            ButtonData *data = button_data[button];
+            
+            // Skip original cells (they are always correct)
+            if (data->original) continue;
+            
+            int current_value = app->game->GetValue(x, y);
+            int correct_value = clean_game.GetValue(x, y);
+            
+            // Skip empty cells
+            if (current_value == -1) continue;
+            
+            // If the value is incorrect, highlight it
+            if (current_value != correct_value) {
+                has_errors = true;
+                error_count++;
+                
+                // Add error styling
+                GtkStyleContext *context = gtk_widget_get_style_context(button);
+                gtk_style_context_add_class(context, "error-cell");
+            }
+        }
+    }
+    
+    // If no errors and all cells are filled, the solution is correct
+    if (!has_errors && all_filled) {
         // Stop the timer
         if (app->timer_id != 0) {
             g_source_remove(app->timer_id);
@@ -769,7 +828,16 @@ static void check_solution(SudokuApp *app) {
         // Update status
         gtk_label_set_text(GTK_LABEL(app->status_label), "Puzzle solved successfully!");
     } else {
-        gtk_label_set_text(GTK_LABEL(app->status_label), "The solution is not correct. Keep trying!");
+        // Update status with appropriate message
+        if (has_errors) {
+            char error_message[100];
+            snprintf(error_message, sizeof(error_message),
+                    "Found %d incorrect %s. Check the highlighted cells in red.", 
+                    error_count, error_count == 1 ? "entry" : "entries");
+            gtk_label_set_text(GTK_LABEL(app->status_label), error_message);
+        } else if (!all_filled) {
+            gtk_label_set_text(GTK_LABEL(app->status_label), "The puzzle is not complete yet");
+        }
     }
 }
 
@@ -1200,6 +1268,8 @@ gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_item);
     gtk_frame_set_shadow_type(GTK_FRAME(grid_frame), GTK_SHADOW_IN);
     gtk_box_pack_start(GTK_BOX(main_box), grid_frame, TRUE, TRUE, 0);
     
+
+
     // Set up CSS styling for the grid (UPDATED with focus styles)
     GtkCssProvider *provider = gtk_css_provider_new();
     const char *css =
@@ -1212,6 +1282,11 @@ gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_item);
         ".original-cell { font-weight: bold; color: black; }"
         ".user-cell { color: blue; }"
         ".hint-cell { color: green; font-weight: bold; }"
+        ".error-cell { "
+        "   color: red; "               /* Red text */
+        "   background-color: #ffeded; " /* Light red background */
+        "   border: 1px solid red; "    /* Red border */
+        "}"
         ".focused-cell { "
         "   outline: 3px solid #ff8800; "  /* Bright orange outline */
         "   outline-offset: -3px; "        /* Keep the outline inside the button */
@@ -1219,7 +1294,7 @@ gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_item);
         "   box-shadow: 0 0 8px #ff8800; " /* Glow effect */
         "   z-index: 100; "                /* Keep the focused cell on top */
         "}";
-    
+
     gtk_css_provider_load_from_data(provider, css, -1, NULL);
     gtk_style_context_add_provider_for_screen(
         gdk_screen_get_default(),
