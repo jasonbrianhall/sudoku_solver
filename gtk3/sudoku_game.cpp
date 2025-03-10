@@ -617,10 +617,9 @@ static void provide_hint(SudokuApp *app) {
     
     // Try to solve the puzzle from only the clue cells
     if (clean_game.Solve() == 0) {
-        // First pass: collect all empty cells
-        std::vector<std::pair<int, int>> empty_cells;
+        // Collect candidate cells for hints (empty or incorrect cells)
+        std::vector<std::pair<int, int>> candidate_cells;
         
-        // Find all empty cells in the current game state
         for (int y = 0; y < 9; y++) {
             for (int x = 0; x < 9; x++) {
                 ButtonData *data = button_data[app->buttons[y][x]];
@@ -628,22 +627,26 @@ static void provide_hint(SudokuApp *app) {
                 // Skip original cells
                 if (data->original) continue;
                 
-                // Check if the cell is empty
-                if (app->game->GetValue(x, y) == -1) {
-                    empty_cells.push_back(std::make_pair(x, y));
+                int current_value = app->game->GetValue(x, y);
+                int correct_value = clean_game.GetValue(x, y);
+                
+                // Add to candidates if empty or incorrect
+                if (current_value == -1 || current_value != correct_value) {
+                    candidate_cells.push_back(std::make_pair(x, y));
                 }
             }
         }
         
-        // If we found empty cells, give a hint for a random one
-        if (!empty_cells.empty()) {
-            // Pick a random empty cell
-            int index = rand() % empty_cells.size();
-            int x = empty_cells[index].first;
-            int y = empty_cells[index].second;
+        // If we found candidate cells, give a hint for a random one
+        if (!candidate_cells.empty()) {
+            // Pick a random candidate cell
+            int index = rand() % candidate_cells.size();
+            int x = candidate_cells[index].first;
+            int y = candidate_cells[index].second;
             
             // Get the correct value from our solved clean game
             int correct_value = clean_game.GetValue(x, y);
+            int current_value = app->game->GetValue(x, y);
             
             // Set the hint directly in the current game
             app->game->SetValue(x, y, correct_value);
@@ -656,51 +659,12 @@ static void provide_hint(SudokuApp *app) {
             // Update the display to show the hint
             update_display(app);
             
-            gtk_label_set_text(GTK_LABEL(app->status_label), "Hint provided for a random empty cell");
-            return;
-        }
-        
-        // If no empty cells, look for incorrect cells
-        std::vector<std::pair<int, int>> incorrect_cells;
-        
-        // Find cells with incorrect values
-        for (int y = 0; y < 9; y++) {
-            for (int x = 0; x < 9; x++) {
-                ButtonData *data = button_data[app->buttons[y][x]];
-                
-                // Skip original cells
-                if (data->original) continue;
-                
-                int current_value = app->game->GetValue(x, y);
-                int correct_value = clean_game.GetValue(x, y);
-                
-                // If the cell has a value and it's incorrect
-                if (current_value != -1 && current_value != correct_value) {
-                    incorrect_cells.push_back(std::make_pair(x, y));
-                }
+            // Provide appropriate status message
+            if (current_value == -1) {
+                gtk_label_set_text(GTK_LABEL(app->status_label), "Hint provided for a random empty cell");
+            } else {
+                gtk_label_set_text(GTK_LABEL(app->status_label), "Corrected an incorrect entry");
             }
-        }
-        
-        // If we found incorrect cells, correct a random one
-        if (!incorrect_cells.empty()) {
-            // Pick a random incorrect cell
-            int index = rand() % incorrect_cells.size();
-            int x = incorrect_cells[index].first;
-            int y = incorrect_cells[index].second;
-            
-            // Apply the correct value from our solved clean game
-            int correct_value = clean_game.GetValue(x, y);
-            app->game->SetValue(x, y, correct_value);
-            
-            // Mark the cell as now original so it can't be changed
-            ButtonData *data = button_data[app->buttons[y][x]];
-            data->original = true;
-            gtk_style_context_add_class(gtk_widget_get_style_context(app->buttons[y][x]), "hint-cell");
-            
-            // Update the display to show the correction
-            update_display(app);
-            
-            gtk_label_set_text(GTK_LABEL(app->status_label), "Corrected a randomly selected wrong entry");
             return;
         }
         
