@@ -2,7 +2,7 @@
 
 echo "Compile Linux Version"
 pushd linux_cli
-make
+./compile.sh
 popd
 
 echo "Compiling MSDOS Version"
