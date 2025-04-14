@@ -95,8 +95,25 @@ cd python_generate_puzzles
 make
 ```
 
-
 The Python version is a prototype with limited functionality and doesn't require compilation. For the best solving experience, use the C++ implementation. The Python version only has basic algorithms implemented, while the C++ versions (Windows and UNIX) can solve extreme puzzles using advanced algorithms.
+
+
+For CLI versions
+```bash
+cd CLI
+./compile.sh
+```
+
+This builds a Linux CLI (ncurses), Windows CLI (PDCurses), and MS-DOS (PDCurses)
+
+
+For MS-DOS CONIO version
+```bash
+cd msdos
+make
+```
+
+This builds a CONIO version that can be ran using dosbox sudoku.exe
 
 ## Usage
 
