@@ -2,7 +2,7 @@
 VERSION=1.0
 
 # Source files
-SRCS = msdos_main.cpp sudoku.cpp generatepuzzle.cpp
+SRCS = msdos_main.cpp sudoku.cpp generatepuzzle.cpp dosprint.cpp
 
 # Output executable
 DOS_TARGET = sudoku.exe
