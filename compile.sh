@@ -5,6 +5,11 @@ pushd linux_cli
 ./compile.sh
 popd
 
+echo "Compiling GTK3 Linux Version"
+pushd gtk3
+make
+popd
+
 echo "Compiling MSDOS Version"
 pushd msdos
 make

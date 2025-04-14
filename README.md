@@ -2,14 +2,15 @@
 
 An interactive Sudoku solver and puzzle generator implemented in both C++ and Python, featuring a user-friendly ncurses interface for puzzle input and visualization. The C++ implementation offers robust solving capabilities with multiple advanced techniques, while the Python version serves as a basic prototype and only serves to solve basic puzzles.
 
-There are three main C++ versions
-- CLI Solver version written in Ncurses
+There are four main C++ versions
+- CLI Solver version written in Ncurses or PDCurses (Linux, Windows, and MS-DOS)
+- CLI Solver version written in CONIO for MS-DOS
 - GUI Solver version designed for Microsoft Windows. 
-- GUI Sudoku Game version written in GTK3 and can compile for both MS Windows and Linux (not a solver but does solve it's own puzzles)
+- GUI Sudoku Game version written in GTK3 and can compile for both MS Windows and Linux
 
 * Both C++ versions (Windows and CLI) can also generate puzzles to be solved.  They also have the ability to export puzzles to XML Spreadsheet 2003, which is Excel compatible.  The Mono version also has a copy board feature which would allow you to copy the board into Excel and Word.
 
-There is a MS-DOS version written in C++.  It is fully functional but because DOSBOX is emulated, can be a little slow (see compile.sh on how to compile it).  It can also generate puzzles since it's based on the C++ Code and export puzzles.
+There are two MS-DOS versions written in C++.  They are fully functional but because DOSBOX is emulated, can be a little slow (see compile.sh on how to compile it).  They can also generate puzzles since it's based on the C++ Code and export puzzles.
 
 There are four different versions of python.
 - Pure python version that only implements basic solving algorithms (located in python directory)
