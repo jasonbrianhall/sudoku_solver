@@ -250,7 +250,7 @@ void Sudoku::RestoreBoard(int original_board[9][9][9], int board[9][9][9]) {
    }
 } 
 
-#ifdef MSDOS
+/*#ifdef MSDOS
 
 #define DEBUG_BUFFER_SIZE 10
 void Sudoku::print_debug(const char *format, ...) {
@@ -274,7 +274,7 @@ void Sudoku::print_debug(const char *format, ...) {
     gotoxy(1, 23);
     cputs(buffer);
 }
-#endif
+#endif */
 
 void Sudoku::ExportToExcelXML(const string& filename) {
     ofstream file(filename);
