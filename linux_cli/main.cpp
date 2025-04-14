@@ -2,11 +2,16 @@
 using namespace std;
 #include <stdlib.h>
 
-#ifndef _WIN32
-    #include <ncurses.h>
+#ifdef _WIN32
+#include <curses.h>
 #else
-    #include <curses.h>
+#ifdef MSDOS
+#include <curses.h>
+#else
+#include <ncurses.h>
 #endif
+#endif
+
 
 #define _NCURSES
 

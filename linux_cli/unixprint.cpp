@@ -1,10 +1,15 @@
 #include "sudoku.h"
 
-#if defined(_WIN32) || defined(WIN32) || defined(__MINGW32__)
-    #include "curses.h"
+#ifdef _WIN32
+	#include <curses.h>
 #else
-    #include <ncurses.h>
-
+#ifdef MSDOS
+	#include <curses.h>
+        #include <stdarg.h>  // Required for va_list, va_start, va_end
+        #include <stdio.h>   // Required for vsprintf
+#else
+	#include <ncurses.h>
+#endif
 #endif
 
 #define _NCURSES
