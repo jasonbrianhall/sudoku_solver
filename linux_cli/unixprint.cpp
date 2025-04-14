@@ -29,7 +29,8 @@ void Sudoku::print_debug(const char *format, ...) {
 #ifndef MSDOS
     move(23 + debug_line, 0);
 #else
-    move(23, 0);
+    move(23 + debug_line%2, 0);
+    refresh();
 #endif    
     
     // Print the formatted string
