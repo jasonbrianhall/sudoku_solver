@@ -1,0 +1,1 @@
+../shared/collect_dlls.sh
