@@ -26,7 +26,11 @@ void Sudoku::print_debug(const char *format, ...) {
     va_end(args);
     
     // Move to position below grid
+#ifndef MSDOS
     move(23 + debug_line, 0);
+#else
+    move(23, 0);
+#endif    
     
     // Print the formatted string
     printw("%s", buffer);
