@@ -144,8 +144,8 @@ void draw_screen(Sudoku &NewGame, int x_pos, int y_pos) {
 int main(int argc, char *argv[]) {
   int x_pos = 0, y_pos = 0;
   Sudoku NewGame;
-
   _setcursortype(_NORMALCURSOR);
+  clrscr();
   draw_screen(NewGame, x_pos, y_pos);
 
   while (1) {
