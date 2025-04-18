@@ -33,7 +33,6 @@ jobs:
     - name: Build MS-DOS Version
       working-directory: msdos
       run: |
-        cp ../shared/* .
         g++ dosprint.cpp generatepuzzle.cpp msdos_main.cpp sudoku.cpp -o sudoku.exe
         exe2coff sudoku.exe
         cat csdpmi/bin/CWSDSTUB.EXE sudoku > sudoku.exe
@@ -67,8 +66,7 @@ jobs:
           Sudoku-MSDOS.zip
           msdos/sudoku.exe
 
-
-  build:
+  build-windows:
     runs-on: windows-latest
     permissions:
       contents: write
@@ -211,7 +209,7 @@ jobs:
         echo     entitlements_file=None, >> sudoku.spec
         echo ) >> sudoku.spec
 
-    - name: Build Python Executable for QT5 Python gamper
+    - name: Build Python Executable for QT5 Python Puzzler
       working-directory: python_generate_puzzles
       run: |
         pyinstaller --clean sudoku.spec
@@ -222,56 +220,97 @@ jobs:
         name: msdos-artifacts
         path: msdos-artifacts
 
+  build-gtk:
+    runs-on: ubuntu-latest
+    container: 
+      image: fedora:latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        dnf -y update
+        dnf -y install mingw64-gcc mingw64-gcc-c++ mingw64-gtk3 mingw64-gtkmm30 wine wine-devel wixl binutils zip
+
+    - name: Build GTK Windows Version
+      working-directory: gtk3
+      run: |
+        chmod +x ../collect_dlls.sh
+        mkdir -p build/windows_gtk3
+        x86_64-w64-mingw32-g++ -std=c++11 -Wall -O2 \
+          $(mingw64-pkg-config --cflags gtk+-3.0) \
+          sudoku_game.cpp sudoku.cpp debug.cpp generatepuzzle.cpp \
+          -o build/windows_gtk3/sudoku_game_gtk3.exe \
+          $(mingw64-pkg-config --libs gtk+-3.0) -lstdc++ -mwindows
+
+    - name: Collect DLLs for GTK Windows Version
+      working-directory: gtk3
+      run: |
+        mkdir -p build/windows_gtk3/dlls
+        ../collect_dlls.sh build/windows_gtk3/sudoku_game_gtk3.exe \
+          /usr/x86_64-w64-mingw32/sys-root/mingw/bin \
+          build/windows_gtk3/dlls
+
+    - name: Create ZIP Archive
+      working-directory: gtk3
+      run: |
+        cp ../README.md build/windows_gtk3/
+        cp ../LICENSE.md build/windows_gtk3/
+        cd build/windows_gtk3
+        zip -r ../../../Sudoku-GTK3-Windows.zip ./*
+
+    - name: Upload GTK Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: gtk-artifacts
+        path: Sudoku-GTK3-Windows.zip
+
+  create-release:
+    needs: [build-msdos, build-windows, build-gtk]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: github.event_name == 'push'
+    
+    steps:
+    - name: Download MS-DOS Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: msdos-artifacts
+        path: msdos-artifacts
+
+    - name: Download GTK Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: gtk-artifacts
+        path: gtk-artifacts
+
     - name: Create Release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      id: create_release
       uses: softprops/action-gh-release@v1
       with:
         files: |
+          msdos-artifacts/Sudoku-MSDOS.zip
+          msdos-artifacts/sudoku.exe
           windows/x64/Release/SudokuSolver.exe
           python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
           python_generate_puzzles/dist/sudoku_puzzler.exe
-          msdos-artifacts/Sudoku-MSDOS.zip
-          README.md
-        tag_name: v${{ github.run_number }}
-        name: Release ${{ github.run_number }}
+          gtk-artifacts/Sudoku-GTK3-Windows.zip
+        tag_name: ${{ github.ref == 'refs/heads/master' && format('v{0}', github.run_number) || format('bleedingedge-v{0}', github.run_number) }}
+        name: ${{ github.ref == 'refs/heads/master' && format('Release {0}', github.run_number) || format('Dev Build {0}', github.run_number) }}
         draft: false
-        prerelease: false
+        prerelease: ${{ github.ref != 'refs/heads/master' }}
         token: ${{ secrets.GITHUB_TOKEN }}
         body: |
-          Automated release from CI build
+          ${{ github.ref == 'refs/heads/master' && 'Release build' || 'Development build' }}
           Commit: ${{ github.sha }}
           Build number: ${{ github.run_number }}
           
           This release includes:
+          - MS-DOS version (sudoku.exe)
           - Windows C++ Native Sudoku Solver
           - Python QT5 Sudoku Solver
           - Python QT5 Sudoku Puzzler Game
-          - MS-DOS Sudoku Solver (run with DOSBox)
-
-    - name: Create Dev Build
-      if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-      id: create_dev_build
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          windows/x64/Release/SudokuSolver.exe
-          python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
-          python_generate_puzzles/dist/sudoku_puzzler.exe
-          msdos-artifacts/Sudoku-MSDOS.zip
-          README.md
-        tag_name: bleedingedge-v${{ github.run_number }}
-        name: Dev Build ${{ github.run_number }}
-        draft: false
-        prerelease: true
-        token: ${{ secrets.GITHUB_TOKEN }}
-        body: |
-          Development build
-          Commit: ${{ github.sha }}
-          Build number: ${{ github.run_number }}
-          
-          This development build includes:
-          - Windows C++ Native Sudoku Solver
-          - Python QT5 Sudoku Solver
-          - Python QT5 Sudoku Puzzler Game
-          - MS-DOS Sudoku Solver (run with DOSBox)
+          - GTK3 Windows Puzzle Game
