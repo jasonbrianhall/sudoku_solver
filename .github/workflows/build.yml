@@ -72,6 +72,7 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+    needs: build-msdos
     
     steps:
     - uses: actions/checkout@v4
@@ -215,6 +216,12 @@ jobs:
       run: |
         pyinstaller --clean sudoku.spec
 
+    - name: Download MS-DOS Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: msdos-artifacts
+        path: msdos-artifacts
+
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       id: create_release
@@ -224,6 +231,7 @@ jobs:
           windows/x64/Release/SudokuSolver.exe
           python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
           python_generate_puzzles/dist/sudoku_puzzler.exe
+          msdos-artifacts/Sudoku-MSDOS.zip
           README.md
         tag_name: v${{ github.run_number }}
         name: Release ${{ github.run_number }}
@@ -234,6 +242,12 @@ jobs:
           Automated release from CI build
           Commit: ${{ github.sha }}
           Build number: ${{ github.run_number }}
+          
+          This release includes:
+          - Windows C++ Native Sudoku Solver
+          - Python QT5 Sudoku Solver
+          - Python QT5 Sudoku Puzzler Game
+          - MS-DOS Sudoku Solver (run with DOSBox)
 
     - name: Create Dev Build
       if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
@@ -244,6 +258,7 @@ jobs:
           windows/x64/Release/SudokuSolver.exe
           python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
           python_generate_puzzles/dist/sudoku_puzzler.exe
+          msdos-artifacts/Sudoku-MSDOS.zip
           README.md
         tag_name: bleedingedge-v${{ github.run_number }}
         name: Dev Build ${{ github.run_number }}
@@ -254,3 +269,9 @@ jobs:
           Development build
           Commit: ${{ github.sha }}
           Build number: ${{ github.run_number }}
+          
+          This development build includes:
+          - Windows C++ Native Sudoku Solver
+          - Python QT5 Sudoku Solver
+          - Python QT5 Sudoku Puzzler Game
+          - MS-DOS Sudoku Solver (run with DOSBox)
