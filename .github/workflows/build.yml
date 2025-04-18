@@ -33,6 +33,8 @@ jobs:
     - name: Build MS-DOS Version
       working-directory: msdos
       run: |
+        cp ../shared/*.cpp .
+        cp ../shared/*.h .
         g++ dosprint.cpp generatepuzzle.cpp msdos_main.cpp sudoku.cpp -o sudoku.exe
         exe2coff sudoku.exe
         cat csdpmi/bin/CWSDSTUB.EXE sudoku > sudoku.exe
@@ -238,7 +240,7 @@ jobs:
     - name: Build GTK Windows Version
       working-directory: gtk3
       run: |
-        chmod +x ../collect_dlls.sh
+        chmod +x ../shared/collect_dlls.sh
         mkdir -p build/windows_gtk3
         x86_64-w64-mingw32-g++ -std=c++11 -Wall -O2 \
           $(mingw64-pkg-config --cflags gtk+-3.0) \
@@ -250,7 +252,7 @@ jobs:
       working-directory: gtk3
       run: |
         mkdir -p build/windows_gtk3/dlls
-        ../collect_dlls.sh build/windows_gtk3/sudoku_game_gtk3.exe \
+        ../shared/collect_dlls.sh build/windows_gtk3/sudoku_game_gtk3.exe \
           /usr/x86_64-w64-mingw32/sys-root/mingw/bin \
           build/windows_gtk3/dlls
 
