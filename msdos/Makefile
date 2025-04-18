@@ -6,6 +6,7 @@ SRCS = msdos_main.cpp sudoku.cpp generatepuzzle.cpp dosprint.cpp
 
 # Output executable
 DOS_TARGET = sudoku.exe
+DOS_COFF = sudoku
 
 # Docker image for DJGPP
 DJGPP_IMAGE = djfdyuruiry/djgpp
@@ -32,9 +33,10 @@ get-csdpmi:
 # Target to build for MS-DOS using DJGPP in Docker
 msdos: pull-djgpp get-csdpmi
 	cp ../shared/* .
-	docker run --rm -v $(PWD):/src:z -u $(USER_ID):$(GROUP_ID) $(DJGPP_IMAGE) /bin/sh -c "cd /src && g++ $(SRCS) -o $(DOS_TARGET)"
-	cp csdpmi/bin/CWSDPMI.EXE .
-
+	docker run --rm -v $(PWD):/src:z -u $(USER_ID):$(GROUP_ID) $(DJGPP_IMAGE) /bin/sh -c "cd /src && g++ $(SRCS) -o $(DOS_TARGET) && \
+	exe2coff $(DOS_TARGET) && \
+	cat csdpmi/bin/CWSDSTUB.EXE $(DOS_COFF) $(COFF_TARGET) > $(DOS_TARGET)"
+	
 # Target to run the MS-DOS executable using DOSBox
 run: msdos
 	dosbox $(DOS_TARGET)
