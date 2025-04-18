@@ -72,7 +72,6 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
-    needs: build-msdos
     
     steps:
     - uses: actions/checkout@v4
@@ -216,12 +215,6 @@ jobs:
       run: |
         pyinstaller --clean sudoku.spec
 
-    - name: Download MS-DOS Artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: msdos-artifacts
-        path: msdos-artifacts
-
   build-gtk:
     runs-on: ubuntu-latest
     container: 
@@ -251,10 +244,10 @@ jobs:
     - name: Collect DLLs for GTK Windows Version
       working-directory: gtk3
       run: |
-        mkdir -p build/windows_gtk3/dlls
+        mkdir -p build/windows_gtk3
         ../shared/collect_dlls.sh build/windows_gtk3/sudoku_game_gtk3.exe \
           /usr/x86_64-w64-mingw32/sys-root/mingw/bin \
-          build/windows_gtk3/dlls
+          build/windows_gtk3
 
     - name: Create ZIP Archive
       working-directory: gtk3
@@ -283,6 +276,12 @@ jobs:
       with:
         name: msdos-artifacts
         path: msdos-artifacts
+
+    - name: Download Windows Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: windows-artifacts
+        path: windows-artifacts
 
     - name: Download GTK Artifacts
       uses: actions/download-artifact@v4
