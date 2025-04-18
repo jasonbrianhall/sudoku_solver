@@ -215,6 +215,15 @@ jobs:
       run: |
         pyinstaller --clean sudoku.spec
 
+    - name: Upload Windows Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-artifacts
+        path: |
+          windows/x64/Release/SudokuSolver.exe
+          python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
+          python_generate_puzzles/dist/sudoku_puzzler.exe
+
   build-gtk:
     runs-on: ubuntu-latest
     container: 
