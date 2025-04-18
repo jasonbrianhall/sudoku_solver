@@ -8,6 +8,7 @@ CSDPMI_URL="http://na.mirror.garr.it/mirrors/djgpp/current/v2misc/csdpmi7b.zip"
 USER_ID=$(id -u)
 GROUP_ID=$(id -g)
 DOS_TARGET="sudoku.exe"
+COFF_TARGET="sudoku"
 
 # Check and compile Linux version if g++ is available
 if command -v g++ &> /dev/null; then
@@ -174,16 +175,15 @@ cp "${TEMP_BUILD_DIR}/lib/libpdcurses.a" ./ 2>/dev/null || echo "Failed to copy 
 echo "Cleaning up temporary directory..."
 rm -rf "${TEMP_BUILD_DIR}"
 
-# Ensure we have the CSDPMI executable in the current directory
-if [ -f "csdpmi/bin/CWSDPMI.EXE" ]; then
-    cp csdpmi/bin/CWSDPMI.EXE .
+if [ -f "csdpmi/bin/CWSSTUB.EXE" ]; then
+    docker run --rm -v "${TEMP_BUILD_DIR}:/src:z" -u ${USER_ID}:${GROUP_ID} ${DJGPP_IMAGE} "exe2coff $(DOS_TARGET) && \
+    cat csdpmi/bin/CWSDSTUB.EXE $(DOS_COFF) $(COFF_TARGET) > $(DOS_TARGET)"
 fi
 
 # Check if build was successful
 if [ -f "${DOS_TARGET}" ]; then
     echo "MSDOS build successful! Files created:"
     echo "- ${DOS_TARGET}"
-    echo "- CWSDPMI.EXE"
     echo "To run in DOSBox, execute: dosbox ${DOS_TARGET}"
 else
     echo "MSDOS build failed."
