@@ -33,7 +33,7 @@ jobs:
     - name: Build MS-DOS Version
       working-directory: msdos
       run: |
-        g++ g++ dosprint.cpp generatepuzzle.cpp msdos_main.cpp sudoku.cpp -o sudoku.exe
+        g++ dosprint.cpp generatepuzzle.cpp msdos_main.cpp sudoku.cpp -o sudoku.exe
         exe2coff sudoku.exe
         cat csdpmi/bin/CWSDSTUB.EXE sudoku > sudoku.exe
         
