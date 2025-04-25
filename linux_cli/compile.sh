@@ -93,7 +93,7 @@ touch /src/include/term.h
 cd /src
 echo "Building sudoku for MSDOS..."
 # Add preprocessor define for MSDOS to handle any platform-specific code
-g++ main.cpp sudoku.cpp generatepuzzle.cpp unixprint.cpp -o sudoku.exe -I/src/include -L/src/lib -lpdcurses -DMSDOS
+g++ -s main.cpp sudoku.cpp generatepuzzle.cpp unixprint.cpp -o sudoku.exe -I/src/include -L/src/lib -lpdcurses -DMSDOS
 
 echo "Build complete!"
 EOF
