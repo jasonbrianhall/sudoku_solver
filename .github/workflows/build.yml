@@ -256,11 +256,11 @@ jobs:
       run: |
         $msiDir = "msi-build"
         New-Item -ItemType Directory -Path $msiDir -Force | Out-Null
-        Copy-Item "windows/x64/Release/SudokuSolver.exe" "$msiDir/"
-        Copy-Item "python_generate_puzzles/dist/sudoku_solver_qt5_python.exe" "$msiDir/SudokuSolver-PyQT5.exe"
-        Copy-Item "python_generate_puzzles/dist/sudoku_puzzler.exe" "$msiDir/SudokuPuzzler-PyQT5.exe"
-        Copy-Item "README.md" "$msiDir/"
-        Copy-Item "LICENSE.md" "$msiDir/"
+        Copy-Item "windows/x64/Release/SudokuSolver.exe" "$msiDir/" -ErrorAction SilentlyContinue
+        Copy-Item "python_generate_puzzles/dist/sudoku_solver_qt5_python.exe" "$msiDir/SudokuSolver-PyQT5.exe" -ErrorAction SilentlyContinue
+        Copy-Item "python_generate_puzzles/dist/sudoku_puzzler.exe" "$msiDir/SudokuPuzzler-PyQT5.exe" -ErrorAction SilentlyContinue
+        Copy-Item "README.md" "$msiDir/" -ErrorAction SilentlyContinue
+        Copy-Item "LICENSE.md" "$msiDir/" -ErrorAction SilentlyContinue
         Write-Host "MSI build directory prepared"
 
     - name: Compile MSI with WiX
@@ -301,16 +301,21 @@ jobs:
         $msiDir = "msi-build"
         New-Item -ItemType Directory -Path $msiDir -Force | Out-Null
         
+        # Copy License.rtf to msi-build directory
+        Copy-Item "windows/License.rtf" "$msiDir/License.rtf" -ErrorAction SilentlyContinue
+        
+        Write-Host "Compiling WiX source..."
         & $candleExe -arch x64 -o "$msiDir/Sudoku.wixobj" -dSourceDir="$PWD/msi-build" $wxsFile
         if ($LASTEXITCODE -eq 0) {
-          & $lightExe -out "Sudoku-${{ env.PRODUCT_VERSION }}.msi" "$msiDir/Sudoku.wixobj" -ext WixUIExtension
+          Write-Host "Linking MSI..."
+          & $lightExe -out "Sudoku-${{ env.PRODUCT_VERSION }}.msi" "$msiDir/Sudoku.wixobj" -ext WixUIExtension -b "$msiDir"
           if ($LASTEXITCODE -eq 0) {
             Write-Host "MSI created successfully"
           } else {
-            Write-Host "Light.exe failed"
+            Write-Host "Light.exe failed with exit code $LASTEXITCODE"
           }
         } else {
-          Write-Host "Candle.exe failed"
+          Write-Host "Candle.exe failed with exit code $LASTEXITCODE"
         }
 
     - name: Create MSIX Package

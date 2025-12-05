@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:ui="http://schemas.microsoft.com/wix/UIExtension">
   <Product Id="*" Name="Sudoku" Language="1033" Version="1.0.0.0" Manufacturer="Sudoku Project" UpgradeCode="E1A85D73-9B2C-4E6D-B3C1-8F0A9D2E5C7B">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" AdminImage="no" />
     <Media Id="1" Cabinet="Sudoku.cab" EmbedCab="yes" />
+    
     <Feature Id="ProductFeature" Title="Sudoku Solvers and Games" Level="1">
       <ComponentRef Id="SudokuSolverExe" />
       <ComponentRef Id="SudokuSolverPyQT5Exe" />
@@ -10,6 +11,7 @@
       <ComponentRef Id="ReadmeFile" />
       <ComponentRef Id="LicenseFile" />
     </Feature>
+    
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLFOLDER" Name="Sudoku" />
@@ -19,21 +21,16 @@
       </Directory>
       <Directory Id="DesktopFolder" Name="Desktop" />
     </Directory>
+    
     <DirectoryRef Id="INSTALLFOLDER">
       <Component Id="SudokuSolverExe" Guid="E2B3D4C5-F6A7-4B8C-9D0E-1F2A3B4C5D6E">
         <File Id="SudokuSolverFile" Source="$(var.SourceDir)\SudokuSolver.exe" KeyPath="yes" />
-        <Shortcut Id="SudokuSolverDesktopShortcut" Directory="DesktopFolder" Name="Sudoku Solver" Target="[INSTALLFOLDER]SudokuSolver.exe" />
-        <Shortcut Id="SudokuSolverMenuShortcut" Directory="SudokuMenuFolder" Name="Sudoku Solver" Target="[INSTALLFOLDER]SudokuSolver.exe" />
       </Component>
       <Component Id="SudokuSolverPyQT5Exe" Guid="A1B2C3D4-E5F6-7A8B-9C0D-E1F2A3B4C5D6">
         <File Id="SudokuSolverPyQT5File" Source="$(var.SourceDir)\SudokuSolver-PyQT5.exe" KeyPath="yes" />
-        <Shortcut Id="SudokuSolverPyQT5DesktopShortcut" Directory="DesktopFolder" Name="Sudoku Solver (PyQT5)" Target="[INSTALLFOLDER]SudokuSolver-PyQT5.exe" />
-        <Shortcut Id="SudokuSolverPyQT5MenuShortcut" Directory="SudokuMenuFolder" Name="Sudoku Solver (PyQT5)" Target="[INSTALLFOLDER]SudokuSolver-PyQT5.exe" />
       </Component>
       <Component Id="SudokuPuzzlerPyQT5Exe" Guid="F1E2D3C4-B5A6-9876-5432-1F0E9D8C7B6A">
         <File Id="SudokuPuzzlerPyQT5File" Source="$(var.SourceDir)\SudokuPuzzler-PyQT5.exe" KeyPath="yes" />
-        <Shortcut Id="SudokuPuzzlerPyQT5DesktopShortcut" Directory="DesktopFolder" Name="Sudoku Puzzler (PyQT5)" Target="[INSTALLFOLDER]SudokuPuzzler-PyQT5.exe" />
-        <Shortcut Id="SudokuPuzzlerPyQT5MenuShortcut" Directory="SudokuMenuFolder" Name="Sudoku Puzzler (PyQT5)" Target="[INSTALLFOLDER]SudokuPuzzler-PyQT5.exe" />
       </Component>
       <Component Id="ReadmeFile" Guid="B6C7D8E9-F0A1-2B3C-4D5E-6F7A8B9C0D1E">
         <File Id="ReadmeFileId" Source="$(var.SourceDir)\README.md" KeyPath="yes" />
@@ -42,12 +39,30 @@
         <File Id="LicenseFileId" Source="$(var.SourceDir)\LICENSE.md" KeyPath="yes" />
       </Component>
     </DirectoryRef>
+    
     <DirectoryRef Id="SudokuMenuFolder">
-      <Component Id="UninstallShortcut" Guid="C0D1E2F3-A4B5-6C7D-8E9F-0A1B2C3D4E5F">
+      <Component Id="StartMenuShortcuts" Guid="D8E9F0A1-B2C3-4D5E-6F7A-8B9C0D1E2F3A">
+        <Shortcut Id="SudokuSolverStartMenuShortcut" Directory="SudokuMenuFolder" Name="Sudoku Solver" Target="[INSTALLFOLDER]SudokuSolver.exe" />
+        <Shortcut Id="SudokuSolverPyQT5StartMenuShortcut" Directory="SudokuMenuFolder" Name="Sudoku Solver (PyQT5)" Target="[INSTALLFOLDER]SudokuSolver-PyQT5.exe" />
+        <Shortcut Id="SudokuPuzzlerStartMenuShortcut" Directory="SudokuMenuFolder" Name="Sudoku Puzzler" Target="[INSTALLFOLDER]SudokuPuzzler-PyQT5.exe" />
+        <Shortcut Id="UninstallShortcut" Directory="SudokuMenuFolder" Name="Uninstall Sudoku" Target="[SystemFolder]msiexec.exe" Arguments="/x [ProductCode]" />
         <RemoveFolder Id="SudokuMenuFolder" On="uninstall" />
         <RegistryValue Root="HKCU" Key="Software\Sudoku" Name="installed" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </DirectoryRef>
-    <UIRef Id="WixUI_InstallDir" />
+    
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcuts" Guid="E3F4A5B6-C7D8-4E9F-0A1B-2C3D4E5F6A7B">
+        <Shortcut Id="SudokuSolverDesktopShortcut" Directory="DesktopFolder" Name="Sudoku Solver" Target="[INSTALLFOLDER]SudokuSolver.exe" />
+        <RemoveFolder Id="DesktopFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\Sudoku" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+    
+    <WixVariable Id="WixUIBannerBmp" Value="BannerBmp.bmp" Overridable="yes" />
+    <WixVariable Id="WixUIDialogBmp" Value="DialogBmp.bmp" Overridable="yes" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" Overridable="yes" />
+    
+    <UIRef Id="WixUI_LicenseAgreement" />
   </Product>
 </Wix>
