@@ -432,15 +432,13 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          release-artifacts/msdos-artifacts/Sudoku-MSDOS.zip
-          release-artifacts/msdos-artifacts/sudoku.exe
-          release-artifacts/windows-artifacts/SudokuSolver.exe
-          release-artifacts/windows-artifacts/sudoku_solver_qt5_python.exe
-          release-artifacts/windows-artifacts/sudoku_puzzler.exe
-          release-artifacts/windows-artifacts/Sudoku-Portable-*.zip
-          release-artifacts/windows-artifacts/Sudoku-*.msi
-          release-artifacts/windows-artifacts/Sudoku-*.msix
-          release-artifacts/gtk-artifacts/Sudoku-GTK3-Windows.zip
+          release-artifacts/msdos-artifacts/*.zip
+          release-artifacts/msdos-artifacts/*.exe
+          release-artifacts/windows-artifacts/*.exe
+          release-artifacts/windows-artifacts/*.zip
+          release-artifacts/windows-artifacts/*.msi
+          release-artifacts/windows-artifacts/*.msix
+          release-artifacts/gtk-artifacts/*.zip
         tag_name: ${{ github.ref == 'refs/heads/master' && format('v{0}', github.run_number) || format('bleedingedge-v{0}', github.run_number) }}
         name: ${{ github.ref == 'refs/heads/master' && format('Release {0}', github.run_number) || format('Dev Build {0}', github.run_number) }}
         draft: false
