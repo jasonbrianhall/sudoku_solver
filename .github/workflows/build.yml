@@ -465,6 +465,8 @@ jobs:
         } else {
           Write-Host "Warning: MSIX creation failed"
         }
+
+    - name: Create Portable ZIP
       shell: powershell
       run: |
         $portableDir = "portable/Sudoku-${{ env.PRODUCT_VERSION }}"
