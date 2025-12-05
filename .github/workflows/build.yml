@@ -315,37 +315,41 @@ jobs:
 
     - name: Create MSIX Package
       shell: pwsh
+      continue-on-error: true
       run: |
         $msixDir = "msix-package"
         New-Item -ItemType Directory -Path "$msixDir/Assets" -Force | Out-Null
-        Copy-Item "windows/x64/Release/SudokuSolver.exe" "$msixDir/"
-        Copy-Item "python_generate_puzzles/dist/sudoku_solver_qt5_python.exe" "$msixDir/SudokuSolver-PyQT5.exe"
-        Copy-Item "python_generate_puzzles/dist/sudoku_puzzler.exe" "$msixDir/SudokuPuzzler-PyQT5.exe"
+        Copy-Item "windows/x64/Release/SudokuSolver.exe" "$msixDir/" -ErrorAction SilentlyContinue
+        Copy-Item "python_generate_puzzles/dist/sudoku_solver_qt5_python.exe" "$msixDir/SudokuSolver-PyQT5.exe" -ErrorAction SilentlyContinue
+        Copy-Item "python_generate_puzzles/dist/sudoku_puzzler.exe" "$msixDir/SudokuPuzzler-PyQT5.exe" -ErrorAction SilentlyContinue
         
-        Get-ChildItem "windows/icon-variants" | ForEach-Object {
-          Copy-Item $_.FullName "$msixDir/Assets/$($_.Name)"
+        if (Test-Path "windows/icon-variants") {
+          Copy-Item "windows/icon-variants/*" "$msixDir/Assets/" -Force
         }
         
-        $manifest = Get-Content -Path "windows/AppxManifest.xml" -Raw
-        Set-Content -Path "$msixDir/AppxManifest.xml" -Value $manifest
+        $manifestPath = "$msixDir/AppxManifest.xml"
+        $manifestXml = "<?xml version=`"1.0`" encoding=`"utf-8`"?><Package xmlns=`"http://schemas.microsoft.com/appx/manifest/foundation/windows10`" xmlns:uap=`"http://schemas.microsoft.com/appx/manifest/uap/windows10`"><Identity Name=`"SudokuSolvers`" Publisher=`"CN=SudokuProject`" Version=`"1.0.0.0`" /><Properties><DisplayName>Sudoku Solvers</DisplayName><PublisherDisplayName>Sudoku Project</PublisherDisplayName><Logo>Assets\icon-256x256.png</Logo></Properties><Dependencies><TargetDeviceFamily Name=`"Windows.Desktop`" MinVersion=`"10.0.14393.0`" MaxVersionTested=`"10.0.19041.0`" /></Dependencies><Resources><Resource Language=`"en-US`" /></Resources><Applications><Application Id=`"SudokuSolver`" StartPage=`"SudokuSolver.exe`"><uap:VisualElements DisplayName=`"Sudoku Solver`" Square150x150Logo=`"Assets\icon-128x128.png`" Square44x44Logo=`"Assets\icon-48x48.png`" Description=`"Sudoku puzzle solver`" BackgroundColor=`"transparent`" /></Application><Application Id=`"SudokuSolverPyQT5`" StartPage=`"SudokuSolver-PyQT5.exe`"><uap:VisualElements DisplayName=`"Sudoku Solver PyQT5`" Square150x150Logo=`"Assets\icon-128x128.png`" Square44x44Logo=`"Assets\icon-48x48.png`" Description=`"Sudoku solver with PyQT5`" BackgroundColor=`"transparent`" /></Application><Application Id=`"SudokuPuzzler`" StartPage=`"SudokuPuzzler-PyQT5.exe`"><uap:VisualElements DisplayName=`"Sudoku Puzzler`" Square150x150Logo=`"Assets\icon-128x128.png`" Square44x44Logo=`"Assets\icon-48x48.png`" Description=`"Sudoku puzzle game`" BackgroundColor=`"transparent`" /></Application></Applications></Package>"
+        $manifestXml | Out-File -FilePath $manifestPath -Encoding UTF8
+        Write-Host "AppxManifest.xml created"
         
         $makeAppxPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe"
         if (-not (Test-Path $makeAppxPath)) {
-          $sdkVersions = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\" | Where-Object { $_.Name -match "10\.0\.\d+\.\d+" } | Sort-Object Name -Descending
-          foreach ($version in $sdkVersions) {
-            $testPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\$($version.Name)\x64\makeappx.exe"
-            if (Test-Path $testPath) {
-              $makeAppxPath = $testPath
-              break
-            }
+          $sdkVersions = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match "10\.0\.\d+\.\d+" } | Sort-Object Name -Descending
+          if ($sdkVersions) {
+            $makeAppxPath = Join-Path $sdkVersions[0].FullName "x64\makeappx.exe"
           }
         }
         
         if (Test-Path $makeAppxPath) {
-          & "$makeAppxPath" pack /d "msix-package" /p "Sudoku-${{ env.PRODUCT_VERSION }}.msix" /o
-          Write-Host "MSIX created successfully"
+          Write-Host "Using MakeAppx: $makeAppxPath"
+          & "$makeAppxPath" pack /d "$msixDir" /p "Sudoku-${{ env.PRODUCT_VERSION }}.msix" /o
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "MSIX created successfully"
+          } else {
+            Write-Host "MakeAppx failed with exit code $LASTEXITCODE"
+          }
         } else {
-          Write-Host "MakeAppx.exe not found. Skipping MSIX."
+          Write-Host "MakeAppx.exe not found. MSIX will be skipped."
         }
 
     - name: Upload Windows Artifacts
