@@ -539,17 +539,23 @@ jobs:
         Compress-Archive -Path $portableDir -DestinationPath "Sudoku-Portable-${{ env.PRODUCT_VERSION }}.zip"
         Write-Host "Portable ZIP created"
 
+    - name: Prepare Release Artifacts
+      shell: powershell
+      run: |
+        New-Item -ItemType Directory -Path "release-artifacts" -Force | Out-Null
+        Copy-Item "artifacts/build/windows/Sudoku-*.msi" "release-artifacts/" -ErrorAction SilentlyContinue
+        Copy-Item "Sudoku-*.msix" "release-artifacts/" -ErrorAction SilentlyContinue
+        Copy-Item "Sudoku-Portable-*.zip" "release-artifacts/" -ErrorAction SilentlyContinue
+        Get-ChildItem "release-artifacts/"
+
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: sudoku-windows
-        path: |
-          artifacts/build/windows/Sudoku-*.msi
-          Sudoku-*.msix
-          Sudoku-Portable-*.zip
+        path: release-artifacts/
 
   create-release:
-    needs: build-windows
+    needs: [build-windows, build-msdos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
