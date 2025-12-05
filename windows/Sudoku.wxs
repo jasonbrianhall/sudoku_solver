@@ -59,9 +59,10 @@
       </Component>
     </DirectoryRef>
     
+    <WixVariable Id="WixUIBannerBmp" Value="BannerBmp.bmp" Overridable="yes" />
+    <WixVariable Id="WixUIDialogBmp" Value="DialogBmp.bmp" Overridable="yes" />
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" Overridable="yes" />
     
     <UIRef Id="WixUI_InstallDir" />
-    <UIRef Id="WixUI_ErrorAwesomeBox" />
   </Product>
 </Wix>
