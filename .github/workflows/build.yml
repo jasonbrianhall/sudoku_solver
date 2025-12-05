@@ -195,105 +195,98 @@ jobs:
       run: |
         Write-Host "=== Generating MSI Installer WiX ===" 
         
-        # Get list of files to install
         $files = Get-ChildItem -File | Where-Object { $_.Name -ne "installer.wxs" } | Sort-Object Name
         
         Write-Host "Files to include in MSI:"
         $files | ForEach-Object { Write-Host "  - $($_.Name)" }
         
-        # Generate WiX FileSearch entries
-        $fileComponents = $files | ForEach-Object {
-          $safeName = $_.Name -replace '\.', '_' -replace '-', '_'
-          @"
-                  <Component Id="Comp_$safeName" Guid="$(New-Guid)" Win64="yes">
-                    <File Id="File_$safeName" Source="`$(var.SourceDir\)$($_.Name)" KeyPath="yes" />
-                  </Component>
-"@
+        $fileComponents = @()
+        $componentRefs = @()
+        
+        foreach ($file in $files) {
+          $safeName = $file.Name -replace '\.', '_' -replace '-', '_'
+          $component = '                  <Component Id="Comp_{0}" Guid="{1}" Win64="yes">' -f $safeName, (New-Guid)
+          $component += "`n"
+          $component += '                    <File Id="File_{0}" Source="$(var.SourceDir)\{1}" KeyPath="yes" />' -f $safeName, $file.Name
+          $component += "`n"
+          $component += '                  </Component>'
+          $fileComponents += $component
+          $ref = '        <ComponentRef Id="Comp_{0}" />' -f $safeName
+          $componentRefs += $ref
         }
         
-        # Generate ComponentRef entries for Feature
-        $componentRefs = $files | ForEach-Object {
-          $safeName = $_.Name -replace '\.', '_' -replace '-', '_'
-          "        <ComponentRef Id=`"Comp_$safeName`" />"
-        }
+        # Build the complete WiX installer using array of lines
+        $wxsLines = @(
+          '<?xml version="1.0" encoding="UTF-8"?>'
+          '<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">'
+          '  <Product Id="*"'
+          '           Name="Sudoku Solvers"'
+          '           Language="1033"'
+          '           Version="${{ env.PRODUCT_VERSION }}.0"'
+          '           Manufacturer="Sudoku Project"'
+          '           UpgradeCode="${{ env.UPGRADE_CODE }}">'
+          '    <Package InstallerVersion="200"'
+          '             Compressed="yes"'
+          '             InstallScope="perMachine"'
+          '             Platform="x64" />'
+          '    <Media Id="1" Cabinet="Sudoku.cab" EmbedCab="yes" />'
+          ''
+          '    <Directory Id="TARGETDIR" Name="SourceDir">'
+          '      <Directory Id="ProgramFiles64Folder">'
+          '        <Directory Id="INSTALLFOLDER" Name="Sudoku" />'
+          '      </Directory>'
+          '      <Directory Id="ProgramMenuFolder">'
+          '        <Directory Id="ApplicationProgramsFolder" Name="Sudoku" />'
+          '      </Directory>'
+          '      <Directory Id="DesktopFolder" Name="Desktop" />'
+          '    </Directory>'
+          ''
+          '    <DirectoryRef Id="INSTALLFOLDER">'
+          $fileComponents
+          '    </DirectoryRef>'
+          ''
+          '    <DirectoryRef Id="ApplicationProgramsFolder">'
+          '      <Component Id="ApplicationShortcuts" Guid="' + (New-Guid) + '" Win64="yes">'
+          '        <Shortcut Id="SudokuSolverShortcut" Name="Sudoku Solver (C++)" Target="[INSTALLFOLDER]SudokuSolver.exe"'
+          '                 WorkingDirectory="INSTALLFOLDER" Description="Sudoku Solver" />'
+          '        <Shortcut Id="SudokuSolverPyQT5Shortcut" Name="Sudoku Solver (PyQT5)" Target="[INSTALLFOLDER]SudokuSolver-PyQT5.exe"'
+          '                 WorkingDirectory="INSTALLFOLDER" Description="Sudoku Solver PyQT5" />'
+          '        <Shortcut Id="SudokuPuzzlerShortcut" Name="Sudoku Puzzler" Target="[INSTALLFOLDER]SudokuPuzzler.exe"'
+          '                 WorkingDirectory="INSTALLFOLDER" Description="Sudoku Puzzler Game" />'
+          '        <Shortcut Id="UninstallShortcut" Name="Uninstall Sudoku" Target="[SystemFolder]msiexec.exe"'
+          '                 Arguments="/x [ProductCode]" Description="Uninstall Sudoku" />'
+          '        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />'
+          '        <RegistryValue Root="HKCU" Key="Software\Sudoku" Name="installed" Type="integer" Value="1" KeyPath="yes" />'
+          '      </Component>'
+          '    </DirectoryRef>'
+          ''
+          '    <DirectoryRef Id="DesktopFolder">'
+          '      <Component Id="DesktopShortcut" Guid="' + (New-Guid) + '" Win64="yes">'
+          '        <Condition>DESKTOP_SHORTCUT</Condition>'
+          '        <Shortcut Id="DesktopSudokuShortcut" Name="Sudoku Solver" Target="[INSTALLFOLDER]SudokuSolver.exe"'
+          '                 WorkingDirectory="INSTALLFOLDER" Description="Sudoku Solver" />'
+          '        <RegistryValue Root="HKCU" Key="Software\Sudoku" Name="desktop" Type="integer" Value="1" KeyPath="yes" />'
+          '      </Component>'
+          '    </DirectoryRef>'
+          ''
+          '    <Feature Id="ProductFeature" Title="Sudoku Solvers and Games" Level="1" ConfigurableDirectory="INSTALLFOLDER">'
+          $componentRefs
+          '      <ComponentRef Id="ApplicationShortcuts" />'
+          '    </Feature>'
+          ''
+          '    <Feature Id="DesktopFeature" Title="Desktop Shortcut" Description="Create a desktop shortcut" Level="1000">'
+          '      <ComponentRef Id="DesktopShortcut" />'
+          '    </Feature>'
+          ''
+          '    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />'
+          '    <Property Id="DESKTOP_SHORTCUT" Value="1" />'
+          '    <UIRef Id="WixUI_FeatureTree" />'
+          '    <UIRef Id="WixUI_ErrorProgressText" />'
+          '  </Product>'
+          '</Wix>'
+        )
         
-        # Build the complete WiX installer
-        $wxsContent = @"
-        <?xml version="1.0" encoding="UTF-8"?>
-        <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-          <Product Id="*" 
-                   Name="Sudoku Solvers" 
-                   Language="1033" 
-                   Version="${{ env.PRODUCT_VERSION }}.0"
-                   Manufacturer="Sudoku Project" 
-                   UpgradeCode="${{ env.UPGRADE_CODE }}">
-            <Package InstallerVersion="200" 
-                     Compressed="yes" 
-                     InstallScope="perMachine"
-                     Platform="x64" />
-            <Media Id="1" Cabinet="Sudoku.cab" EmbedCab="yes" />
-            
-            <Directory Id="TARGETDIR" Name="SourceDir">
-              <Directory Id="ProgramFiles64Folder">
-                <Directory Id="INSTALLFOLDER" Name="Sudoku" />
-              </Directory>
-              <Directory Id="ProgramMenuFolder">
-                <Directory Id="ApplicationProgramsFolder" Name="Sudoku" />
-              </Directory>
-              <Directory Id="DesktopFolder" Name="Desktop" />
-            </Directory>
-            
-            <!-- Main installation files -->
-            <DirectoryRef Id="INSTALLFOLDER">
-        $($fileComponents -join [Environment]::NewLine)
-            </DirectoryRef>
-            
-            <!-- Start Menu -->
-            <DirectoryRef Id="ApplicationProgramsFolder">
-              <Component Id="ApplicationShortcuts" Guid="$(New-Guid)" Win64="yes">
-                <Shortcut Id="SudokuSolverShortcut" Name="Sudoku Solver (C++)" Target="[INSTALLFOLDER]SudokuSolver.exe" 
-                         WorkingDirectory="INSTALLFOLDER" Description="Sudoku Solver" />
-                <Shortcut Id="SudokuSolverPyQT5Shortcut" Name="Sudoku Solver (PyQT5)" Target="[INSTALLFOLDER]SudokuSolver-PyQT5.exe" 
-                         WorkingDirectory="INSTALLFOLDER" Description="Sudoku Solver PyQT5" />
-                <Shortcut Id="SudokuPuzzlerShortcut" Name="Sudoku Puzzler" Target="[INSTALLFOLDER]SudokuPuzzler.exe" 
-                         WorkingDirectory="INSTALLFOLDER" Description="Sudoku Puzzler Game" />
-                <Shortcut Id="UninstallShortcut" Name="Uninstall Sudoku" Target="[SystemFolder]msiexec.exe" 
-                         Arguments="/x [ProductCode]" Description="Uninstall Sudoku" />
-                <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
-                <RegistryValue Root="HKCU" Key="Software\Sudoku" Name="installed" Type="integer" Value="1" KeyPath="yes" />
-              </Component>
-            </DirectoryRef>
-            
-            <!-- Desktop Shortcut (optional) -->
-            <DirectoryRef Id="DesktopFolder">
-              <Component Id="DesktopShortcut" Guid="$(New-Guid)" Win64="yes">
-                <Condition>DESKTOP_SHORTCUT</Condition>
-                <Shortcut Id="DesktopSudokuShortcut" Name="Sudoku Solver" Target="[INSTALLFOLDER]SudokuSolver.exe" 
-                         WorkingDirectory="INSTALLFOLDER" Description="Sudoku Solver" />
-                <RegistryValue Root="HKCU" Key="Software\Sudoku" Name="desktop" Type="integer" Value="1" KeyPath="yes" />
-              </Component>
-            </DirectoryRef>
-            
-            <!-- Features -->
-            <Feature Id="ProductFeature" Title="Sudoku Solvers and Games" Level="1" ConfigurableDirectory="INSTALLFOLDER">
-        $($componentRefs -join [Environment]::NewLine)
-              <ComponentRef Id="ApplicationShortcuts" />
-            </Feature>
-            
-            <Feature Id="DesktopFeature" Title="Desktop Shortcut" Description="Create a desktop shortcut" Level="1000">
-              <ComponentRef Id="DesktopShortcut" />
-            </Feature>
-            
-            <!-- UI -->
-            <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-            <Property Id="DESKTOP_SHORTCUT" Value="1" />
-            <UIRef Id="WixUI_FeatureTree" />
-            <UIRef Id="WixUI_ErrorProgressText" />
-          </Product>
-        </Wix>
-        "@
-        
-        $wxsContent | Out-File -FilePath "installer.wxs" -Encoding UTF8
+        $wxsLines | Out-File -FilePath "installer.wxs" -Encoding UTF8
         Write-Host "installer.wxs generated successfully"
 
     - name: Build MSI Installer
