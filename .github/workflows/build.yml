@@ -428,17 +428,20 @@ jobs:
       with:
         path: release-artifacts
 
+    - name: List Downloaded Files
+      shell: bash
+      run: |
+        echo "=== Contents of release-artifacts ==="
+        find release-artifacts -type f -name "*" | head -20
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          release-artifacts/msdos-artifacts/*.zip
-          release-artifacts/msdos-artifacts/*.exe
-          release-artifacts/windows-artifacts/*.exe
-          release-artifacts/windows-artifacts/*.zip
-          release-artifacts/windows-artifacts/*.msi
-          release-artifacts/windows-artifacts/*.msix
-          release-artifacts/gtk-artifacts/*.zip
+          release-artifacts/**/*.zip
+          release-artifacts/**/*.exe
+          release-artifacts/**/*.msi
+          release-artifacts/**/*.msix
         tag_name: ${{ github.ref == 'refs/heads/master' && format('v{0}', github.run_number) || format('bleedingedge-v{0}', github.run_number) }}
         name: ${{ github.ref == 'refs/heads/master' && format('Release {0}', github.run_number) || format('Dev Build {0}', github.run_number) }}
         draft: false
