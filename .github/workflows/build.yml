@@ -12,6 +12,64 @@ env:
   UPGRADE_CODE: "E1A85D73-9B2C-4E6D-B3C1-8F0A9D2E5C7B"
 
 jobs:
+  build-msdos:
+    runs-on: ubuntu-latest
+    container: 
+      image: djfdyuruiry/djgpp
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        apt-get update
+        apt-get install -y wget unzip zip
+
+    - name: Download CSDPMI
+      working-directory: msdos
+      run: |
+        wget http://na.mirror.garr.it/mirrors/djgpp/current/v2misc/csdpmi7b.zip
+        unzip -o csdpmi7b.zip -d csdpmi
+
+    - name: Build MS-DOS Version
+      working-directory: msdos
+      run: |
+        cp ../shared/*.cpp .
+        cp ../shared/*.h .
+        g++ dosprint.cpp generatepuzzle.cpp msdos_main.cpp sudoku.cpp -o sudoku.exe
+        exe2coff sudoku.exe
+        cat csdpmi/bin/CWSDSTUB.EXE sudoku > sudoku.exe
+        
+    - name: Create MS-DOS Distribution
+      working-directory: msdos
+      run: |
+        mkdir sudoku-msdos-v1.0
+        cp sudoku.exe sudoku-msdos-v1.0/
+        cp ../README.md sudoku-msdos-v1.0/
+        cp ../LICENSE.md sudoku-msdos-v1.0/
+        
+        echo "Sudoku Solver for MS-DOS
+        Version 1.0
+
+        Installation:
+        1. dosbox sudoku.exe
+
+        Requirements:
+        - MS-DOS or compatible OS
+        - 4MB RAM
+        - VGA or better graphics" > sudoku-msdos-v1.0/README-MSDOS.txt
+        
+        zip -r ../Sudoku-MSDOS.zip sudoku-msdos-v1.0
+
+    - name: Upload MS-DOS Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: msdos-artifacts
+        path: |
+          Sudoku-MSDOS.zip
+
   build-windows:
     runs-on: windows-latest
     permissions:
@@ -498,10 +556,16 @@ jobs:
     if: github.event_name == 'push'
     
     steps:
-    - name: Download Artifacts
+    - name: Download MSI Artifact
       uses: actions/download-artifact@v4
       with:
         name: sudoku-windows
+        path: release
+
+    - name: Download MSDOS Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: msdos-artifacts
         path: release
 
     - name: Create GitHub Release
@@ -511,6 +575,7 @@ jobs:
           release/Sudoku-*.msi
           release/Sudoku-*.msix
           release/Sudoku-Portable-*.zip
+          release/Sudoku-MSDOS.zip
         tag_name: ${{ github.ref == 'refs/heads/master' && format('v{0}', github.run_number) || format('dev-v{0}', github.run_number) }}
         name: ${{ github.ref == 'refs/heads/master' && format('Release {0}', github.run_number) || format('Dev Build {0}', github.run_number) }}
         draft: false
@@ -523,6 +588,7 @@ jobs:
           - **Sudoku-*.msi** - Windows installer with Start Menu shortcuts
           - **Sudoku-*.msix** - Microsoft Store package (unsigned, ready for Store submission)
           - **Sudoku-Portable-*.zip** - Portable version (no installation needed)
+          - **Sudoku-MSDOS.zip** - MS-DOS version for retro systems (requires DOSBox)
           
           ## Features
           - Sudoku Solver (C++)
