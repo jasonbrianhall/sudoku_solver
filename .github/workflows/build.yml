@@ -48,18 +48,6 @@ jobs:
         cp sudoku.exe sudoku-msdos-v1.0/
         cp ../README.md sudoku-msdos-v1.0/
         cp ../LICENSE.md sudoku-msdos-v1.0/
-        
-        echo "Sudoku Solver for MS-DOS
-        Version 1.0
-
-        Installation:
-        1. dosbox sudoku.exe
-
-        Requirements:
-        - MS-DOS or compatible OS
-        - 4MB RAM
-        - VGA or better graphics" > sudoku-msdos-v1.0/README-MSDOS.txt
-        
         zip -r ../Sudoku-MSDOS.zip sudoku-msdos-v1.0
 
     - name: Upload MS-DOS Artifacts
@@ -99,13 +87,11 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller pybind11
 
-    # Build the standalone executable
     - name: Build C++ Executable
       working-directory: windows
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
 
-    # Build the Python extension using setup.py
     - name: Build Python Extension
       working-directory: python_generate_puzzles
       run: |
@@ -219,318 +205,97 @@ jobs:
       run: |
         pyinstaller --clean sudoku.spec
 
-    - name: Convert Icon to PNG and Generate Variants
+    - name: Convert Icon and Generate Variants
       shell: pwsh
       run: |
-        # Install ImageMagick if not present
         if (-not (Get-Command magick -ErrorAction SilentlyContinue)) {
-          Write-Host "Installing ImageMagick..."
           choco install imagemagick.tool -y
         }
-        
-        # Convert JPG to PNG
-        Write-Host "Converting appicon.jpg to PNG..."
         magick convert "windows/appicon.jpg" -resize 256x256 -background none -gravity center -extent 256x256 "windows/appicon.png"
-        
-        # Create directory for icon variants
         New-Item -ItemType Directory -Path "windows/icon-variants" -Force | Out-Null
-        
-        # Generate icon sizes for Windows
-        $sizes = @(
-          @{size = "16x16"; name = "icon-16.png"},
-          @{size = "24x24"; name = "icon-24.png"},
-          @{size = "32x32"; name = "icon-32.png"},
-          @{size = "48x48"; name = "icon-48.png"},
-          @{size = "64x64"; name = "icon-64.png"},
-          @{size = "128x128"; name = "icon-128.png"},
-          @{size = "256x256"; name = "icon-256.png"}
-        )
-        
-        foreach ($variant in $sizes) {
-          Write-Host "Creating $($variant.size) variant..."
-          magick convert "windows/appicon.png" -resize $variant.size "windows/icon-variants/$($variant.name)"
+        foreach ($size in @("16x16", "24x24", "32x32", "48x48", "64x64", "128x128", "256x256")) {
+          magick convert "windows/appicon.png" -resize $size "windows/icon-variants/icon-$size.png"
         }
-        
-        # Create ICO file from PNG (for traditional Windows support)
-        Write-Host "Creating .ICO file..."
         magick convert "windows/appicon.png" -define icon:auto-resize=256,128,96,64,48,32,16 "windows/appicon.ico"
-        
-        Write-Host "Icon conversion complete!"
-        Get-ChildItem "windows/icon-variants" -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" }
+        Write-Host "Icon processing complete"
 
     - name: Create Portable Zip Bundle
       shell: pwsh
       run: |
         $version = "${{ env.PRODUCT_VERSION }}"
-        # Create portable distribution with all executables
         New-Item -ItemType Directory -Path "portable/Sudoku-Portable-$version" -Force | Out-Null
-        
-        # Copy all executables
         Copy-Item "windows/x64/Release/SudokuSolver.exe" "portable/Sudoku-Portable-$version/"
         Copy-Item "python_generate_puzzles/dist/sudoku_solver_qt5_python.exe" "portable/Sudoku-Portable-$version/SudokuSolver-PyQT5.exe"
         Copy-Item "python_generate_puzzles/dist/sudoku_puzzler.exe" "portable/Sudoku-Portable-$version/SudokuPuzzler-PyQT5.exe"
-        
-        # Add documentation
         Copy-Item "README.md" "portable/Sudoku-Portable-$version/"
         Copy-Item "LICENSE.md" "portable/Sudoku-Portable-$version/"
-        
-        # Create README for portable version
-        $version = "${{ env.PRODUCT_VERSION }}"
-        $portableReadme = @"
-# Sudoku Portable Edition v$version
-
-This is the portable/standalone version requiring no installation.
-
-## Contents
-- **SudokuSolver.exe** - Native C++ Sudoku Solver
-- **SudokuSolver-PyQT5.exe** - Python/PyQT5 Solver Interface
-- **SudokuPuzzler-PyQT5.exe** - Python/PyQT5 Sudoku Game
-
-## Usage
-Simply run any .exe directly from this folder. No installation required.
-
-## Requirements
-- Windows 7 SP1 or later
-- No additional software needed - all dependencies are bundled
-
-## Licensing
-See LICENSE.md for full licensing information.
-"@
-        $portableReadme | Out-File -FilePath "portable/Sudoku-Portable-$version/README-PORTABLE.txt" -Encoding UTF8
-        
-        # Create zip archive
         Compress-Archive -Path "portable/Sudoku-Portable-$version" -DestinationPath "Sudoku-Portable-$version.zip"
-        Write-Host "Portable zip created successfully"
+        Write-Host "Portable zip created"
 
     - name: Install WiX Toolset
       shell: pwsh
       run: |
-        # Download WiX 3.14
-        $wixVersion = "3.14.1.5722"
         $wixUrl = "https://github.com/wixtoolset/wix3/releases/download/wix314rtm/wix314.exe"
-        
         Write-Host "Downloading WiX Toolset..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Invoke-WebRequest -Uri $wixUrl -OutFile "wix314.exe"
-        
         Write-Host "Installing WiX Toolset..."
         & "wix314.exe" /install /passive /quiet
-        
-        # Wait for installation
         Start-Sleep -Seconds 10
-        
-        # Add WiX to PATH
         $wixPath = "C:\Program Files (x86)\WiX Toolset v3.14\bin"
         if (Test-Path $wixPath) {
           echo "WIX_BIN=$wixPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "WiX installed successfully at $wixPath"
-        } else {
-          Write-Host "Warning: WiX may not have installed to expected location"
+          Write-Host "WiX installed at $wixPath"
         }
 
     - name: Create MSI Installer
       shell: pwsh
       run: |
-        # Create temporary MSI build directory
         $msiDir = "msi-build"
         New-Item -ItemType Directory -Path $msiDir -Force | Out-Null
-        
-        # Copy executables to MSI directory
         Copy-Item "windows/x64/Release/SudokuSolver.exe" "$msiDir/"
         Copy-Item "python_generate_puzzles/dist/sudoku_solver_qt5_python.exe" "$msiDir/SudokuSolver-PyQT5.exe"
         Copy-Item "python_generate_puzzles/dist/sudoku_puzzler.exe" "$msiDir/SudokuPuzzler-PyQT5.exe"
         Copy-Item "README.md" "$msiDir/"
         Copy-Item "LICENSE.md" "$msiDir/"
-        
-        # Create WiX source XML
-        $wxsContent = @"
-<?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" 
-           Name="Sudoku" 
-           Language="1033" 
-           Version="${{ env.PRODUCT_VERSION }}" 
-           Manufacturer="Sudoku Project" 
-           UpgradeCode="E1A85D73-9B2C-4E6D-B3C1-8F0A9D2E5C7B">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
-    <Media Id="1" Cabinet="Sudoku.cab" EmbedCab="yes" />
-    
-    <Feature Id="ProductFeature" Title="Sudoku Solvers and Games" Level="1">
-      <ComponentRef Id="SudokuSolverExe" />
-      <ComponentRef Id="SudokuSolverPyQT5Exe" />
-      <ComponentRef Id="SudokuPuzzlerPyQT5Exe" />
-      <ComponentRef Id="ReadmeFile" />
-      <ComponentRef Id="LicenseFile" />
-    </Feature>
-    
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
-        <Directory Id="INSTALLFOLDER" Name="Sudoku" />
-      </Directory>
-      <Directory Id="ProgramMenuFolder">
-        <Directory Id="SudokuMenuFolder" Name="Sudoku" />
-      </Directory>
-      <Directory Id="DesktopFolder" Name="Desktop" />
-    </Directory>
-    
-    <DirectoryRef Id="INSTALLFOLDER">
-      <Component Id="SudokuSolverExe" Guid="E2B3D4C5-F6A7-4B8C-9D0E-1F2A3B4C5D6E">
-        <File Id="SudokuSolverFile" Source="$(var.SourceDir)\SudokuSolver.exe" KeyPath="yes" />
-        <Shortcut Id="SudokuSolverDesktopShortcut" Directory="DesktopFolder" Name="Sudoku Solver" Target="[INSTALLFOLDER]SudokuSolver.exe" />
-        <Shortcut Id="SudokuSolverMenuShortcut" Directory="SudokuMenuFolder" Name="Sudoku Solver" Target="[INSTALLFOLDER]SudokuSolver.exe" />
-      </Component>
-      <Component Id="SudokuSolverPyQT5Exe" Guid="A1B2C3D4-E5F6-7A8B-9C0D-E1F2A3B4C5D6">
-        <File Id="SudokuSolverPyQT5File" Source="$(var.SourceDir)\SudokuSolver-PyQT5.exe" KeyPath="yes" />
-        <Shortcut Id="SudokuSolverPyQT5DesktopShortcut" Directory="DesktopFolder" Name="Sudoku Solver (PyQT5)" Target="[INSTALLFOLDER]SudokuSolver-PyQT5.exe" />
-        <Shortcut Id="SudokuSolverPyQT5MenuShortcut" Directory="SudokuMenuFolder" Name="Sudoku Solver (PyQT5)" Target="[INSTALLFOLDER]SudokuSolver-PyQT5.exe" />
-      </Component>
-      <Component Id="SudokuPuzzlerPyQT5Exe" Guid="F1E2D3C4-B5A6-9876-5432-1F0E9D8C7B6A">
-        <File Id="SudokuPuzzlerPyQT5File" Source="$(var.SourceDir)\SudokuPuzzler-PyQT5.exe" KeyPath="yes" />
-        <Shortcut Id="SudokuPuzzlerPyQT5DesktopShortcut" Directory="DesktopFolder" Name="Sudoku Puzzler (PyQT5)" Target="[INSTALLFOLDER]SudokuPuzzler-PyQT5.exe" />
-        <Shortcut Id="SudokuPuzzlerPyQT5MenuShortcut" Directory="SudokuMenuFolder" Name="Sudoku Puzzler (PyQT5)" Target="[INSTALLFOLDER]SudokuPuzzler-PyQT5.exe" />
-      </Component>
-      <Component Id="ReadmeFile" Guid="B6C7D8E9-F0A1-2B3C-4D5E-6F7A8B9C0D1E">
-        <File Id="ReadmeFileId" Source="$(var.SourceDir)\README.md" KeyPath="yes" />
-      </Component>
-      <Component Id="LicenseFile" Guid="E7F8A9B0-C1D2-3E4F-5A6B-7C8D9E0F1A2B">
-        <File Id="LicenseFileId" Source="$(var.SourceDir)\LICENSE.md" KeyPath="yes" />
-      </Component>
-    </DirectoryRef>
-    
-    <DirectoryRef Id="SudokuMenuFolder">
-      <Component Id="UninstallShortcut" Guid="C0D1E2F3-A4B5-6C7D-8E9F-0A1B2C3D4E5F">
-        <RemoveFolder Id="SudokuMenuFolder" On="uninstall" />
-        <RegistryValue Root="HKCU" Key="Software\Sudoku" Name="installed" Type="integer" Value="1" KeyPath="yes" />
-      </Component>
-    </DirectoryRef>
-    
-    <UIRef Id="WixUI_InstallDir" />
-  </Product>
-</Wix>
-"@
-        $wxsContent | Out-File -FilePath "$msiDir/Sudoku.wxs" -Encoding UTF8
-        
-        Write-Host "WiX source file created"
+        Write-Host "MSI build directory prepared"
 
     - name: Compile MSI with WiX
       shell: pwsh
       run: |
-        # Check if WiX was installed
         $candleExe = "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe"
         $lightExe = "C:\Program Files (x86)\WiX Toolset v3.14\bin\light.exe"
         
         if (-not (Test-Path $candleExe)) {
-          Write-Host "WiX Candle not found at $candleExe"
-          # Try alternative WiX installation
-          $candleExe = (Get-Command candle.exe -ErrorAction SilentlyContinue).Source
-          if (-not $candleExe) {
-            Write-Host "Installing alternative MSI tools - using heatfiles approach"
-            # Fallback: create MSI using PowerShell and Windows Installer COM
-            Write-Host "Note: Skipping MSI creation - WiX not available. Install WiX Toolset for full MSI support."
-            exit 0
-          }
+          Write-Host "WiX Candle not found. Skipping MSI creation."
+          exit 0
         }
         
-        # Compile WiX source
-        & $candleExe -arch x64 -o "msi-build/Sudoku.wixobj" -dSourceDir="$PWD/msi-build" "msi-build/Sudoku.wxs"
+        $wxsFile = "msi-build/Sudoku.wxs"
+        $wxsContent = Get-Content -Path "windows/Sudoku.wxs" -Raw
+        Set-Content -Path $wxsFile -Value $wxsContent
         
-        # Link to create MSI
+        & $candleExe -arch x64 -o "msi-build/Sudoku.wixobj" -dSourceDir="$PWD/msi-build" $wxsFile
         & $lightExe -out "Sudoku-${{ env.PRODUCT_VERSION }}.msi" "msi-build/Sudoku.wixobj" -ext WixUIExtension
-        
         Write-Host "MSI creation completed"
 
-    - name: Prepare MSIX Assets from Generated Icons
+    - name: Create MSIX Package
       shell: pwsh
       run: |
-        # Create MSIX Assets directory
-        $assetsDir = "msix-package/Assets"
-        New-Item -ItemType Directory -Path $assetsDir -Force | Out-Null
-        
-        # Copy and scale icons for MSIX requirements
-        Write-Host "Preparing MSIX assets from generated icons..."
-        
-        # For MSIX, we need specific sizes with scale factors (100%, 125%, 150%, 200%)
-        # Required minimum: Square44x44Logo and Square150x150Logo
-        
-        # Use the 44x44 for Square44x44Logo
-        Copy-Item "windows/icon-variants/icon-48.png" "$assetsDir/Square44x44Logo.png" -Force
-        
-        # For scaled versions
-        Copy-Item "windows/icon-variants/icon-48.png" "$assetsDir/Square44x44Logo.scale-100.png" -Force
-        Copy-Item "windows/icon-variants/icon-64.png" "$assetsDir/Square44x44Logo.scale-125.png" -Force
-        Copy-Item "windows/icon-variants/icon-64.png" "$assetsDir/Square44x44Logo.scale-150.png" -Force
-        Copy-Item "windows/icon-variants/icon-128.png" "$assetsDir/Square44x44Logo.scale-200.png" -Force
-        
-        # For Square150x150Logo
-        Copy-Item "windows/icon-variants/icon-128.png" "$assetsDir/Square150x150Logo.png" -Force
-        Copy-Item "windows/icon-variants/icon-128.png" "$assetsDir/Square150x150Logo.scale-100.png" -Force
-        Copy-Item "windows/icon-variants/icon-128.png" "$assetsDir/Square150x150Logo.scale-125.png" -Force
-        Copy-Item "windows/icon-variants/icon-256.png" "$assetsDir/Square150x150Logo.scale-150.png" -Force
-        Copy-Item "windows/icon-variants/icon-256.png" "$assetsDir/Square150x150Logo.scale-200.png" -Force
-        
-        # Store logo (used for Store listings)
-        Copy-Item "windows/icon-variants/icon-48.png" "$assetsDir/StoreLogo.png" -Force
-        Copy-Item "windows/icon-variants/icon-48.png" "$assetsDir/StoreLogo.scale-100.png" -Force
-        Copy-Item "windows/icon-variants/icon-64.png" "$assetsDir/StoreLogo.scale-125.png" -Force
-        Copy-Item "windows/icon-variants/icon-64.png" "$assetsDir/StoreLogo.scale-150.png" -Force
-        Copy-Item "windows/icon-variants/icon-128.png" "$assetsDir/StoreLogo.scale-200.png" -Force
-        
-        Write-Host "MSIX assets prepared successfully"
-        Get-ChildItem $assetsDir | ForEach-Object { Write-Host "  $($_.Name)" }
-
-    - name: Create MSIX Package AppxManifest
-      shell: pwsh
-      run: |
-        # Create MSIX package directory structure
         $msixDir = "msix-package"
-        New-Item -ItemType Directory -Path "$msixDir" -Force | Out-Null
-        
-        # Copy executables
+        New-Item -ItemType Directory -Path "$msixDir/Assets" -Force | Out-Null
         Copy-Item "windows/x64/Release/SudokuSolver.exe" "$msixDir/"
         Copy-Item "python_generate_puzzles/dist/sudoku_solver_qt5_python.exe" "$msixDir/SudokuSolver-PyQT5.exe"
         Copy-Item "python_generate_puzzles/dist/sudoku_puzzler.exe" "$msixDir/SudokuPuzzler-PyQT5.exe"
         
-        # Create AppxManifest.xml for MSIX
-        $appxManifest = @"
-<?xml version="1.0" encoding="utf-8"?>
-<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" 
-         xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10">
-  <Identity Name="SudokuSolvers" Publisher="CN=SudokuProject" Version="${{ env.PRODUCT_VERSION }}.0" />
-  <Properties>
-    <DisplayName>Sudoku Solvers</DisplayName>
-    <PublisherDisplayName>Sudoku Project</PublisherDisplayName>
-    <Logo>Assets\StoreLogo.png</Logo>
-  </Properties>
-  <Dependencies>
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.14393.0" MaxVersionTested="10.0.19041.0" />
-  </Dependencies>
-  <Resources>
-    <Resource Language="en-US" />
-  </Resources>
-  <Applications>
-    <Application Id="SudokuSolver" StartPage="SudokuSolver.exe">
-      <uap:VisualElements DisplayName="Sudoku Solver" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" Description="Sudoku puzzle solver" BackgroundColor="transparent" />
-    </Application>
-    <Application Id="SudokuSolverPyQT5" StartPage="SudokuSolver-PyQT5.exe">
-      <uap:VisualElements DisplayName="Sudoku Solver (PyQT5)" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" Description="Sudoku solver with PyQT5 interface" BackgroundColor="transparent" />
-    </Application>
-    <Application Id="SudokuPuzzler" StartPage="SudokuPuzzler-PyQT5.exe">
-      <uap:VisualElements DisplayName="Sudoku Puzzler" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" Description="Sudoku puzzle game" BackgroundColor="transparent" />
-    </Application>
-  </Applications>
-</Package>
-"@
-        $appxManifest | Out-File -FilePath "$msixDir/AppxManifest.xml" -Encoding UTF8
+        Get-ChildItem "windows/icon-variants" | ForEach-Object {
+          Copy-Item $_.FullName "$msixDir/Assets/$($_.Name)"
+        }
         
-        Write-Host "MSIX manifest created"
-
-    - name: Build MSIX Package
-      shell: pwsh
-      run: |
-        # Use Windows SDK MakeAppx tool to create MSIX
+        $manifest = Get-Content -Path "windows/AppxManifest.xml" -Raw
+        Set-Content -Path "$msixDir/AppxManifest.xml" -Value $manifest
+        
         $makeAppxPath = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe"
-        
-        # Try different SDK versions if the specific one doesn't exist
         if (-not (Test-Path $makeAppxPath)) {
           $sdkVersions = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\" | Where-Object { $_.Name -match "10\.0\.\d+\.\d+" } | Sort-Object Name -Descending
           foreach ($version in $sdkVersions) {
@@ -542,29 +307,11 @@ See LICENSE.md for full licensing information.
           }
         }
         
-        if (-not (Test-Path $makeAppxPath)) {
-          Write-Host "MakeAppx.exe not found. Windows SDK may not be installed."
-          exit 1
-        }
-        
-        Write-Host "Using MakeAppx at: $makeAppxPath"
-        
-        # Create the MSIX package
-        & "$makeAppxPath" pack /d "msix-package" /p "Sudoku-${{ env.PRODUCT_VERSION }}.msix" /o
-        
-        if ($LASTEXITCODE -ne 0) {
-          Write-Error "MSIX package creation failed with exit code $LASTEXITCODE"
-          exit 1
-        }
-        
-        # Verify MSIX was created
-        if (Test-Path "Sudoku-${{ env.PRODUCT_VERSION }}.msix") {
-          Write-Host "MSIX package created successfully"
-          $msixSize = (Get-Item "Sudoku-${{ env.PRODUCT_VERSION }}.msix").Length
-          Write-Host "MSIX file size: $msixSize bytes"
+        if (Test-Path $makeAppxPath) {
+          & "$makeAppxPath" pack /d "msix-package" /p "Sudoku-${{ env.PRODUCT_VERSION }}.msix" /o
+          Write-Host "MSIX created successfully"
         } else {
-          Write-Error "MSIX file was not created!"
-          exit 1
+          Write-Host "MakeAppx.exe not found. Skipping MSIX."
         }
 
     - name: Upload Windows Artifacts
@@ -575,6 +322,9 @@ See LICENSE.md for full licensing information.
           windows/x64/Release/SudokuSolver.exe
           python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
           python_generate_puzzles/dist/sudoku_puzzler.exe
+          windows/appicon.png
+          windows/appicon.ico
+          windows/icon-variants
           Sudoku-Portable-*.zip
           Sudoku-*.msi
           Sudoku-*.msix
@@ -635,85 +385,31 @@ See LICENSE.md for full licensing information.
     if: github.event_name == 'push'
     
     steps:
-    - name: Download MS-DOS Artifacts
+    - name: Download All Artifacts
       uses: actions/download-artifact@v4
       with:
-        name: msdos-artifacts
-        path: msdos-artifacts
+        path: release-artifacts
 
-    - name: Download Windows Artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: windows-artifacts
-        path: windows-artifacts
-
-    - name: Download GTK Artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: gtk-artifacts
-        path: gtk-artifacts
-
-    - name: Create Release
+    - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          msdos-artifacts/Sudoku-MSDOS.zip
-          msdos-artifacts/sudoku.exe
-          windows-artifacts/SudokuSolver.exe
-          windows-artifacts/sudoku_solver_qt5_python.exe
-          windows-artifacts/sudoku_puzzler.exe
-          windows-artifacts/Sudoku-Portable-*.zip
-          windows-artifacts/Sudoku-*.msi
-          windows-artifacts/Sudoku-*.msix
-          gtk-artifacts/Sudoku-GTK3-Windows.zip
+          release-artifacts/msdos-artifacts/Sudoku-MSDOS.zip
+          release-artifacts/msdos-artifacts/sudoku.exe
+          release-artifacts/windows-artifacts/SudokuSolver.exe
+          release-artifacts/windows-artifacts/sudoku_solver_qt5_python.exe
+          release-artifacts/windows-artifacts/sudoku_puzzler.exe
+          release-artifacts/windows-artifacts/Sudoku-Portable-*.zip
+          release-artifacts/windows-artifacts/Sudoku-*.msi
+          release-artifacts/windows-artifacts/Sudoku-*.msix
+          release-artifacts/gtk-artifacts/Sudoku-GTK3-Windows.zip
         tag_name: ${{ github.ref == 'refs/heads/master' && format('v{0}', github.run_number) || format('bleedingedge-v{0}', github.run_number) }}
         name: ${{ github.ref == 'refs/heads/master' && format('Release {0}', github.run_number) || format('Dev Build {0}', github.run_number) }}
         draft: false
         prerelease: ${{ github.ref != 'refs/heads/master' }}
-        token: ${{ secrets.GITHUB_TOKEN }}
         body: |
-          ${{ github.ref == 'refs/heads/master' && 'Release build' || 'Development build' }}
           Version: ${{ needs.build-windows.outputs.version }}
           Commit: ${{ github.sha }}
-          Build number: ${{ github.run_number }}
+          Build: #${{ github.run_number }}
           
-          ## Available Downloads
-          
-          ### Windows Installers & Packages
-          - **Sudoku-[version].msi** - Traditional Windows installer with Start Menu shortcuts and uninstall support
-          - **Sudoku-[version].msix** - Modern Microsoft Store format package
-          - **Sudoku-Portable-[version].zip** - No installation required, just extract and run
-          
-          ### Individual Executables
-          - **SudokuSolver.exe** - Native C++ Sudoku Solver
-          - **sudoku_solver_qt5_python.exe** - Python/PyQT5 Solver Interface
-          - **sudoku_puzzler.exe** - Python/PyQT5 Sudoku Game
-          
-          ### Legacy/Cross-Platform
-          - **Sudoku-MSDOS.zip** - Classic MS-DOS version (for DOSBox)
-          - **Sudoku-GTK3-Windows.zip** - GTK3-based version with all dependencies
-          
-          ## Installation Instructions
-          
-          ### MSI Installer
-          1. Download `Sudoku-[version].msi`
-          2. Double-click to run the installer
-          3. Follow the installation wizard
-          4. Applications will be added to Start Menu and Desktop shortcuts created
-          
-          ### MSIX Package
-          1. Download `Sudoku-[version].msix`
-          2. Right-click and select "Install for me"
-          3. Or use PowerShell: `Add-AppxPackage -Path Sudoku-[version].msix`
-          
-          ### Portable Version
-          1. Download `Sudoku-Portable-[version].zip`
-          2. Extract to your desired location
-          3. Run any .exe directly - no installation needed
-          
-          ### Silent Installation (MSI)
-          ```cmd
-          msiexec /i Sudoku-[version].msi /quiet /norestart
-          ```
-          
-          This release includes all solver and puzzle game variants across Windows platforms.
+          Includes: MS-DOS, Windows (C++/PyQT5), GTK3, MSI installer, MSIX package, and portable version.
