@@ -301,14 +301,17 @@ jobs:
         $msiDir = "msi-build"
         New-Item -ItemType Directory -Path $msiDir -Force | Out-Null
         
-        # Copy License.rtf to msi-build directory
+        # Copy License.rtf to msi-build directory for light.exe to find
         Copy-Item "windows/License.rtf" "$msiDir/License.rtf" -ErrorAction SilentlyContinue
         
         Write-Host "Compiling WiX source..."
         & $candleExe -arch x64 -o "$msiDir/Sudoku.wixobj" -dSourceDir="$PWD/msi-build" $wxsFile
+        
         if ($LASTEXITCODE -eq 0) {
           Write-Host "Linking MSI..."
-          & $lightExe -out "Sudoku-${{ env.PRODUCT_VERSION }}.msi" "$msiDir/Sudoku.wixobj" -ext WixUIExtension -b "$msiDir"
+          # Use -b flag to set binary path where light.exe looks for License.rtf
+          & $lightExe -out "Sudoku-${{ env.PRODUCT_VERSION }}.msi" "$msiDir/Sudoku.wixobj" -ext WixUIExtension -b "$msiDir" -b "windows"
+          
           if ($LASTEXITCODE -eq 0) {
             Write-Host "MSI created successfully"
           } else {

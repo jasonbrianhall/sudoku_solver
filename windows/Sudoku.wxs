@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:ui="http://schemas.microsoft.com/wix/UIExtension">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Product Id="*" Name="Sudoku" Language="1033" Version="1.0.0.0" Manufacturer="Sudoku Project" UpgradeCode="E1A85D73-9B2C-4E6D-B3C1-8F0A9D2E5C7B">
-    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" AdminImage="no" />
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
     <Media Id="1" Cabinet="Sudoku.cab" EmbedCab="yes" />
     
     <Feature Id="ProductFeature" Title="Sudoku Solvers and Games" Level="1">
@@ -59,10 +59,9 @@
       </Component>
     </DirectoryRef>
     
-    <WixVariable Id="WixUIBannerBmp" Value="BannerBmp.bmp" Overridable="yes" />
-    <WixVariable Id="WixUIDialogBmp" Value="DialogBmp.bmp" Overridable="yes" />
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" Overridable="yes" />
     
-    <UIRef Id="WixUI_LicenseAgreement" />
+    <UIRef Id="WixUI_InstallDir" />
+    <UIRef Id="WixUI_ErrorAwesomeBox" />
   </Product>
 </Wix>
