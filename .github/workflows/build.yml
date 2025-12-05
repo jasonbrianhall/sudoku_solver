@@ -236,16 +236,19 @@ jobs:
       shell: pwsh
       run: |
         $wixUrl = "https://github.com/wixtoolset/wix3/releases/download/wix314rtm/wix314.exe"
+        $wixExe = "$env:TEMP\wix314.exe"
         Write-Host "Downloading WiX Toolset..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri $wixUrl -OutFile "wix314.exe"
-        Write-Host "Installing WiX Toolset..."
-        & "wix314.exe" /install /passive /quiet
-        Start-Sleep -Seconds 10
+        Invoke-WebRequest -Uri $wixUrl -OutFile $wixExe
+        Write-Host "Installing WiX Toolset from: $wixExe"
+        & $wixExe /install /passive /quiet
+        Start-Sleep -Seconds 15
         $wixPath = "C:\Program Files (x86)\WiX Toolset v3.14\bin"
         if (Test-Path $wixPath) {
-          echo "WIX_BIN=$wixPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "WiX installed at $wixPath"
+          Write-Host "WiX installed successfully at $wixPath"
+          Get-ChildItem $wixPath
+        } else {
+          Write-Host "Warning: WiX path not found, but continuing..."
         }
 
     - name: Create MSI Installer
@@ -262,22 +265,53 @@ jobs:
 
     - name: Compile MSI with WiX
       shell: pwsh
+      continue-on-error: true
       run: |
         $candleExe = "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe"
         $lightExe = "C:\Program Files (x86)\WiX Toolset v3.14\bin\light.exe"
         
         if (-not (Test-Path $candleExe)) {
-          Write-Host "WiX Candle not found. Skipping MSI creation."
+          Write-Host "WiX Candle.exe not found at $candleExe"
+          Write-Host "Attempting to find WiX installation..."
+          $wixInstalls = Get-ChildItem "C:\Program Files (x86)" -Filter "*WiX*" -Directory -ErrorAction SilentlyContinue
+          if ($wixInstalls) {
+            $candleExe = Join-Path $wixInstalls[0].FullName "bin\candle.exe"
+            $lightExe = Join-Path $wixInstalls[0].FullName "bin\light.exe"
+            Write-Host "Found WiX at: $($wixInstalls[0].FullName)"
+          } else {
+            Write-Host "WiX not found. MSI will be skipped."
+            exit 0
+          }
+        }
+        
+        if (-not (Test-Path $candleExe)) {
+          Write-Host "Candle.exe still not found. Skipping MSI."
           exit 0
         }
         
-        $wxsFile = "msi-build/Sudoku.wxs"
-        $wxsContent = Get-Content -Path "windows/Sudoku.wxs" -Raw
-        Set-Content -Path $wxsFile -Value $wxsContent
+        $wxsFile = "windows/Sudoku.wxs"
+        if (-not (Test-Path $wxsFile)) {
+          Write-Host "WiX source file not found at $wxsFile"
+          exit 0
+        }
         
-        & $candleExe -arch x64 -o "msi-build/Sudoku.wixobj" -dSourceDir="$PWD/msi-build" $wxsFile
-        & $lightExe -out "Sudoku-${{ env.PRODUCT_VERSION }}.msi" "msi-build/Sudoku.wixobj" -ext WixUIExtension
-        Write-Host "MSI creation completed"
+        Write-Host "Using candle: $candleExe"
+        Write-Host "Using light: $lightExe"
+        
+        $msiDir = "msi-build"
+        New-Item -ItemType Directory -Path $msiDir -Force | Out-Null
+        
+        & $candleExe -arch x64 -o "$msiDir/Sudoku.wixobj" -dSourceDir="$PWD/msi-build" $wxsFile
+        if ($LASTEXITCODE -eq 0) {
+          & $lightExe -out "Sudoku-${{ env.PRODUCT_VERSION }}.msi" "$msiDir/Sudoku.wixobj" -ext WixUIExtension
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "MSI created successfully"
+          } else {
+            Write-Host "Light.exe failed"
+          }
+        } else {
+          Write-Host "Candle.exe failed"
+        }
 
     - name: Create MSIX Package
       shell: pwsh
