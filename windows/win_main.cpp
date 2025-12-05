@@ -1,3 +1,5 @@
+// Microsoft Windows Native Version
+
 #define _HAS_STD_BYTE 0
 #define NOMINMAX
 #include <msclr/marshal_cppstd.h>
