@@ -261,21 +261,23 @@ jobs:
     - name: Create Portable Zip Bundle
       shell: pwsh
       run: |
+        $version = "${{ env.PRODUCT_VERSION }}"
         # Create portable distribution with all executables
-        New-Item -ItemType Directory -Path "portable/Sudoku-Portable-${{ env.PRODUCT_VERSION }}" -Force | Out-Null
+        New-Item -ItemType Directory -Path "portable/Sudoku-Portable-$version" -Force | Out-Null
         
         # Copy all executables
-        Copy-Item "windows/x64/Release/SudokuSolver.exe" "portable/Sudoku-Portable-${{ env.PRODUCT_VERSION }}/"
-        Copy-Item "python_generate_puzzles/dist/sudoku_solver_qt5_python.exe" "portable/Sudoku-Portable-${{ env.PRODUCT_VERSION }}/SudokuSolver-PyQT5.exe"
-        Copy-Item "python_generate_puzzles/dist/sudoku_puzzler.exe" "portable/Sudoku-Portable-${{ env.PRODUCT_VERSION }}/SudokuPuzzler-PyQT5.exe"
+        Copy-Item "windows/x64/Release/SudokuSolver.exe" "portable/Sudoku-Portable-$version/"
+        Copy-Item "python_generate_puzzles/dist/sudoku_solver_qt5_python.exe" "portable/Sudoku-Portable-$version/SudokuSolver-PyQT5.exe"
+        Copy-Item "python_generate_puzzles/dist/sudoku_puzzler.exe" "portable/Sudoku-Portable-$version/SudokuPuzzler-PyQT5.exe"
         
         # Add documentation
-        Copy-Item "README.md" "portable/Sudoku-Portable-${{ env.PRODUCT_VERSION }}/"
-        Copy-Item "LICENSE.md" "portable/Sudoku-Portable-${{ env.PRODUCT_VERSION }}/"
+        Copy-Item "README.md" "portable/Sudoku-Portable-$version/"
+        Copy-Item "LICENSE.md" "portable/Sudoku-Portable-$version/"
         
         # Create README for portable version
+        $version = "${{ env.PRODUCT_VERSION }}"
         $portableReadme = @"
-# Sudoku Portable Edition v${{ env.PRODUCT_VERSION }}
+# Sudoku Portable Edition v$version
 
 This is the portable/standalone version requiring no installation.
 
@@ -294,10 +296,10 @@ Simply run any .exe directly from this folder. No installation required.
 ## Licensing
 See LICENSE.md for full licensing information.
 "@
-        $portableReadme | Out-File -FilePath "portable/Sudoku-Portable-${{ env.PRODUCT_VERSION }}/README-PORTABLE.txt" -Encoding UTF8
+        $portableReadme | Out-File -FilePath "portable/Sudoku-Portable-$version/README-PORTABLE.txt" -Encoding UTF8
         
         # Create zip archive
-        Compress-Archive -Path "portable/Sudoku-Portable-${{ env.PRODUCT_VERSION }}" -DestinationPath "Sudoku-Portable-${{ env.PRODUCT_VERSION }}.zip"
+        Compress-Archive -Path "portable/Sudoku-Portable-$version" -DestinationPath "Sudoku-Portable-$version.zip"
         Write-Host "Portable zip created successfully"
 
     - name: Install WiX Toolset
