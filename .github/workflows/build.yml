@@ -304,9 +304,9 @@ jobs:
         files: |
           msdos-artifacts/Sudoku-MSDOS.zip
           msdos-artifacts/sudoku.exe
-          windows/x64/Release/SudokuSolver.exe
-          python_generate_puzzles/dist/sudoku_solver_qt5_python.exe
-          python_generate_puzzles/dist/sudoku_puzzler.exe
+          windows-artifacts/SudokuSolver.exe
+          windows-artifacts/sudoku_solver_qt5_python.exe
+          windows-artifacts/sudoku_puzzler.exe
           gtk-artifacts/Sudoku-GTK3-Windows.zip
         tag_name: ${{ github.ref == 'refs/heads/master' && format('v{0}', github.run_number) || format('bleedingedge-v{0}', github.run_number) }}
         name: ${{ github.ref == 'refs/heads/master' && format('Release {0}', github.run_number) || format('Dev Build {0}', github.run_number) }}
