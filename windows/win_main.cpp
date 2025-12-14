@@ -817,47 +817,88 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       }
     }
 
-    // Check each cell for conflicts
+    // Create a copy of the current board state
+    Sudoku* solveCopy = new Sudoku();
+    
+    // Copy the current board to the solver copy
+    for (int row = 0; row < 9; row++) {
+      for (int col = 0; col < 9; col++) {
+        int value = sudoku->GetValue(row, col);
+        if (value != -1) {
+          solveCopy->SetValue(row, col, value);
+        }
+      }
+    }
+    
+    // Solve the copy without logging (SolveBasic doesn't log)
+    solveCopy->SolveBasic();
+    
+    // Compare each cell and highlight mismatches
+    for (int row = 0; row < 9; row++) {
+      for (int col = 0; col < 9; col++) {
+        int currentValue = sudoku->GetValue(row, col);
+        int solvedValue = solveCopy->GetValue(row, col);
+        
+        // Highlight if:
+        // 1. Cell is empty (currentValue == -1) and solver found a value, OR
+        // 2. Cell has a value that doesn't match the solution
+        if (currentValue == -1 || (currentValue != -1 && currentValue != solvedValue)) {
+          // Show what the correct value should be in light yellow
+          grid[row, col]->BackColor = Color::Yellow;
+          grid[row, col]->ForeColor = Color::Black;
+        }
+      }
+    }
+    
+    // Clean up the copy
+    delete solveCopy;
+
+    // FALLBACK: Highlight direct conflicts (duplicates) in red if solver validation missed them
+    // This catches immediate rule violations as a safety net
     for (int row = 0; row < 9; row++) {
       for (int col = 0; col < 9; col++) {
         int value = sudoku->GetValue(row, col);
         if (value == -1) continue;  // Skip empty cells
 
+        bool hasConflict = false;
+
         // Check row for duplicates
         for (int c = 0; c < 9; c++) {
           if (c != col && sudoku->GetValue(row, c) == value) {
-            // Highlight both cells as conflicts
-            grid[row, col]->BackColor = Color::Red;
-            grid[row, col]->ForeColor = Color::White;
-            grid[row, c]->BackColor = Color::Red;
-            grid[row, c]->ForeColor = Color::White;
+            hasConflict = true;
+            break;
           }
         }
 
         // Check column for duplicates
-        for (int r = 0; r < 9; r++) {
-          if (r != row && sudoku->GetValue(r, col) == value) {
-            // Highlight both cells as conflicts
-            grid[row, col]->BackColor = Color::Red;
-            grid[row, col]->ForeColor = Color::White;
-            grid[r, col]->BackColor = Color::Red;
-            grid[r, col]->ForeColor = Color::White;
+        if (!hasConflict) {
+          for (int r = 0; r < 9; r++) {
+            if (r != row && sudoku->GetValue(r, col) == value) {
+              hasConflict = true;
+              break;
+            }
           }
         }
 
         // Check 3x3 box for duplicates
-        int boxRow = (row / 3) * 3;
-        int boxCol = (col / 3) * 3;
-        for (int r = boxRow; r < boxRow + 3; r++) {
-          for (int c = boxCol; c < boxCol + 3; c++) {
-            if ((r != row || c != col) && sudoku->GetValue(r, c) == value) {
-              // Highlight both cells as conflicts
-              grid[row, col]->BackColor = Color::Red;
-              grid[row, col]->ForeColor = Color::White;
-              grid[r, c]->BackColor = Color::Red;
-              grid[r, c]->ForeColor = Color::White;
+        if (!hasConflict) {
+          int boxRow = (row / 3) * 3;
+          int boxCol = (col / 3) * 3;
+          for (int r = boxRow; r < boxRow + 3; r++) {
+            for (int c = boxCol; c < boxCol + 3; c++) {
+              if ((r != row || c != col) && sudoku->GetValue(r, c) == value) {
+                hasConflict = true;
+                break;
+              }
             }
+            if (hasConflict) break;
           }
+        }
+
+        // If direct conflict found, highlight in red (overrides yellow)
+        if (hasConflict) {
+          grid[row, col]->BackColor = Color::Red;
+          grid[row, col]->ForeColor = Color::White;
         }
       }
     }
