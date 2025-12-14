@@ -98,7 +98,7 @@ ref class MainForm : public System::Windows::Forms::Form {
  private:
   SudokuWrapper ^ sudoku;
   array<TextBox ^, 2> ^ grid;
-  array<Label ^, 2> ^ notes;  // 2D array for cell notes
+  array<TextBox ^, 2> ^ notes;  // 2D array for cell notes - changed to TextBox
   MenuStrip ^ menuStrip;
   ToolStrip ^ toolStrip;
   StatusStrip ^ statusStrip;
@@ -317,13 +317,10 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->Size = System::Drawing::Size(700, 100);
 
     instructionsBox->Text = L"Instructions:\r\n\r\n"
-        L"  - Use the mouse cursor to move around the board (scroll button will change the value and middle mouse will clear)\r\n"
-        L"  - Use the keypad to enter numbers (0 to clear the current cell).\r\n"
-        L"  - Each cell has a notes area below it where you can write candidate numbers before deciding on the final value.\r\n"
-        L"  - Press 'A' to solve the puzzle.\r\n"
-        L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles.\r\n"
-        L"  - Press F5-F8 to save, and Shift+F5-F8 to load.";
-        L"  - Press F9-F12 to save as XML Spreadsheet in the format puzzle1.xml, puzzle2.xml, etc.";
+        L"  - Use keypad (1-9) to enter numbers in cells. Middle mouse click or press 0 to clear.\r\n"
+        L"  - Each cell has a NOTES area below it (gray box). Click on it to add candidate numbers (e.g., '2 5 8').\r\n"
+        L"  - Press 'A' for auto-solve. Press F1-F4 for new puzzles (easy to expert). Press Shift+F1 for master.\r\n"
+        L"  - Press F5-F8 to save, Shift+F5-F8 to load. F9-F12 to export as XML. Arrow keys navigate cells.";
 
     instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9); // Consistent fixed-width font
     this->Controls->Add(instructionsBox);
@@ -433,16 +430,18 @@ ref class MainForm : public System::Windows::Forms::Form {
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
 
-        // Create notes Label below the cell (25 pixels tall)
-        notes[i, j] = gcnew Label();
+        // Create notes TextBox below the cell (25 pixels tall) - now editable!
+        notes[i, j] = gcnew TextBox();
         notes[i, j]->Size = System::Drawing::Size(60, 25);
         notes[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight + 45);
         notes[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 7);
-        notes[i, j]->TextAlign = ContentAlignment::TopCenter;
+        notes[i, j]->Multiline = true;
+        notes[i, j]->WordWrap = true;
         notes[i, j]->BackColor = Color::WhiteSmoke;
-        notes[i, j]->BorderStyle = BorderStyle::None;
-        notes[i, j]->AutoEllipsis = true;
+        notes[i, j]->BorderStyle = BorderStyle::FixedSingle;
         notes[i, j]->Tag = gcnew array<int>{i, j};
+        notes[i, j]->ScrollBars = ScrollBars::None;
+        notes[i, j]->AcceptsTab = false;
         gridContainer->Controls->Add(notes[i, j]);
       }
     }
@@ -737,24 +736,21 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       }
   }
 
-  // Add method to add/remove note text
-  void ToggleNote(int row, int col, String^ number) {
-      String^ currentNotes = notes[row, col]->Text;
-      
-      if (String::IsNullOrEmpty(currentNotes)) {
-          notes[row, col]->Text = number;
-      } else if (currentNotes->Contains(number)) {
-          // Remove the number if it already exists
-          currentNotes = currentNotes->Replace(number + " ", "")->Replace(number, "");
-          notes[row, col]->Text = currentNotes;
-      } else {
-          // Add the number if it doesn't exist
-          notes[row, col]->Text = currentNotes + " " + number;
-      }
-  }
-
+  // Method to clear notes from a cell
   void ClearNotes(int row, int col) {
       notes[row, col]->Text = "";
+  }
+
+  // Method to add a candidate number to notes (useful for programmatic usage)
+  void AddToNotes(int row, int col, String^ number) {
+      String^ currentNotes = notes[row, col]->Text;
+      if (!currentNotes->Contains(number)) {
+          if (currentNotes->Length > 0) {
+              notes[row, col]->Text = currentNotes + " " + number;
+          } else {
+              notes[row, col]->Text = number;
+          }
+      }
   }
 
   void UpdateStatus(String ^ message) {
