@@ -109,30 +109,11 @@ jobs:
         Compress-Archive -Path $portableDir -DestinationPath "Sudoku-Portable-Windows-${{ env.PRODUCT_VERSION }}.zip"
         Write-Host "✅ Portable Windows ZIP created"
 
-    - name: Create Source Code Archive
-      shell: powershell
-      run: |
-        $sourceDir = "source-backup/Sudoku-${{ env.PRODUCT_VERSION }}-source"
-        New-Item -ItemType Directory -Path $sourceDir -Force | Out-Null
-        
-        # Copy all source files
-        Copy-Item "windows" "$sourceDir/windows" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item "shared" "$sourceDir/shared" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item "python_generate_puzzles" "$sourceDir/python_generate_puzzles" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item "msdos" "$sourceDir/msdos" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item "README.md" "$sourceDir/" -ErrorAction SilentlyContinue
-        Copy-Item "LICENSE.md" "$sourceDir/" -ErrorAction SilentlyContinue
-        Copy-Item ".github" "$sourceDir/.github" -Recurse -ErrorAction SilentlyContinue
-        
-        Compress-Archive -Path $sourceDir -DestinationPath "Sudoku-Source-${{ env.PRODUCT_VERSION }}.zip"
-        Write-Host "✅ Source code archive created"
-
     - name: Prepare Release Artifacts
       shell: powershell
       run: |
         New-Item -ItemType Directory -Path "release-artifacts" -Force | Out-Null
         Copy-Item "Sudoku-Portable-Windows-*.zip" "release-artifacts/" -ErrorAction SilentlyContinue
-        Copy-Item "Sudoku-Source-*.zip" "release-artifacts/" -ErrorAction SilentlyContinue
         Get-ChildItem "release-artifacts/"
 
     - name: Upload Artifacts

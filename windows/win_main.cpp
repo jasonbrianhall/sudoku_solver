@@ -289,8 +289,6 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize ToolStrip
     toolStrip = gcnew ToolStrip();
-    
-    // Game section
     ToolStripButton^ newGameBtn = gcnew ToolStripButton(
         "New Game (Z)", nullptr,
         gcnew EventHandler(this, &MainForm::NewGame_Click));
@@ -522,7 +520,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         gridContainer->Controls->Add(grid[i, j]);
       }
     }
-
+    
     // Adjust debug box
     debugBox->Location = Point(50 + gridSize + 20, gridTop);
     debugBox->Size = System::Drawing::Size(availableWidth - gridSize - 20, gridSize);
@@ -804,6 +802,11 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     
     // Validate and highlight any conflicts
     ValidateAndHighlight();
+  }
+
+  void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
+    // Suppress the beep for all keys - let KeyDown handle everything
+    e->Handled = true;
   }
 
   void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
