@@ -269,9 +269,19 @@ ref class MainForm : public System::Windows::Forms::Form {
         "Save as spreadsheet puzzle4.xml F(12)", nullptr,
         gcnew EventHandler(this, &MainForm::GeneratePuzzle4)));
 
+    // Help Menu
+    ToolStripMenuItem^ helpMenu = gcnew ToolStripMenuItem("Help");
+    helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "About", nullptr,
+        gcnew EventHandler(this, &MainForm::About_Click)));
+    helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Support the Author (Buy Me a Coffee)", nullptr,
+        gcnew EventHandler(this, &MainForm::SupportAuthor_Click)));
+
     // Add Menus to MenuStrip
     menuStrip->Items->Add(fileMenu);
     menuStrip->Items->Add(generateBoardMenu);
+    menuStrip->Items->Add(helpMenu);
 
     // Attach MenuStrip to the Form
     this->MainMenuStrip = menuStrip;
@@ -537,6 +547,7 @@ private: void SafeSetClipboard(DataObject^ data) {
         grid[i, j]->Text = (value >= 0) ? (value + 1).ToString() : "";
       }
     }
+    ValidateAndHighlight();
   }
 
     String^ GetBoardAsText() {
@@ -717,6 +728,61 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
   }
 
+  void ValidateAndHighlight() {
+    // Clear all previous highlights
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        grid[i, j]->BackColor = Color::White;
+        grid[i, j]->ForeColor = Color::Black;
+      }
+    }
+
+    // Check each cell for conflicts
+    for (int row = 0; row < 9; row++) {
+      for (int col = 0; col < 9; col++) {
+        int value = sudoku->GetValue(row, col);
+        if (value == -1) continue;  // Skip empty cells
+
+        // Check row for duplicates
+        for (int c = 0; c < 9; c++) {
+          if (c != col && sudoku->GetValue(row, c) == value) {
+            // Highlight both cells as conflicts
+            grid[row, col]->BackColor = Color::Red;
+            grid[row, col]->ForeColor = Color::White;
+            grid[row, c]->BackColor = Color::Red;
+            grid[row, c]->ForeColor = Color::White;
+          }
+        }
+
+        // Check column for duplicates
+        for (int r = 0; r < 9; r++) {
+          if (r != row && sudoku->GetValue(r, col) == value) {
+            // Highlight both cells as conflicts
+            grid[row, col]->BackColor = Color::Red;
+            grid[row, col]->ForeColor = Color::White;
+            grid[r, col]->BackColor = Color::Red;
+            grid[r, col]->ForeColor = Color::White;
+          }
+        }
+
+        // Check 3x3 box for duplicates
+        int boxRow = (row / 3) * 3;
+        int boxCol = (col / 3) * 3;
+        for (int r = boxRow; r < boxRow + 3; r++) {
+          for (int c = boxCol; c < boxCol + 3; c++) {
+            if ((r != row || c != col) && sudoku->GetValue(r, c) == value) {
+              // Highlight both cells as conflicts
+              grid[row, col]->BackColor = Color::Red;
+              grid[row, col]->ForeColor = Color::White;
+              grid[r, c]->BackColor = Color::Red;
+              grid[r, c]->ForeColor = Color::White;
+            }
+          }
+        }
+      }
+    }
+  }
+
   void Cell_TextChanged(Object ^ sender, EventArgs ^ e) {
     TextBox ^ textBox = safe_cast<TextBox ^>(sender);
     array<int> ^ position = safe_cast<array<int> ^>(textBox->Tag);
@@ -729,7 +795,18 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       } else {
         textBox->Text = "";
       }
+    } else {
+      // Clear the cell when text is empty
+      sudoku->ClearValue(position[0], position[1]);
     }
+    
+    // Validate and highlight any conflicts
+    ValidateAndHighlight();
+  }
+
+  void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
+    // Suppress the beep for all keys - let KeyDown handle everything
+    e->Handled = true;
   }
 
   void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
@@ -821,6 +898,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       case Keys::D7:
       case Keys::D8:
       case Keys::D9:
+        // Normal input mode - set the cell value
         sudoku->Clean();
         sudoku->SetValue(row, col, ((int)e->KeyCode - (int)Keys::D1));
         UpdateGrid();
@@ -1074,6 +1152,34 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
   void Exit_Click(Object ^ sender, EventArgs ^ e) {
      Application::Exit(); 
+  }
+
+  void About_Click(Object ^ sender, EventArgs ^ e) {
+    String^ aboutText = 
+      "Sudoku Solver\r\n\r\n" +
+      "(C) 2025 Jason Brian Hall\r\n" +
+      "MIT License - https://opensource.org/licenses/MIT\r\n\r\n" +
+      "GitHub: https://github.com/jasonbrianhall/sudoku_solver\r\n\r\n" +
+      "A powerful Sudoku puzzle generator and solver with support for multiple difficulty levels " +
+      "and advanced solving techniques including X-Wing, Swordfish, XY-Wing, and XYZ-Wing patterns.\r\n\r\n" +
+      "Features:\r\n" +
+      "- Generate puzzles at 6 difficulty levels\r\n" +
+      "- Real-time conflict detection and highlighting\r\n" +
+      "- Pencil mark notes for candidates\r\n" +
+      "- Multiple solving techniques\r\n" +
+      "- Save/load games\r\n" +
+      "- Export to Excel XML\r\n";
+
+    MessageBox::Show(this, aboutText, "About Sudoku Solver", MessageBoxButtons::OK, MessageBoxIcon::Information);
+  }
+
+  void SupportAuthor_Click(Object ^ sender, EventArgs ^ e) {
+    String^ supportText = 
+      "If you enjoy this Sudoku Solver, please consider supporting the author!\r\n\r\n" +
+      "Visit: https://buymeacoffee.com/jasonbrianhall\r\n\r\n" +
+      "Your support helps fund development and keeps this project active.";
+
+    MessageBox::Show(this, supportText, "Support the Author", MessageBoxButtons::OK, MessageBoxIcon::Information);
   }
 
   // Solving technique handlers
