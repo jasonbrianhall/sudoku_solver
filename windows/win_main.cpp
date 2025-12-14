@@ -1141,55 +1141,8 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
     // Check if this cell is immutable (from generated puzzle)
     if (sudoku->IsCellImmutable(col, row)) {
-      // Immutable cells cannot be changed or cleared - restore original value
-      if (textBox->Text->Length == 0) {
-        // User tried to clear it - restore the original value
-        int originalValue = sudoku->GetValue(col, row);
-        textBox->Text = System::Convert::ToString(originalValue + 1);
-        textBox->BackColor = Color::LightBlue;
-        textBox->ForeColor = Color::DarkBlue;
-        textBox->ReadOnly = true;
-        UpdateStatus("That cell is from the puzzle and cannot be cleared");
-        ValidateAndHighlight();
-        return;
-      } else {
-        // Try to parse the input
-        int value;
-        if (Int32::TryParse(textBox->Text, value) && value >= 1 && value <= 9) {
-          // Check if this matches the puzzle's original value
-          int originalValue = sudoku->GetValue(col, row);
-          
-          // If user entered the correct value, allow it
-          if (value - 1 == originalValue) {
-            // Correct! Keep the value
-            sudoku->SetValue(col, row, value - 1);
-            // Make textbox blue to indicate immutable
-            textBox->BackColor = Color::LightBlue;
-            textBox->ForeColor = Color::DarkBlue;
-            textBox->ReadOnly = true;  // Prevent further editing
-            ValidateAndHighlight();
-            return;
-          } else {
-            // Wrong! Reject the input
-            textBox->Text = System::Convert::ToString(originalValue + 1);
-            textBox->BackColor = Color::LightBlue;
-            textBox->ForeColor = Color::DarkBlue;
-            textBox->ReadOnly = true;
-            UpdateStatus("That cell is from the puzzle and cannot be changed");
-            ValidateAndHighlight();
-            return;
-          }
-        } else {
-          // Invalid input for immutable cell
-          int originalValue = sudoku->GetValue(col, row);
-          textBox->Text = System::Convert::ToString(originalValue + 1);
-          textBox->BackColor = Color::LightBlue;
-          textBox->ForeColor = Color::DarkBlue;
-          textBox->ReadOnly = true;
-          ValidateAndHighlight();
-          return;
-        }
-      }
+      // Don't allow any changes to immutable cells
+      return;
     }
 
     // For non-immutable cells, allow normal editing
