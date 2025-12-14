@@ -471,11 +471,15 @@ ref class MainForm : public System::Windows::Forms::Form {
     // Calculate cell size based on grid size
     int cellSize = gridSize / 9;
     
+    // Calculate font size based on cell size (proportional)
+    float fontSize = System::Math::Max(8.0f, (float)cellSize * 0.6f);
+    
     // Update all cells and grid lines
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
         grid[i, j]->Size = System::Drawing::Size(cellSize, cellSize);
         grid[i, j]->Location = System::Drawing::Point(j * cellSize, i * cellSize);
+        grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", fontSize);
       }
     }
     
