@@ -486,28 +486,54 @@ ref class MainForm : public System::Windows::Forms::Form {
 
   void Form_Resize(Object^ sender, EventArgs^ e) {
     int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
-    int availableWidth = this->ClientSize.Width - 100;  // 50px margin left, 50px for debug
+    int availableWidth = this->ClientSize.Width - 100;  // 50px margin left, 50px for debug box
     int availableHeight = this->ClientSize.Height - gridTop - statusStrip->Height - 20;
     
-    // Keep grid square and fit within available space
-    int gridSize = System::Math::Min(availableWidth, availableHeight);
-    gridSize = System::Math::Max(gridSize, 180);  // Minimum size
+    // Grid proportions: 60px per cell × 9 = 540 wide
+    //                   70px per cell × 9 = 630 tall (includes 25px notes area)
+    // Aspect ratio = 540:630 = 6:7
     
-    gridContainer->Size = System::Drawing::Size(gridSize, gridSize);
+    // Calculate grid size while maintaining aspect ratio
+    int gridWidth = availableWidth;
+    int gridHeight = (gridWidth * 7) / 6;  // Maintain 6:7 aspect ratio
+    
+    // If height is too large, scale down based on height instead
+    if (gridHeight > availableHeight) {
+      gridHeight = availableHeight;
+      gridWidth = (gridHeight * 6) / 7;  // Maintain 6:7 aspect ratio
+    }
+    
+    // Minimum sizes
+    gridWidth = System::Math::Max(gridWidth, 240);   // At least 60px × 4 cells
+    gridHeight = System::Math::Max(gridHeight, 280);  // At least 70px × 4 cells
+    
+    gridContainer->Size = System::Drawing::Size(gridWidth, gridHeight);
     gridContainer->Location = Point(50, gridTop);
     
-    // Calculate cell size based on grid size
-    int cellSize = gridSize / 9;
+    // Calculate cell sizes (width and height can be different)
+    int cellWidth = gridWidth / 9;
+    int cellHeight = gridHeight / 9;
+    int mainCellHeight = (cellHeight * 45) / 70;  // 45 pixels for main cell out of 70 total
+    int notesCellHeight = cellHeight - mainCellHeight;  // Remaining for notes
     
-    // Calculate font size based on cell size (proportional)
-    float fontSize = System::Math::Max(8.0f, (float)cellSize * 0.6f);
-    
-    // Update all cells and grid lines
+    // Update all cells and notes boxes
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
-        grid[i, j]->Size = System::Drawing::Size(cellSize, cellSize);
-        grid[i, j]->Location = System::Drawing::Point(j * cellSize, i * cellSize);
+        // Update main cell
+        grid[i, j]->Size = System::Drawing::Size(cellWidth, mainCellHeight);
+        grid[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight);
+        
+        // Scale font based on cell size
+        float fontSize = System::Math::Max(8.0f, (float)mainCellHeight * 0.5f);
         grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", fontSize);
+        
+        // Update notes box
+        notes[i, j]->Size = System::Drawing::Size(cellWidth, notesCellHeight);
+        notes[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight + mainCellHeight);
+        
+        // Scale notes font based on notes area size
+        float notesFontSize = System::Math::Max(6.0f, (float)notesCellHeight * 0.4f);
+        notes[i, j]->Font = gcnew System::Drawing::Font(L"Arial", notesFontSize);
       }
     }
     
@@ -517,31 +543,34 @@ ref class MainForm : public System::Windows::Forms::Form {
       int thickness = (i % 3 == 0) ? 3 : 1;
       int offset = (i % 3 == 0) ? 1 : 0;
       
+      // Vertical lines
       Panel ^ vline = gcnew Panel();
       vline->BorderStyle = BorderStyle::None;
-      vline->Location = Point(i * cellSize - offset, 0);
-      vline->Size = System::Drawing::Size(thickness, gridSize);
+      vline->Location = Point(i * cellWidth - offset, 0);
+      vline->Size = System::Drawing::Size(thickness, gridHeight);
       vline->BackColor = Color::Black;
       gridContainer->Controls->Add(vline);
 
+      // Horizontal lines
       Panel ^ hline = gcnew Panel();
       hline->BorderStyle = BorderStyle::None;
-      hline->Location = Point(0, i * cellSize - offset);
-      hline->Size = System::Drawing::Size(gridSize, thickness);
+      hline->Location = Point(0, i * cellHeight - offset);
+      hline->Size = System::Drawing::Size(gridWidth, thickness);
       hline->BackColor = Color::Black;
       gridContainer->Controls->Add(hline);
     }
     
-    // Re-add cells on top of grid lines
+    // Re-add all cells and notes on top of grid lines
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
         gridContainer->Controls->Add(grid[i, j]);
+        gridContainer->Controls->Add(notes[i, j]);
       }
     }
     
-    // Adjust debug box
-    debugBox->Location = Point(50 + gridSize + 20, gridTop);
-    debugBox->Size = System::Drawing::Size(availableWidth - gridSize - 20, gridSize);
+    // Update debug box position and size
+    debugBox->Location = Point(gridContainer->Right + 20, gridTop);
+    debugBox->Size = System::Drawing::Size(availableWidth - gridWidth - 70, gridHeight);
   }
 
 private: void SafeSetClipboard(DataObject^ data) {
