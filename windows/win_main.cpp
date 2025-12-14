@@ -1862,7 +1862,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   }
 
   void ClearBoard_Click(Object ^ sender, EventArgs ^ e) {
-    DialogResult result = MessageBox::Show(
+    System::Windows::Forms::DialogResult result = MessageBox::Show(
       this,
       "Clear all non-immutable cells? This action can be undone with Ctrl+Z.",
       "Clear Board",
@@ -1870,7 +1870,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       MessageBoxIcon::Question
     );
     
-    if (result == DialogResult::Yes) {
+    if (result == System::Windows::Forms::DialogResult::Yes) {
       sudoku->SaveBoardState();
       sudoku->ClearBoardExceptImmutable();
       UpdateGrid();
