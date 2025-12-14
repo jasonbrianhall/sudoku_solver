@@ -105,6 +105,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   ToolStripStatusLabel ^ statusLabel;
   TextBox^ instructionsBox;
   TextBox^ debugBox;
+  Panel^ gridContainer;
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle1.xml");
@@ -278,6 +279,14 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize ToolStrip
     toolStrip = gcnew ToolStrip();
+    ToolStripButton^ newGameBtn = gcnew ToolStripButton(
+        "New Game (Z)", nullptr,
+        gcnew EventHandler(this, &MainForm::NewGame_Click));
+    newGameBtn->AutoSize = false;
+    newGameBtn->Size = System::Drawing::Size(100, 25);
+    toolStrip->Items->Add(newGameBtn);
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
+    
     toolStrip->Items->Add(gcnew ToolStripButton(
         "Complete Auto-Solve (A)", nullptr,
         gcnew EventHandler(this, &MainForm::Solve_Click)));
@@ -358,19 +367,39 @@ ref class MainForm : public System::Windows::Forms::Form {
     grid = gcnew array<TextBox ^, 2>(9, 9);
     int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
 
-    // Create a container panel for the Sudoku grid
-    Panel ^ gridContainer = gcnew Panel();
+    // Create a container panel for the Sudoku grid with white background
+    gridContainer = gcnew Panel();
     gridContainer->Location = Point(50, gridTop);
     gridContainer->Size = System::Drawing::Size(405, 405);
-    gridContainer->BackColor = Color::Black;
+    gridContainer->BackColor = Color::White;
     this->Controls->Add(gridContainer);
 
-    // Initialize grid cells
+    // Draw bold grid lines for 3x3 boxes FIRST (underneath cells)
+    for (int i = 0; i <= 9; i++) {
+      int thickness = (i % 3 == 0) ? 3 : 1;
+      int offset = (i % 3 == 0) ? 1 : 0;
+      
+      Panel ^ vline = gcnew Panel();
+      vline->BorderStyle = BorderStyle::None;
+      vline->Location = Point(i * 45 - offset, 0);
+      vline->Size = System::Drawing::Size(thickness, 405);
+      vline->BackColor = Color::Black;
+      gridContainer->Controls->Add(vline);
+
+      Panel ^ hline = gcnew Panel();
+      hline->BorderStyle = BorderStyle::None;
+      hline->Location = Point(0, i * 45 - offset);
+      hline->Size = System::Drawing::Size(405, thickness);
+      hline->BackColor = Color::Black;
+      gridContainer->Controls->Add(hline);
+    }
+
+    // Initialize grid cells as proper cells (45x45 pixels each, no gaps)
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
         grid[i, j] = gcnew TextBox();
-        grid[i, j]->Size = System::Drawing::Size(40, 40);
-        grid[i, j]->Location = System::Drawing::Point(3 + j * 45, 3 + i * 45);
+        grid[i, j]->Size = System::Drawing::Size(45, 45);  // Full cell size
+        grid[i, j]->Location = System::Drawing::Point(j * 45, i * 45);  // Perfectly positioned
         grid[i, j]->MaxLength = 1;
         grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 20);
         grid[i, j]->TextAlign = HorizontalAlignment::Center;
@@ -379,28 +408,14 @@ ref class MainForm : public System::Windows::Forms::Form {
             gcnew EventHandler(this, &MainForm::Cell_TextChanged);
         grid[i, j]->KeyDown +=
             gcnew KeyEventHandler(this, &MainForm::Cell_KeyDown);
+        grid[i, j]->KeyPress +=
+            gcnew KeyPressEventHandler(this, &MainForm::Cell_KeyPress);
         grid[i, j]->BackColor = Color::White;
+        grid[i, j]->BorderStyle = BorderStyle::None;
         gridContainer->Controls->Add(grid[i, j]);
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
       }
-    }
-
-    // Draw grid lines
-    for (int i = 0; i <= 9; i++) {
-      Panel ^ vline = gcnew Panel();
-      vline->BorderStyle = BorderStyle::None;
-      vline->Location = Point(i * 45, 0);
-      vline->Size = System::Drawing::Size(i % 3 == 0 ? 3 : 1, 405);
-      vline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
-      gridContainer->Controls->Add(vline);
-
-      Panel ^ hline = gcnew Panel();
-      hline->BorderStyle = BorderStyle::None;
-      hline->Location = Point(0, i * 45);
-      hline->Size = System::Drawing::Size(405, i % 3 == 0 ? 3 : 1);
-      hline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
-      gridContainer->Controls->Add(hline);
     }
 
     Label^ debugLabel = gcnew Label();
@@ -424,6 +439,9 @@ ref class MainForm : public System::Windows::Forms::Form {
     debugTimer->Interval = 100; // Check every 100ms
     debugTimer->Tick += gcnew EventHandler(this, &MainForm::UpdateDebugBox);
     debugTimer->Start();
+
+    // Handle form resize to expand grid
+    this->Resize += gcnew EventHandler(this, &MainForm::Form_Resize);
   }
 
   void UpdateDebugBox(Object^ sender, EventArgs^ e) {
@@ -436,6 +454,66 @@ ref class MainForm : public System::Windows::Forms::Form {
           debugBox->SelectionStart = debugBox->Text->Length;
           debugBox->ScrollToCaret();
       }
+  }
+
+  void Form_Resize(Object^ sender, EventArgs^ e) {
+    int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
+    int availableWidth = this->ClientSize.Width - 100;  // 50px margin left, 50px for debug
+    int availableHeight = this->ClientSize.Height - gridTop - statusStrip->Height - 20;
+    
+    // Keep grid square and fit within available space
+    int gridSize = System::Math::Min(availableWidth, availableHeight);
+    gridSize = System::Math::Max(gridSize, 180);  // Minimum size
+    
+    gridContainer->Size = System::Drawing::Size(gridSize, gridSize);
+    gridContainer->Location = Point(50, gridTop);
+    
+    // Calculate cell size based on grid size
+    int cellSize = gridSize / 9;
+    
+    // Calculate font size based on cell size (proportional)
+    float fontSize = System::Math::Max(8.0f, (float)cellSize * 0.6f);
+    
+    // Update all cells and grid lines
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        grid[i, j]->Size = System::Drawing::Size(cellSize, cellSize);
+        grid[i, j]->Location = System::Drawing::Point(j * cellSize, i * cellSize);
+        grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", fontSize);
+      }
+    }
+    
+    // Update grid lines
+    gridContainer->Controls->Clear();
+    for (int i = 0; i <= 9; i++) {
+      int thickness = (i % 3 == 0) ? 3 : 1;
+      int offset = (i % 3 == 0) ? 1 : 0;
+      
+      Panel ^ vline = gcnew Panel();
+      vline->BorderStyle = BorderStyle::None;
+      vline->Location = Point(i * cellSize - offset, 0);
+      vline->Size = System::Drawing::Size(thickness, gridSize);
+      vline->BackColor = Color::Black;
+      gridContainer->Controls->Add(vline);
+
+      Panel ^ hline = gcnew Panel();
+      hline->BorderStyle = BorderStyle::None;
+      hline->Location = Point(0, i * cellSize - offset);
+      hline->Size = System::Drawing::Size(gridSize, thickness);
+      hline->BackColor = Color::Black;
+      gridContainer->Controls->Add(hline);
+    }
+    
+    // Re-add cells on top of grid lines
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        gridContainer->Controls->Add(grid[i, j]);
+      }
+    }
+    
+    // Adjust debug box
+    debugBox->Location = Point(50 + gridSize + 20, gridTop);
+    debugBox->Size = System::Drawing::Size(availableWidth - gridSize - 20, gridSize);
   }
 
 private: void SafeSetClipboard(DataObject^ data) {
@@ -652,6 +730,11 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         textBox->Text = "";
       }
     }
+  }
+
+  void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
+    // Suppress the beep for all keys - let KeyDown handle everything
+    e->Handled = true;
   }
 
   void Cell_KeyDown(Object ^ sender, KeyEventArgs ^ e) {
