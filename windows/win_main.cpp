@@ -1,7 +1,6 @@
 // Microsoft Windows Native Version
 
 #define _HAS_STD_BYTE 0
-#define NOMINMAX
 #include <msclr/marshal_cppstd.h>
 
 #include "resource.h"
@@ -802,11 +801,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     
     // Validate and highlight any conflicts
     ValidateAndHighlight();
-  }
-
-  void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
-    // Suppress the beep for all keys - let KeyDown handle everything
-    e->Handled = true;
   }
 
   void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
