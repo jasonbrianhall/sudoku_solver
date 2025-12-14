@@ -98,6 +98,7 @@ ref class MainForm : public System::Windows::Forms::Form {
  private:
   SudokuWrapper ^ sudoku;
   array<TextBox ^, 2> ^ grid;
+  array<Label ^, 2> ^ notes;  // 2D array for cell notes
   MenuStrip ^ menuStrip;
   ToolStrip ^ toolStrip;
   StatusStrip ^ statusStrip;
@@ -318,6 +319,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->Text = L"Instructions:\r\n\r\n"
         L"  - Use the mouse cursor to move around the board (scroll button will change the value and middle mouse will clear)\r\n"
         L"  - Use the keypad to enter numbers (0 to clear the current cell).\r\n"
+        L"  - Each cell has a notes area below it where you can write candidate numbers before deciding on the final value.\r\n"
         L"  - Press 'A' to solve the puzzle.\r\n"
         L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles.\r\n"
         L"  - Press F5-F8 to save, and Shift+F5-F8 to load.";
@@ -374,12 +376,17 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize grid
     grid = gcnew array<TextBox ^, 2>(9, 9);
+    notes = gcnew array<Label ^, 2>(9, 9);  // Initialize notes array
     int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
+
+    // Cell dimensions: 60x70 pixels (45 for main cell, 25 for notes below)
+    int cellWidth = 60;
+    int cellHeight = 70;
 
     // Create a container panel for the Sudoku grid with white background
     gridContainer = gcnew Panel();
     gridContainer->Location = Point(50, gridTop);
-    gridContainer->Size = System::Drawing::Size(405, 405);
+    gridContainer->Size = System::Drawing::Size(540, 630);  // 9 * 60 = 540 wide, 9 * 70 = 630 tall
     gridContainer->BackColor = Color::White;
     this->Controls->Add(gridContainer);
 
@@ -390,25 +397,26 @@ ref class MainForm : public System::Windows::Forms::Form {
       
       Panel ^ vline = gcnew Panel();
       vline->BorderStyle = BorderStyle::None;
-      vline->Location = Point(i * 45 - offset, 0);
-      vline->Size = System::Drawing::Size(thickness, 405);
+      vline->Location = Point(i * cellWidth - offset, 0);
+      vline->Size = System::Drawing::Size(thickness, 630);
       vline->BackColor = Color::Black;
       gridContainer->Controls->Add(vline);
 
       Panel ^ hline = gcnew Panel();
       hline->BorderStyle = BorderStyle::None;
-      hline->Location = Point(0, i * 45 - offset);
-      hline->Size = System::Drawing::Size(405, thickness);
+      hline->Location = Point(0, i * cellHeight - offset);
+      hline->Size = System::Drawing::Size(540, thickness);
       hline->BackColor = Color::Black;
       gridContainer->Controls->Add(hline);
     }
 
-    // Initialize grid cells as proper cells (45x45 pixels each, no gaps)
+    // Initialize grid cells with notes area below
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
+        // Create main cell TextBox (45 pixels tall)
         grid[i, j] = gcnew TextBox();
-        grid[i, j]->Size = System::Drawing::Size(45, 45);  // Full cell size
-        grid[i, j]->Location = System::Drawing::Point(j * 45, i * 45);  // Perfectly positioned
+        grid[i, j]->Size = System::Drawing::Size(60, 45);
+        grid[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight);
         grid[i, j]->MaxLength = 1;
         grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 20);
         grid[i, j]->TextAlign = HorizontalAlignment::Center;
@@ -424,12 +432,24 @@ ref class MainForm : public System::Windows::Forms::Form {
         gridContainer->Controls->Add(grid[i, j]);
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
+
+        // Create notes Label below the cell (25 pixels tall)
+        notes[i, j] = gcnew Label();
+        notes[i, j]->Size = System::Drawing::Size(60, 25);
+        notes[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight + 45);
+        notes[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 7);
+        notes[i, j]->TextAlign = ContentAlignment::TopCenter;
+        notes[i, j]->BackColor = Color::WhiteSmoke;
+        notes[i, j]->BorderStyle = BorderStyle::None;
+        notes[i, j]->AutoEllipsis = true;
+        notes[i, j]->Tag = gcnew array<int>{i, j};
+        gridContainer->Controls->Add(notes[i, j]);
       }
     }
 
     Label^ debugLabel = gcnew Label();
     debugLabel->Text = "Debug Output";
-    debugLabel->Location = Point(500, gridTop);
+    debugLabel->Location = Point(600, gridTop);
     debugLabel->AutoSize = true;
     this->Controls->Add(debugLabel);
 
@@ -438,8 +458,8 @@ ref class MainForm : public System::Windows::Forms::Form {
     debugBox->Multiline = true;
     debugBox->ScrollBars = ScrollBars::Vertical;
     debugBox->ReadOnly = true;
-    debugBox->Location = Point(500, gridTop+20);  // Position next to grid
-    debugBox->Size = System::Drawing::Size(250, 385);  // Same height as grid
+    debugBox->Location = Point(600, gridTop+20);  // Position next to grid
+    debugBox->Size = System::Drawing::Size(150, 600);  // Adjusted height to match new grid
     debugBox->Font = gcnew System::Drawing::Font(L"Consolas", 9);
     this->Controls->Add(debugBox);
 
@@ -544,6 +564,7 @@ private: void SafeSetClipboard(DataObject^ data) {
       for (int j = 0; j < 9; j++) {
         int value = sudoku->GetValue(i, j);
         grid[i, j]->Text = (value >= 0) ? (value + 1).ToString() : "";
+        ClearNotes(i, j);  // Clear notes when updating grid
       }
     }
     ValidateAndHighlight();
@@ -714,6 +735,26 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           sudoku->ClearValue(row, col);
           textBox->Text = "";
       }
+  }
+
+  // Add method to add/remove note text
+  void ToggleNote(int row, int col, String^ number) {
+      String^ currentNotes = notes[row, col]->Text;
+      
+      if (String::IsNullOrEmpty(currentNotes)) {
+          notes[row, col]->Text = number;
+      } else if (currentNotes->Contains(number)) {
+          // Remove the number if it already exists
+          currentNotes = currentNotes->Replace(number + " ", "")->Replace(number, "");
+          notes[row, col]->Text = currentNotes;
+      } else {
+          // Add the number if it doesn't exist
+          notes[row, col]->Text = currentNotes + " " + number;
+      }
+  }
+
+  void ClearNotes(int row, int col) {
+      notes[row, col]->Text = "";
   }
 
   void UpdateStatus(String ^ message) {
