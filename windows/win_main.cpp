@@ -430,21 +430,6 @@ ref class MainForm : public System::Windows::Forms::Form {
       }
     }
 
-    // Initialize notes labels (pencil marks displayed in top-left of each cell)
-    for (int i = 0; i < 9; i++) {
-      for (int j = 0; j < 9; j++) {
-        notesLabels[i, j] = gcnew Label();
-        notesLabels[i, j]->Location = System::Drawing::Point(j * 45, i * 45);
-        notesLabels[i, j]->Size = System::Drawing::Size(45, 45);
-        notesLabels[i, j]->Font = gcnew System::Drawing::Font(L"Courier New", 6, FontStyle::Bold);
-        notesLabels[i, j]->ForeColor = Color::Blue;
-        notesLabels[i, j]->BackColor = Color::Transparent;
-        notesLabels[i, j]->TextAlign = ContentAlignment::TopLeft;
-        notesLabels[i, j]->AutoSize = false;
-        gridContainer->Controls->Add(notesLabels[i, j]);
-      }
-    }
-
     Label^ debugLabel = gcnew Label();
     debugLabel->Text = "Debug Output";
     debugLabel->Location = Point(500, gridTop);
