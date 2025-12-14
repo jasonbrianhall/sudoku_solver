@@ -278,6 +278,14 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize ToolStrip
     toolStrip = gcnew ToolStrip();
+    ToolStripButton^ newGameBtn = gcnew ToolStripButton(
+        "New Game (Z)", nullptr,
+        gcnew EventHandler(this, &MainForm::NewGame_Click));
+    newGameBtn->AutoSize = false;
+    newGameBtn->Size = System::Drawing::Size(100, 25);
+    toolStrip->Items->Add(newGameBtn);
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
+    
     toolStrip->Items->Add(gcnew ToolStripButton(
         "Complete Auto-Solve (A)", nullptr,
         gcnew EventHandler(this, &MainForm::Solve_Click)));
@@ -365,41 +373,47 @@ ref class MainForm : public System::Windows::Forms::Form {
     gridContainer->BackColor = Color::Black;
     this->Controls->Add(gridContainer);
 
-    // Initialize grid cells
+    // Initialize grid cells as proper cells (45x45 pixels each, no gaps)
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
         grid[i, j] = gcnew TextBox();
-        grid[i, j]->Size = System::Drawing::Size(40, 40);
-        grid[i, j]->Location = System::Drawing::Point(3 + j * 45, 3 + i * 45);
+        grid[i, j]->Size = System::Drawing::Size(45, 45);  // Full cell size
+        grid[i, j]->Location = System::Drawing::Point(j * 45, i * 45);  // Perfectly positioned
         grid[i, j]->MaxLength = 1;
         grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 20);
         grid[i, j]->TextAlign = HorizontalAlignment::Center;
+        grid[i, j]->VerticalAlignment = System::Windows::Forms::VerticalAlignment::Middle;
         grid[i, j]->Tag = gcnew array<int>{i, j};
         grid[i, j]->TextChanged +=
             gcnew EventHandler(this, &MainForm::Cell_TextChanged);
         grid[i, j]->KeyDown +=
             gcnew KeyEventHandler(this, &MainForm::Cell_KeyDown);
         grid[i, j]->BackColor = Color::White;
+        grid[i, j]->BorderStyle = BorderStyle::FixedSingle;
+        grid[i, j]->Margin = Padding(0);
+        grid[i, j]->Padding = Padding(0);
         gridContainer->Controls->Add(grid[i, j]);
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
       }
     }
 
-    // Draw grid lines
-    for (int i = 0; i <= 9; i++) {
+    // Draw bold grid lines for 3x3 boxes (on top of cells)
+    for (int i = 1; i < 9; i++) {
       Panel ^ vline = gcnew Panel();
       vline->BorderStyle = BorderStyle::None;
-      vline->Location = Point(i * 45, 0);
-      vline->Size = System::Drawing::Size(i % 3 == 0 ? 3 : 1, 405);
-      vline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
+      vline->Location = Point(i * 45 - (i % 3 == 0 ? 2 : 1), 0);
+      vline->Size = System::Drawing::Size(i % 3 == 0 ? 2 : 1, 405);
+      vline->BackColor = i % 3 == 0 ? Color::Black : Color::LightGray;
+      vline->BringToFront();
       gridContainer->Controls->Add(vline);
 
       Panel ^ hline = gcnew Panel();
       hline->BorderStyle = BorderStyle::None;
-      hline->Location = Point(0, i * 45);
-      hline->Size = System::Drawing::Size(405, i % 3 == 0 ? 3 : 1);
-      hline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
+      hline->Location = Point(0, i * 45 - (i % 3 == 0 ? 2 : 1));
+      hline->Size = System::Drawing::Size(405, i % 3 == 0 ? 2 : 1);
+      hline->BackColor = i % 3 == 0 ? Color::Black : Color::LightGray;
+      hline->BringToFront();
       gridContainer->Controls->Add(hline);
     }
 
