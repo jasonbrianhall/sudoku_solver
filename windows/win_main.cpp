@@ -105,6 +105,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   ToolStripStatusLabel ^ statusLabel;
   TextBox^ instructionsBox;
   TextBox^ debugBox;
+  Panel^ gridContainer;
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle1.xml");
@@ -367,7 +368,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
 
     // Create a container panel for the Sudoku grid with white background
-    Panel ^ gridContainer = gcnew Panel();
+    gridContainer = gcnew Panel();
     gridContainer->Location = Point(50, gridTop);
     gridContainer->Size = System::Drawing::Size(405, 405);
     gridContainer->BackColor = Color::White;
@@ -438,6 +439,9 @@ ref class MainForm : public System::Windows::Forms::Form {
     debugTimer->Interval = 100; // Check every 100ms
     debugTimer->Tick += gcnew EventHandler(this, &MainForm::UpdateDebugBox);
     debugTimer->Start();
+
+    // Handle form resize to expand grid
+    this->Resize += gcnew EventHandler(this, &MainForm::Form_Resize);
   }
 
   void UpdateDebugBox(Object^ sender, EventArgs^ e) {
@@ -450,6 +454,62 @@ ref class MainForm : public System::Windows::Forms::Form {
           debugBox->SelectionStart = debugBox->Text->Length;
           debugBox->ScrollToCaret();
       }
+  }
+
+  void Form_Resize(Object^ sender, EventArgs^ e) {
+    int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
+    int availableWidth = this->ClientSize.Width - 100;  // 50px margin left, 50px for debug
+    int availableHeight = this->ClientSize.Height - gridTop - statusStrip->Height - 20;
+    
+    // Keep grid square and fit within available space
+    int gridSize = System::Math::Min(availableWidth, availableHeight);
+    gridSize = System::Math::Max(gridSize, 180);  // Minimum size
+    
+    gridContainer->Size = System::Drawing::Size(gridSize, gridSize);
+    gridContainer->Location = Point(50, gridTop);
+    
+    // Calculate cell size based on grid size
+    int cellSize = gridSize / 9;
+    
+    // Update all cells and grid lines
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        grid[i, j]->Size = System::Drawing::Size(cellSize, cellSize);
+        grid[i, j]->Location = System::Drawing::Point(j * cellSize, i * cellSize);
+      }
+    }
+    
+    // Update grid lines
+    gridContainer->Controls->Clear();
+    for (int i = 0; i <= 9; i++) {
+      int thickness = (i % 3 == 0) ? 3 : 1;
+      int offset = (i % 3 == 0) ? 1 : 0;
+      
+      Panel ^ vline = gcnew Panel();
+      vline->BorderStyle = BorderStyle::None;
+      vline->Location = Point(i * cellSize - offset, 0);
+      vline->Size = System::Drawing::Size(thickness, gridSize);
+      vline->BackColor = Color::Black;
+      gridContainer->Controls->Add(vline);
+
+      Panel ^ hline = gcnew Panel();
+      hline->BorderStyle = BorderStyle::None;
+      hline->Location = Point(0, i * cellSize - offset);
+      hline->Size = System::Drawing::Size(gridSize, thickness);
+      hline->BackColor = Color::Black;
+      gridContainer->Controls->Add(hline);
+    }
+    
+    // Re-add cells on top of grid lines
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        gridContainer->Controls->Add(grid[i, j]);
+      }
+    }
+    
+    // Adjust debug box
+    debugBox->Location = Point(50 + gridSize + 20, gridTop);
+    debugBox->Size = System::Drawing::Size(availableWidth - gridSize - 20, gridSize);
   }
 
 private: void SafeSetClipboard(DataObject^ data) {
@@ -669,10 +729,9 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   }
 
   void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
-    // Suppress the beep for unhandled characters
-    if (!Char::IsDigit(e->KeyChar) && e->KeyChar != 8) {  // 8 is backspace
-      e->Handled = true;
-    }
+    // Suppress the beep for all keys - let KeyDown handle everything
+    e->Handled = true;
+    e->SuppressKeyPress = true;
   }
 
   void Cell_KeyDown(Object ^ sender, KeyEventArgs ^ e) {
