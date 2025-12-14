@@ -322,6 +322,7 @@ ref class SudokuWrapper {
       
     } while (changes_made);
   }
+};  // End of SudokuWrapper class
 
 std::string unix2dos(const std::string& input) {
     std::string output;
