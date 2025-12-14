@@ -382,7 +382,6 @@ ref class MainForm : public System::Windows::Forms::Form {
         grid[i, j]->MaxLength = 1;
         grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 20);
         grid[i, j]->TextAlign = HorizontalAlignment::Center;
-        grid[i, j]->VerticalAlignment = System::Windows::Forms::VerticalAlignment::Middle;
         grid[i, j]->Tag = gcnew array<int>{i, j};
         grid[i, j]->TextChanged +=
             gcnew EventHandler(this, &MainForm::Cell_TextChanged);
@@ -390,8 +389,6 @@ ref class MainForm : public System::Windows::Forms::Form {
             gcnew KeyEventHandler(this, &MainForm::Cell_KeyDown);
         grid[i, j]->BackColor = Color::White;
         grid[i, j]->BorderStyle = BorderStyle::FixedSingle;
-        grid[i, j]->Margin = Padding(0);
-        grid[i, j]->Padding = Padding(0);
         gridContainer->Controls->Add(grid[i, j]);
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
