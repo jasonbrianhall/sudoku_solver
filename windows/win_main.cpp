@@ -39,6 +39,36 @@ ref class SudokuWrapper {
   Sudoku* nativeSudoku;
   AlgorithmType currentAlgorithm;
   array<array<bool>^>^ immutableCells;  // Track which cells are from generated puzzle
+  
+  // Undo history system
+  ref class BoardState {
+   public:
+    array<int, 3>^ boardData;
+    
+    BoardState(int source[9][9][9]) {
+      boardData = gcnew array<int, 3>(9, 9, 9);
+      for (int x = 0; x < 9; x++) {
+        for (int y = 0; y < 9; y++) {
+          for (int z = 0; z < 9; z++) {
+            boardData[x, y, z] = source[x][y][z];
+          }
+        }
+      }
+    }
+    
+    void CopyToBoard(int dest[9][9][9]) {
+      for (int x = 0; x < 9; x++) {
+        for (int y = 0; y < 9; y++) {
+          for (int z = 0; z < 9; z++) {
+            dest[x][y][z] = boardData[x, y, z];
+          }
+        }
+      }
+    }
+  };
+  
+  System::Collections::Generic::Stack<BoardState^>^ undoStack;
+  static const int MAX_UNDO_STATES = 100;
 
  public:
   SudokuWrapper() { 
@@ -53,12 +83,59 @@ ref class SudokuWrapper {
         immutableCells[i][j] = false;
       }
     }
+    
+    // Initialize undo stack
+    undoStack = gcnew System::Collections::Generic::Stack<BoardState^>();
   }
 
   ~SudokuWrapper() {
     if (nativeSudoku) {
       delete nativeSudoku;
       nativeSudoku = nullptr;
+    }
+  }
+  
+  // Save current board state to undo history
+  void SaveBoardState() {
+    if (undoStack->Count < MAX_UNDO_STATES) {
+      BoardState^ state = gcnew BoardState(nativeSudoku->board);
+      undoStack->Push(state);
+    }
+  }
+  
+  // Undo last change
+  bool Undo() {
+    if (undoStack->Count > 0) {
+      BoardState^ state = undoStack->Pop();
+      state->CopyToBoard(nativeSudoku->board);
+      return true;
+    }
+    return false;
+  }
+  
+  // Check if undo is available
+  bool CanUndo() {
+    return undoStack->Count > 0;
+  }
+  
+  // Get undo history count
+  int GetUndoCount() {
+    return undoStack->Count;
+  }
+  
+  // Clear undo history
+  void ClearUndoHistory() {
+    undoStack->Clear();
+  }
+  
+  // Clear board except immutable cells
+  void ClearBoardExceptImmutable() {
+    for (int x = 0; x < 9; x++) {
+      for (int y = 0; y < 9; y++) {
+        if (!immutableCells[x][y]) {
+          nativeSudoku->ClearValue(x, y);
+        }
+      }
     }
   }
   property Sudoku* NativeSudoku {
@@ -351,6 +428,9 @@ public ref class MainForm : public System::Windows::Forms::Form {
   TextBox^ instructionsBox;
   TextBox^ debugBox;
   Panel^ gridContainer;
+  ToolStripButton^ undoBtn;
+  ToolStripButton^ clearBoardBtn;
+  ToolStripLabel^ undoCountLabel;
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle1.xml");
@@ -545,6 +625,29 @@ public ref class MainForm : public System::Windows::Forms::Form {
     newGameBtn->AutoSize = false;
     newGameBtn->Size = System::Drawing::Size(100, 25);
     toolStrip->Items->Add(newGameBtn);
+    
+    // Add Undo button
+    undoBtn = gcnew ToolStripButton(
+        "Undo", nullptr,
+        gcnew EventHandler(this, &MainForm::Undo_Click));
+    undoBtn->AutoSize = false;
+    undoBtn->Size = System::Drawing::Size(60, 25);
+    undoBtn->Enabled = false;
+    toolStrip->Items->Add(undoBtn);
+    
+    // Add Undo count label
+    undoCountLabel = gcnew ToolStripLabel("Undo (0)");
+    toolStrip->Items->Add(undoCountLabel);
+    
+    // Add Clear Board button
+    clearBoardBtn = gcnew ToolStripButton(
+        "Clear Board", nullptr,
+        gcnew EventHandler(this, &MainForm::ClearBoard_Click));
+    clearBoardBtn->AutoSize = false;
+    clearBoardBtn->Size = System::Drawing::Size(85, 25);
+    toolStrip->Items->Add(clearBoardBtn);
+    
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
     
     // Add Toggle Notes button
     ToolStripButton^ toggleNotesBtn = gcnew ToolStripButton(
@@ -1191,6 +1294,20 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     int row = position[0];
     int col = position[1];
 
+    // Handle Ctrl+Z for undo
+    if (e->Control && e->KeyCode == Keys::Z) {
+      if (sudoku->CanUndo()) {
+        sudoku->Undo();
+        UpdateGrid();
+        UpdateUndoButtonState();
+        UpdateStatus("Undo completed - " + sudoku->GetUndoCount() + " states remaining");
+      } else {
+        UpdateStatus("Nothing to undo");
+      }
+      e->Handled = true;
+      return;
+    }
+
     switch (e->KeyCode) {
       case Keys::Left:
         if (col > 0) {
@@ -1275,10 +1392,13 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           e->Handled = true;
           break;
         }
+        // Save state before modification
+        sudoku->SaveBoardState();
         // Normal input mode - set the cell value
         sudoku->Clean();
         sudoku->SetValue(row, col, ((int)e->KeyCode - (int)Keys::D1));
         UpdateGrid();
+        UpdateUndoButtonState();
         e->Handled = true;
         break;
 
@@ -1290,8 +1410,11 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           e->Handled = true;
           break;
         }
+        // Save state before modification
+        sudoku->SaveBoardState();
         sudoku->ClearValue(row, col);
         UpdateGrid();
+        UpdateUndoButtonState();
         e->Handled = true;
         break;
 
@@ -1529,6 +1652,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   // Menu event handlers
   void NewGame_Click(Object ^ sender, EventArgs ^ e) {
     sudoku->NewGame();
+    sudoku->ClearUndoHistory();
     UpdateGrid();
     UpdateStatus("New game started");
   }
@@ -1724,6 +1848,45 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         UpdateStatus("Game loaded from " + filename);
     } else {
         UpdateStatus("Failed to load " + filename);
+    }
+  }
+
+  void Undo_Click(Object ^ sender, EventArgs ^ e) {
+    if (sudoku->Undo()) {
+      UpdateGrid();
+      UpdateUndoButtonState();
+      UpdateStatus("Undo completed - " + sudoku->GetUndoCount() + " states remaining");
+    } else {
+      UpdateStatus("Nothing to undo");
+    }
+  }
+
+  void ClearBoard_Click(Object ^ sender, EventArgs ^ e) {
+    DialogResult result = MessageBox::Show(
+      this,
+      "Clear all non-immutable cells? This action can be undone with Ctrl+Z.",
+      "Clear Board",
+      MessageBoxButtons::YesNo,
+      MessageBoxIcon::Question
+    );
+    
+    if (result == DialogResult::Yes) {
+      sudoku->SaveBoardState();
+      sudoku->ClearBoardExceptImmutable();
+      UpdateGrid();
+      UpdateUndoButtonState();
+      UpdateStatus("Board cleared - immutable cells preserved");
+    }
+  }
+
+  void UpdateUndoButtonState() {
+    if (undoBtn != nullptr) {
+      undoBtn->Enabled = sudoku->CanUndo();
+      if (sudoku->CanUndo()) {
+        undoCountLabel->Text = "Undo (" + sudoku->GetUndoCount() + ")";
+      } else {
+        undoCountLabel->Text = "Undo (0)";
+      }
     }
   }
 
