@@ -441,14 +441,6 @@ public ref class MainForm : public System::Windows::Forms::Form {
       UpdateGrid();
     }
   }
-      UpdateStatus("Generated new master puzzle");
-    } else {
-      UpdateStatus("Failed to generate master puzzle");
-      sudoku->NewGame();
-      UpdateGrid();
-    }
-    sudoku->Clean();
-  }
 
   void InitializeComponent() {
     this->Size = System::Drawing::Size(800, 600);
