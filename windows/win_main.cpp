@@ -373,7 +373,7 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize grid
     grid = gcnew array<TextBox ^, 2>(9, 9);
-    notes = gcnew array<Label ^, 2>(9, 9);  // Initialize notes array
+    notes = gcnew array<TextBox ^, 2>(9, 9);  // Initialize notes array as TextBox
     int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
 
     // Cell dimensions: 60x70 pixels (45 for main cell, 25 for notes below)
