@@ -15,13 +15,45 @@ using namespace System::Data;
 using namespace System::Drawing;
 
 namespace SudokuGame {
+
+// Enum for stateful algorithm selection (matches execution order in Solve())
+public enum class AlgorithmType {
+  ALG_NONE = 0,
+  ALG_STD_ELIM = 1,
+  ALG_LINE_ELIM = 2,
+  ALG_HIDDEN_SINGLES = 3,
+  ALG_HIDDEN_PAIRS = 4,
+  ALG_POINTING_PAIRS = 5,
+  ALG_X_WING = 6,
+  ALG_SWORDFISH = 7,
+  ALG_NAKED_SETS = 8,
+  ALG_XY_WING = 9,
+  ALG_XYZ_WING = 10,
+  ALG_SIMPLE_COLORING = 11,
+  ALG_SOLVE_ALL = 12
+};
+
 public
 ref class SudokuWrapper {
  private:
   Sudoku* nativeSudoku;
+  AlgorithmType currentAlgorithm;
+  array<array<bool>^>^ immutableCells;  // Track which cells are from generated puzzle
 
  public:
-  SudokuWrapper() { nativeSudoku = new Sudoku(); }
+  SudokuWrapper() { 
+    nativeSudoku = new Sudoku(); 
+    currentAlgorithm = AlgorithmType::ALG_NONE;
+    
+    // Initialize immutable cells array
+    immutableCells = gcnew array<array<bool>^>(9);
+    for (int i = 0; i < 9; i++) {
+      immutableCells[i] = gcnew array<bool>(9);
+      for (int j = 0; j < 9; j++) {
+        immutableCells[i][j] = false;
+      }
+    }
+  }
 
   ~SudokuWrapper() {
     if (nativeSudoku) {
@@ -32,13 +64,53 @@ ref class SudokuWrapper {
   property Sudoku* NativeSudoku {
     Sudoku* get() { return nativeSudoku; }
   }
+  
+  property AlgorithmType CurrentAlgorithm {
+    AlgorithmType get() { return currentAlgorithm; }
+    void set(AlgorithmType value) { currentAlgorithm = value; }
+  }
+  
+  // Mark all currently filled cells as immutable (from puzzle generation)
+  void MarkPuzzleAsGenerated() {
+    for (int row = 0; row < 9; row++) {
+      for (int col = 0; col < 9; col++) {
+        if (nativeSudoku->GetValue(col, row) != -1) {
+          immutableCells[col][row] = true;
+        } else {
+          immutableCells[col][row] = false;
+        }
+      }
+    }
+  }
+  
+  // Check if a cell is immutable (from puzzle generation)
+  bool IsCellImmutable(int col, int row) {
+    if (col >= 0 && col < 9 && row >= 0 && row < 9) {
+      return immutableCells[col][row];
+    }
+    return false;
+  }
+  
+  // Reset immutability when starting new game
+  void ClearImmutability() {
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        immutableCells[i][j] = false;
+      }
+    }
+  }
+  
   // Core game functions
   void SetValue(int x, int y, int value) {
     nativeSudoku->SetValue(x, y, value);
   }
 
   int GetValue(int x, int y) { return nativeSudoku->GetValue(x, y); }
-  void NewGame() { nativeSudoku->NewGame(); }
+  void NewGame() { 
+    nativeSudoku->NewGame(); 
+    currentAlgorithm = AlgorithmType::ALG_NONE;
+    ClearImmutability();
+  }
   void Solve() { nativeSudoku->Solve(); }
   void ClearValue(int x, int y) { nativeSudoku->ClearValue(x, y); }
   void Clean() { nativeSudoku->Clean(); }
@@ -77,7 +149,179 @@ ref class SudokuWrapper {
   void FindSimpleColoring() {
     nativeSudoku->FindSimpleColoring();
   }  // This seems broken right now
-};
+  
+  // Stateful solving - runs algorithms in sequence up to selected one
+  void SolveToAlgorithm(AlgorithmType targetAlgorithm) {
+    currentAlgorithm = targetAlgorithm;
+    
+    // Execute algorithms in order up to target
+    bool changes_made;
+    do {
+      changes_made = false;
+      
+      // PHASE 1: Basic eliminations
+      if (targetAlgorithm >= AlgorithmType::ALG_STD_ELIM) {
+        bool basic_changes;
+        do {
+          basic_changes = false;
+          
+          // StdElim
+          if (targetAlgorithm >= AlgorithmType::ALG_STD_ELIM) {
+            if (nativeSudoku->StdElim() > 0) {
+              basic_changes = true;
+              changes_made = true;
+            }
+            if (targetAlgorithm == AlgorithmType::ALG_STD_ELIM) {
+              return;
+            }
+          }
+          
+          // LinElim
+          if (targetAlgorithm >= AlgorithmType::ALG_LINE_ELIM) {
+            if (nativeSudoku->LinElim() > 0) {
+              basic_changes = true;
+              changes_made = true;
+            }
+            if (targetAlgorithm == AlgorithmType::ALG_LINE_ELIM) {
+              return;
+            }
+          }
+          
+        } while (basic_changes);
+      }
+      
+      // PHASE 2: Advanced techniques (one at a time, in order)
+      if (!changes_made) {
+        
+        // Hidden Singles
+        if (targetAlgorithm >= AlgorithmType::ALG_HIDDEN_SINGLES) {
+          if (nativeSudoku->FindHiddenSingles() > 0) {
+            changes_made = true;
+            if (targetAlgorithm == AlgorithmType::ALG_HIDDEN_SINGLES) {
+              return;
+            }
+            continue;
+          }
+          if (targetAlgorithm == AlgorithmType::ALG_HIDDEN_SINGLES) {
+            return;
+          }
+        }
+        
+        // Hidden Pairs
+        if (targetAlgorithm >= AlgorithmType::ALG_HIDDEN_PAIRS && !changes_made) {
+          if (nativeSudoku->FindHiddenPairs() > 0) {
+            changes_made = true;
+            if (targetAlgorithm == AlgorithmType::ALG_HIDDEN_PAIRS) {
+              return;
+            }
+            continue;
+          }
+          if (targetAlgorithm == AlgorithmType::ALG_HIDDEN_PAIRS) {
+            return;
+          }
+        }
+        
+        // Pointing Pairs
+        if (targetAlgorithm >= AlgorithmType::ALG_POINTING_PAIRS && !changes_made) {
+          if (nativeSudoku->FindPointingPairs() > 0) {
+            changes_made = true;
+            if (targetAlgorithm == AlgorithmType::ALG_POINTING_PAIRS) {
+              return;
+            }
+            continue;
+          }
+          if (targetAlgorithm == AlgorithmType::ALG_POINTING_PAIRS) {
+            return;
+          }
+        }
+        
+        // X-Wing
+        if (targetAlgorithm >= AlgorithmType::ALG_X_WING && !changes_made) {
+          if (nativeSudoku->FindXWing() > 0) {
+            changes_made = true;
+            if (targetAlgorithm == AlgorithmType::ALG_X_WING) {
+              return;
+            }
+            continue;
+          }
+          if (targetAlgorithm == AlgorithmType::ALG_X_WING) {
+            return;
+          }
+        }
+        
+        // Swordfish
+        if (targetAlgorithm >= AlgorithmType::ALG_SWORDFISH && !changes_made) {
+          if (nativeSudoku->FindSwordFish() > 0) {
+            changes_made = true;
+            if (targetAlgorithm == AlgorithmType::ALG_SWORDFISH) {
+              return;
+            }
+            continue;
+          }
+          if (targetAlgorithm == AlgorithmType::ALG_SWORDFISH) {
+            return;
+          }
+        }
+        
+        // Naked Sets
+        if (targetAlgorithm >= AlgorithmType::ALG_NAKED_SETS && !changes_made) {
+          if (nativeSudoku->FindNakedSets() > 0) {
+            changes_made = true;
+            if (targetAlgorithm == AlgorithmType::ALG_NAKED_SETS) {
+              return;
+            }
+            continue;
+          }
+          if (targetAlgorithm == AlgorithmType::ALG_NAKED_SETS) {
+            return;
+          }
+        }
+        
+        // XY-Wing
+        if (targetAlgorithm >= AlgorithmType::ALG_XY_WING && !changes_made) {
+          if (nativeSudoku->FindXYWing() > 0) {
+            changes_made = true;
+            if (targetAlgorithm == AlgorithmType::ALG_XY_WING) {
+              return;
+            }
+            continue;
+          }
+          if (targetAlgorithm == AlgorithmType::ALG_XY_WING) {
+            return;
+          }
+        }
+        
+        // XYZ-Wing
+        if (targetAlgorithm >= AlgorithmType::ALG_XYZ_WING && !changes_made) {
+          if (nativeSudoku->FindXYZWing() > 0) {
+            changes_made = true;
+            if (targetAlgorithm == AlgorithmType::ALG_XYZ_WING) {
+              return;
+            }
+            continue;
+          }
+          if (targetAlgorithm == AlgorithmType::ALG_XYZ_WING) {
+            return;
+          }
+        }
+        
+        // Simple Coloring
+        if (targetAlgorithm >= AlgorithmType::ALG_SIMPLE_COLORING && !changes_made) {
+          if (nativeSudoku->FindSimpleColoring() > 0) {
+            changes_made = true;
+            if (targetAlgorithm == AlgorithmType::ALG_SIMPLE_COLORING) {
+              return;
+            }
+            continue;
+          }
+          if (targetAlgorithm == AlgorithmType::ALG_SIMPLE_COLORING) {
+            return;
+          }
+        }
+      }
+      
+    } while (changes_made);
+  }
 
 std::string unix2dos(const std::string& input) {
     std::string output;
@@ -131,59 +375,72 @@ ref class MainForm : public System::Windows::Forms::Form {
   void GenerateEasy_Click(Object ^ sender, EventArgs ^ e) {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("easy")) {
+      sudoku->Clean();
+      sudoku->MarkPuzzleAsGenerated();  // Mark all filled cells as immutable
       UpdateGrid();
-      UpdateStatus("Generated new easy puzzle");
+      UpdateStatus("Generated new easy puzzle - clues are immutable");
     } else {
       UpdateStatus("Failed to generate easy puzzle");
       sudoku->NewGame();
       UpdateGrid();
     }
-    sudoku->Clean();
   }
 
   void GenerateMedium_Click(Object ^ sender, EventArgs ^ e) {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("medium")) {
+      sudoku->Clean();
+      sudoku->MarkPuzzleAsGenerated();  // Mark all filled cells as immutable
       UpdateGrid();
-      UpdateStatus("Generated new medium puzzle");
+      UpdateStatus("Generated new medium puzzle - clues are immutable");
     } else {
       UpdateStatus("Failed to generate medium puzzle");
       sudoku->NewGame();
       UpdateGrid();
     }
-    sudoku->Clean();
   }
 
   void GenerateHard_Click(Object ^ sender, EventArgs ^ e) {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("hard")) {
+      sudoku->Clean();
+      sudoku->MarkPuzzleAsGenerated();  // Mark all filled cells as immutable
       UpdateGrid();
-      UpdateStatus("Generated new hard puzzle");
+      UpdateStatus("Generated new hard puzzle - clues are immutable");
     } else {
       UpdateStatus("Failed to generate hard puzzle");
       sudoku->NewGame();
       UpdateGrid();
     }
-    sudoku->Clean();
   }
 
   void GenerateExpert_Click(Object ^ sender, EventArgs ^ e) {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("expert")) {
+      sudoku->Clean();
+      sudoku->MarkPuzzleAsGenerated();  // Mark all filled cells as immutable
       UpdateGrid();
-      UpdateStatus("Generated new expert puzzle");
+      UpdateStatus("Generated new expert puzzle - clues are immutable");
     } else {
       UpdateStatus("Failed to generate expert puzzle");
       sudoku->NewGame();
       UpdateGrid();
     }
-    sudoku->Clean();
   }
 
   void GenerateMaster_Click(Object ^ sender, EventArgs ^ e) {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("extreme")) {
+      sudoku->Clean();
+      sudoku->MarkPuzzleAsGenerated();  // Mark all filled cells as immutable
       UpdateGrid();
+      UpdateStatus("Generated new extreme puzzle - clues are immutable");
+    } else {
+      UpdateStatus("Failed to generate extreme puzzle");
+      sudoku->NewGame();
+      UpdateGrid();
+    }
+  }
       UpdateStatus("Generated new master puzzle");
     } else {
       UpdateStatus("Failed to generate master puzzle");
@@ -607,6 +864,22 @@ private: void SafeSetClipboard(DataObject^ data) {
       for (int j = 0; j < 9; j++) {
         int value = sudoku->GetValue(i, j);
         grid[i, j]->Text = (value >= 0) ? (value + 1).ToString() : "";
+        
+        // Check if this cell is immutable (from generated puzzle)
+        if (sudoku->IsCellImmutable(i, j)) {
+          // Display immutable cells in blue
+          grid[i, j]->BackColor = Color::LightBlue;
+          grid[i, j]->ForeColor = Color::DarkBlue;
+          grid[i, j]->ReadOnly = true;
+          grid[i, j]->Font = gcnew System::Drawing::Font(grid[i, j]->Font, System::Drawing::FontStyle::Bold);
+        } else {
+          // Regular cells are white
+          grid[i, j]->BackColor = Color::White;
+          grid[i, j]->ForeColor = Color::Black;
+          grid[i, j]->ReadOnly = false;
+          grid[i, j]->Font = gcnew System::Drawing::Font(grid[i, j]->Font, System::Drawing::FontStyle::Regular);
+        }
+        
         ClearNotes(i, j);  // Clear notes when updating grid
       }
     }
@@ -817,44 +1090,8 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       }
     }
 
-    // Create a copy of the current board state
-    Sudoku* solveCopy = new Sudoku();
-    
-    // Copy the current board to the solver copy
-    for (int row = 0; row < 9; row++) {
-      for (int col = 0; col < 9; col++) {
-        int value = sudoku->GetValue(row, col);
-        if (value != -1) {
-          solveCopy->SetValue(row, col, value);
-        }
-      }
-    }
-    
-    // Solve the copy without logging (SolveBasic doesn't log)
-    solveCopy->SolveBasic();
-    
-    // Compare each cell and highlight mismatches
-    for (int row = 0; row < 9; row++) {
-      for (int col = 0; col < 9; col++) {
-        int currentValue = sudoku->GetValue(row, col);
-        int solvedValue = solveCopy->GetValue(row, col);
-        
-        // Highlight if:
-        // 1. Cell is empty (currentValue == -1) and solver found a value, OR
-        // 2. Cell has a value that doesn't match the solution
-        if (currentValue == -1 || (currentValue != -1 && currentValue != solvedValue)) {
-          // Show what the correct value should be in light yellow
-          grid[row, col]->BackColor = Color::Yellow;
-          grid[row, col]->ForeColor = Color::Black;
-        }
-      }
-    }
-    
-    // Clean up the copy
-    delete solveCopy;
-
-    // FALLBACK: Highlight direct conflicts (duplicates) in red if solver validation missed them
-    // This catches immediate rule violations as a safety net
+    // ONLY check for direct conflicts (duplicates) - no solver validation
+    // This catches immediate rule violations
     for (int row = 0; row < 9; row++) {
       for (int col = 0; col < 9; col++) {
         int value = sudoku->GetValue(row, col);
@@ -895,7 +1132,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           }
         }
 
-        // If direct conflict found, highlight in red (overrides yellow)
+        // If direct conflict found, highlight in red
         if (hasConflict) {
           grid[row, col]->BackColor = Color::Red;
           grid[row, col]->ForeColor = Color::White;
@@ -907,18 +1144,71 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   void Cell_TextChanged(Object ^ sender, EventArgs ^ e) {
     TextBox ^ textBox = safe_cast<TextBox ^>(sender);
     array<int> ^ position = safe_cast<array<int> ^>(textBox->Tag);
+    int col = position[0];
+    int row = position[1];
 
+    // Check if this cell is immutable (from generated puzzle)
+    if (sudoku->IsCellImmutable(col, row)) {
+      // Only allow clearing immutable cells if we're trying to delete
+      if (textBox->Text->Length == 0) {
+        // Allow clearing
+        return;
+      } else {
+        // Try to parse the input
+        int value;
+        if (Int32::TryParse(textBox->Text, value) && value >= 1 && value <= 9) {
+          // Check if this matches the puzzle's original value
+          int originalValue = sudoku->GetValue(col, row);
+          
+          // If user entered the correct value, allow it
+          if (value - 1 == originalValue) {
+            // Correct! Keep the value
+            sudoku->SetValue(col, row, value - 1);
+            // Make textbox blue to indicate immutable
+            textBox->BackColor = Color::LightBlue;
+            textBox->ForeColor = Color::DarkBlue;
+            textBox->ReadOnly = true;  // Prevent further editing
+            ValidateAndHighlight();
+            return;
+          } else {
+            // Wrong! Reject the input
+            textBox->Text = System::Convert::ToString(originalValue + 1);
+            textBox->BackColor = Color::LightBlue;
+            textBox->ForeColor = Color::DarkBlue;
+            textBox->ReadOnly = true;
+            UpdateStatus("That cell is from the puzzle and cannot be changed");
+            ValidateAndHighlight();
+            return;
+          }
+        } else {
+          // Invalid input for immutable cell
+          int originalValue = sudoku->GetValue(col, row);
+          textBox->Text = System::Convert::ToString(originalValue + 1);
+          textBox->BackColor = Color::LightBlue;
+          textBox->ForeColor = Color::DarkBlue;
+          textBox->ReadOnly = true;
+          ValidateAndHighlight();
+          return;
+        }
+      }
+    }
+
+    // For non-immutable cells, allow normal editing
     if (textBox->Text->Length > 0) {
       int value;
       if (Int32::TryParse(textBox->Text, value) && value >= 1 && value <= 9) {
         sudoku->Clean();
-        sudoku->SetValue(position[0], position[1], value - 1);
+        sudoku->SetValue(col, row, value - 1);
+        textBox->BackColor = Color::White;  // User-entered cells are white
+        textBox->ForeColor = Color::Black;
       } else {
         textBox->Text = "";
       }
     } else {
       // Clear the cell when text is empty
-      sudoku->ClearValue(position[0], position[1]);
+      sudoku->ClearValue(col, row);
+      textBox->BackColor = Color::White;
+      textBox->ForeColor = Color::Black;
     }
     
     // Validate and highlight any conflicts
