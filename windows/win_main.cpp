@@ -1141,9 +1141,16 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
     // Check if this cell is immutable (from generated puzzle)
     if (sudoku->IsCellImmutable(col, row)) {
-      // Only allow clearing immutable cells if we're trying to delete
+      // Immutable cells cannot be changed or cleared - restore original value
       if (textBox->Text->Length == 0) {
-        // Allow clearing
+        // User tried to clear it - restore the original value
+        int originalValue = sudoku->GetValue(col, row);
+        textBox->Text = System::Convert::ToString(originalValue + 1);
+        textBox->BackColor = Color::LightBlue;
+        textBox->ForeColor = Color::DarkBlue;
+        textBox->ReadOnly = true;
+        UpdateStatus("That cell is from the puzzle and cannot be cleared");
+        ValidateAndHighlight();
         return;
       } else {
         // Try to parse the input
