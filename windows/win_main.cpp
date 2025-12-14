@@ -337,8 +337,7 @@ std::string unix2dos(const std::string& input) {
     return output;
 }
 
-public
-ref class MainForm : public System::Windows::Forms::Form {
+public ref class MainForm : public System::Windows::Forms::Form {
  private:
   SudokuWrapper ^ sudoku;
   array<TextBox ^, 2> ^ grid;
