@@ -1168,6 +1168,19 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   }
 
   void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
+    TextBox ^ textBox = safe_cast<TextBox ^>(sender);
+    array<int> ^ position = safe_cast<array<int> ^>(textBox->Tag);
+    int row = position[0];
+    int col = position[1];
+    
+    // Block any number input (0-9) for immutable cells
+    if (sudoku->IsCellImmutable(row, col)) {
+      if (e->KeyChar >= '0' && e->KeyChar <= '9') {
+        e->Handled = true;
+        return;
+      }
+    }
+    
     // Suppress the beep for all keys - let KeyDown handle everything
     e->Handled = true;
   }
@@ -1256,6 +1269,12 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       case Keys::D7:
       case Keys::D8:
       case Keys::D9:
+        // Check if cell is immutable
+        if (sudoku->IsCellImmutable(row, col)) {
+          UpdateStatus("That cell is from the puzzle and cannot be changed");
+          e->Handled = true;
+          break;
+        }
         // Normal input mode - set the cell value
         sudoku->Clean();
         sudoku->SetValue(row, col, ((int)e->KeyCode - (int)Keys::D1));
@@ -1265,6 +1284,12 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
       // Clear cell with 0
       case Keys::D0:
+        // Check if cell is immutable
+        if (sudoku->IsCellImmutable(row, col)) {
+          UpdateStatus("That cell is from the puzzle and cannot be changed");
+          e->Handled = true;
+          break;
+        }
         sudoku->ClearValue(row, col);
         UpdateGrid();
         e->Handled = true;
