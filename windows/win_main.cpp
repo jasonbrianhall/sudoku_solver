@@ -99,12 +99,16 @@ ref class MainForm : public System::Windows::Forms::Form {
  private:
   SudokuWrapper ^ sudoku;
   array<TextBox ^, 2> ^ grid;
+  array<Label ^, 2> ^ notesLabels;  // Labels for displaying pencil marks
   MenuStrip ^ menuStrip;
   ToolStrip ^ toolStrip;
   StatusStrip ^ statusStrip;
   ToolStripStatusLabel ^ statusLabel;
   TextBox^ instructionsBox;
   TextBox^ debugBox;
+  Panel^ gridContainer;
+  bool notesMode = false;
+  array<bool, 3> ^ notes;  // notes[row,col,candidate] - true if candidate 0-8 is marked
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle1.xml");
@@ -196,6 +200,16 @@ ref class MainForm : public System::Windows::Forms::Form {
     this->Text = L"Sudoku Solver";
     this->StartPosition = FormStartPosition::CenterScreen;
 
+    // Initialize notes array for pencil marks
+    notes = gcnew array<bool, 3>(9, 9, 9);
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        for (int k = 0; k < 9; k++) {
+          notes[i, j, k] = false;
+        }
+      }
+    }
+
     // Initialize StatusStrip
     statusStrip = gcnew StatusStrip();
     statusLabel = gcnew ToolStripStatusLabel("Ready");
@@ -268,9 +282,19 @@ ref class MainForm : public System::Windows::Forms::Form {
         "Save as spreadsheet puzzle4.xml F(12)", nullptr,
         gcnew EventHandler(this, &MainForm::GeneratePuzzle4)));
 
+    // Help Menu
+    ToolStripMenuItem^ helpMenu = gcnew ToolStripMenuItem("Help");
+    helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "About", nullptr,
+        gcnew EventHandler(this, &MainForm::About_Click)));
+    helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Support the Author (Buy Me a Coffee)", nullptr,
+        gcnew EventHandler(this, &MainForm::SupportAuthor_Click)));
+
     // Add Menus to MenuStrip
     menuStrip->Items->Add(fileMenu);
     menuStrip->Items->Add(generateBoardMenu);
+    menuStrip->Items->Add(helpMenu);
 
     // Attach MenuStrip to the Form
     this->MainMenuStrip = menuStrip;
@@ -278,6 +302,25 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize ToolStrip
     toolStrip = gcnew ToolStrip();
+    
+    // Notes Mode section
+    toolStrip->Items->Add(gcnew ToolStripLabel("Notes Mode: "));
+    ToolStripButton^ notesBtn = gcnew ToolStripButton(
+        "Toggle (T)", nullptr,
+        gcnew EventHandler(this, &MainForm::ToggleNotesMode_Click));
+    notesBtn->CheckOnClick = true;
+    toolStrip->Items->Add(notesBtn);
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
+    
+    // Game section
+    ToolStripButton^ newGameBtn = gcnew ToolStripButton(
+        "New Game (Z)", nullptr,
+        gcnew EventHandler(this, &MainForm::NewGame_Click));
+    newGameBtn->AutoSize = false;
+    newGameBtn->Size = System::Drawing::Size(100, 25);
+    toolStrip->Items->Add(newGameBtn);
+    toolStrip->Items->Add(gcnew ToolStripSeparator());
+    
     toolStrip->Items->Add(gcnew ToolStripButton(
         "Complete Auto-Solve (A)", nullptr,
         gcnew EventHandler(this, &MainForm::Solve_Click)));
@@ -356,21 +399,42 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize grid
     grid = gcnew array<TextBox ^, 2>(9, 9);
+    notesLabels = gcnew array<Label ^, 2>(9, 9);
     int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
 
-    // Create a container panel for the Sudoku grid
-    Panel ^ gridContainer = gcnew Panel();
+    // Create a container panel for the Sudoku grid with white background
+    gridContainer = gcnew Panel();
     gridContainer->Location = Point(50, gridTop);
     gridContainer->Size = System::Drawing::Size(405, 405);
-    gridContainer->BackColor = Color::Black;
+    gridContainer->BackColor = Color::White;
     this->Controls->Add(gridContainer);
 
-    // Initialize grid cells
+    // Draw bold grid lines for 3x3 boxes FIRST (underneath cells)
+    for (int i = 0; i <= 9; i++) {
+      int thickness = (i % 3 == 0) ? 3 : 1;
+      int offset = (i % 3 == 0) ? 1 : 0;
+      
+      Panel ^ vline = gcnew Panel();
+      vline->BorderStyle = BorderStyle::None;
+      vline->Location = Point(i * 45 - offset, 0);
+      vline->Size = System::Drawing::Size(thickness, 405);
+      vline->BackColor = Color::Black;
+      gridContainer->Controls->Add(vline);
+
+      Panel ^ hline = gcnew Panel();
+      hline->BorderStyle = BorderStyle::None;
+      hline->Location = Point(0, i * 45 - offset);
+      hline->Size = System::Drawing::Size(405, thickness);
+      hline->BackColor = Color::Black;
+      gridContainer->Controls->Add(hline);
+    }
+
+    // Initialize grid cells as proper cells (45x45 pixels each, no gaps)
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
         grid[i, j] = gcnew TextBox();
-        grid[i, j]->Size = System::Drawing::Size(40, 40);
-        grid[i, j]->Location = System::Drawing::Point(3 + j * 45, 3 + i * 45);
+        grid[i, j]->Size = System::Drawing::Size(45, 45);  // Full cell size
+        grid[i, j]->Location = System::Drawing::Point(j * 45, i * 45);  // Perfectly positioned
         grid[i, j]->MaxLength = 1;
         grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 20);
         grid[i, j]->TextAlign = HorizontalAlignment::Center;
@@ -379,28 +443,29 @@ ref class MainForm : public System::Windows::Forms::Form {
             gcnew EventHandler(this, &MainForm::Cell_TextChanged);
         grid[i, j]->KeyDown +=
             gcnew KeyEventHandler(this, &MainForm::Cell_KeyDown);
+        grid[i, j]->KeyPress +=
+            gcnew KeyPressEventHandler(this, &MainForm::Cell_KeyPress);
         grid[i, j]->BackColor = Color::White;
+        grid[i, j]->BorderStyle = BorderStyle::None;
         gridContainer->Controls->Add(grid[i, j]);
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
       }
     }
 
-    // Draw grid lines
-    for (int i = 0; i <= 9; i++) {
-      Panel ^ vline = gcnew Panel();
-      vline->BorderStyle = BorderStyle::None;
-      vline->Location = Point(i * 45, 0);
-      vline->Size = System::Drawing::Size(i % 3 == 0 ? 3 : 1, 405);
-      vline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
-      gridContainer->Controls->Add(vline);
-
-      Panel ^ hline = gcnew Panel();
-      hline->BorderStyle = BorderStyle::None;
-      hline->Location = Point(0, i * 45);
-      hline->Size = System::Drawing::Size(405, i % 3 == 0 ? 3 : 1);
-      hline->BackColor = i % 3 == 0 ? Color::Red : Color::LightGray;
-      gridContainer->Controls->Add(hline);
+    // Initialize notes labels (pencil marks displayed in top-left of each cell)
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        notesLabels[i, j] = gcnew Label();
+        notesLabels[i, j]->Location = System::Drawing::Point(j * 45, i * 45);
+        notesLabels[i, j]->Size = System::Drawing::Size(45, 45);
+        notesLabels[i, j]->Font = gcnew System::Drawing::Font(L"Courier New", 6, FontStyle::Bold);
+        notesLabels[i, j]->ForeColor = Color::Blue;
+        notesLabels[i, j]->BackColor = Color::Transparent;
+        notesLabels[i, j]->TextAlign = ContentAlignment::TopLeft;
+        notesLabels[i, j]->AutoSize = false;
+        gridContainer->Controls->Add(notesLabels[i, j]);
+      }
     }
 
     Label^ debugLabel = gcnew Label();
@@ -424,6 +489,9 @@ ref class MainForm : public System::Windows::Forms::Form {
     debugTimer->Interval = 100; // Check every 100ms
     debugTimer->Tick += gcnew EventHandler(this, &MainForm::UpdateDebugBox);
     debugTimer->Start();
+
+    // Handle form resize to expand grid
+    this->Resize += gcnew EventHandler(this, &MainForm::Form_Resize);
   }
 
   void UpdateDebugBox(Object^ sender, EventArgs^ e) {
@@ -436,6 +504,84 @@ ref class MainForm : public System::Windows::Forms::Form {
           debugBox->SelectionStart = debugBox->Text->Length;
           debugBox->ScrollToCaret();
       }
+  }
+
+  void Form_Resize(Object^ sender, EventArgs^ e) {
+    int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
+    int availableWidth = this->ClientSize.Width - 100;  // 50px margin left, 50px for debug
+    int availableHeight = this->ClientSize.Height - gridTop - statusStrip->Height - 20;
+    
+    // Keep grid square and fit within available space
+    int gridSize = System::Math::Min(availableWidth, availableHeight);
+    gridSize = System::Math::Max(gridSize, 180);  // Minimum size
+    
+    gridContainer->Size = System::Drawing::Size(gridSize, gridSize);
+    gridContainer->Location = Point(50, gridTop);
+    
+    // Calculate cell size based on grid size
+    int cellSize = gridSize / 9;
+    
+    // Calculate font size based on cell size (proportional)
+    float fontSize = System::Math::Max(8.0f, (float)cellSize * 0.6f);
+    
+    // Update all cells and grid lines
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        grid[i, j]->Size = System::Drawing::Size(cellSize, cellSize);
+        grid[i, j]->Location = System::Drawing::Point(j * cellSize, i * cellSize);
+        grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", fontSize);
+      }
+    }
+    
+    // Update grid lines
+    gridContainer->Controls->Clear();
+    for (int i = 0; i <= 9; i++) {
+      int thickness = (i % 3 == 0) ? 3 : 1;
+      int offset = (i % 3 == 0) ? 1 : 0;
+      
+      Panel ^ vline = gcnew Panel();
+      vline->BorderStyle = BorderStyle::None;
+      vline->Location = Point(i * cellSize - offset, 0);
+      vline->Size = System::Drawing::Size(thickness, gridSize);
+      vline->BackColor = Color::Black;
+      gridContainer->Controls->Add(vline);
+
+      Panel ^ hline = gcnew Panel();
+      hline->BorderStyle = BorderStyle::None;
+      hline->Location = Point(0, i * cellSize - offset);
+      hline->Size = System::Drawing::Size(gridSize, thickness);
+      hline->BackColor = Color::Black;
+      gridContainer->Controls->Add(hline);
+    }
+    
+    // Re-add cells on top of grid lines
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        gridContainer->Controls->Add(grid[i, j]);
+      }
+    }
+
+    // Add notes labels on TOP of cells so they're visible
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        gridContainer->Controls->Add(notesLabels[i, j]);
+        notesLabels[i, j]->BringToFront();
+      }
+    }
+
+    // Update notes labels size and position
+    float notesfontSize = System::Math::Max(5.0f, (float)cellSize * 0.2f);
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        notesLabels[i, j]->Location = System::Drawing::Point(j * cellSize, i * cellSize);
+        notesLabels[i, j]->Size = System::Drawing::Size(cellSize, cellSize);
+        notesLabels[i, j]->Font = gcnew System::Drawing::Font(L"Courier New", notesfontSize, FontStyle::Bold);
+      }
+    }
+    
+    // Adjust debug box
+    debugBox->Location = Point(50 + gridSize + 20, gridTop);
+    debugBox->Size = System::Drawing::Size(availableWidth - gridSize - 20, gridSize);
   }
 
 private: void SafeSetClipboard(DataObject^ data) {
@@ -459,6 +605,7 @@ private: void SafeSetClipboard(DataObject^ data) {
         grid[i, j]->Text = (value >= 0) ? (value + 1).ToString() : "";
       }
     }
+    ValidateAndHighlight();
   }
 
     String^ GetBoardAsText() {
@@ -639,9 +786,124 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
   }
 
+  void ToggleNotesMode_Click(Object ^ sender, EventArgs ^ e) {
+    notesMode = !notesMode;
+    
+    // When switching modes, update all cells
+    if (notesMode) {
+      // Entering notes mode - display notes
+      for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+          DisplayNotes(i, j);
+        }
+      }
+      UpdateStatus("Notes Mode ON (numbers 1-9 add/remove notes)");
+    } else {
+      // Exiting notes mode - show values again
+      UpdateGrid();
+      UpdateStatus("Notes Mode OFF");
+    }
+  }
+
+  void DisplayNotes(int row, int col) {
+    // Only display notes if in notes mode
+    if (!notesMode) {
+      return;
+    }
+    
+    // Create a 3x3 grid representation of candidates 1-9
+    // Layout: 1 2 3
+    //         4 5 6
+    //         7 8 9
+    String^ noteText = "";
+    
+    for (int i = 0; i < 9; i++) {
+      if (notes[row, col, i]) {
+        noteText += (i + 1).ToString();
+      } else {
+        noteText += " ";
+      }
+      
+      // Add spacing between columns
+      if ((i + 1) % 3 != 0) {
+        noteText += " ";
+      } else if (i < 8) {
+        // Line break after rows (except last)
+        noteText += "\r\n";
+      }
+    }
+    
+    // Display in cell's text if there are notes
+    if (!String::IsNullOrWhiteSpace(noteText)) {
+      grid[row, col]->Text = noteText;
+      grid[row, col]->Font = gcnew System::Drawing::Font(L"Courier New", 6);
+      grid[row, col]->ForeColor = Color::Blue;
+    }
+  }
+
+  void ValidateAndHighlight() {
+    // Clear all previous highlights
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        grid[i, j]->BackColor = Color::White;
+        grid[i, j]->ForeColor = Color::Black;
+      }
+    }
+
+    // Check each cell for conflicts
+    for (int row = 0; row < 9; row++) {
+      for (int col = 0; col < 9; col++) {
+        int value = sudoku->GetValue(row, col);
+        if (value == -1) continue;  // Skip empty cells
+
+        // Check row for duplicates
+        for (int c = 0; c < 9; c++) {
+          if (c != col && sudoku->GetValue(row, c) == value) {
+            // Highlight both cells as conflicts
+            grid[row, col]->BackColor = Color::Red;
+            grid[row, col]->ForeColor = Color::White;
+            grid[row, c]->BackColor = Color::Red;
+            grid[row, c]->ForeColor = Color::White;
+          }
+        }
+
+        // Check column for duplicates
+        for (int r = 0; r < 9; r++) {
+          if (r != row && sudoku->GetValue(r, col) == value) {
+            // Highlight both cells as conflicts
+            grid[row, col]->BackColor = Color::Red;
+            grid[row, col]->ForeColor = Color::White;
+            grid[r, col]->BackColor = Color::Red;
+            grid[r, col]->ForeColor = Color::White;
+          }
+        }
+
+        // Check 3x3 box for duplicates
+        int boxRow = (row / 3) * 3;
+        int boxCol = (col / 3) * 3;
+        for (int r = boxRow; r < boxRow + 3; r++) {
+          for (int c = boxCol; c < boxCol + 3; c++) {
+            if ((r != row || c != col) && sudoku->GetValue(r, c) == value) {
+              // Highlight both cells as conflicts
+              grid[row, col]->BackColor = Color::Red;
+              grid[row, col]->ForeColor = Color::White;
+              grid[r, c]->BackColor = Color::Red;
+              grid[r, c]->ForeColor = Color::White;
+            }
+          }
+        }
+      }
+    }
+  }
+
   void Cell_TextChanged(Object ^ sender, EventArgs ^ e) {
     TextBox ^ textBox = safe_cast<TextBox ^>(sender);
     array<int> ^ position = safe_cast<array<int> ^>(textBox->Tag);
+
+    // Don't process if in notes mode - notes are handled by KeyDown
+    if (notesMode) {
+      return;
+    }
 
     if (textBox->Text->Length > 0) {
       int value;
@@ -651,7 +913,18 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       } else {
         textBox->Text = "";
       }
+    } else {
+      // Clear the cell when text is empty
+      sudoku->ClearValue(position[0], position[1]);
     }
+    
+    // Validate and highlight any conflicts
+    ValidateAndHighlight();
+  }
+
+  void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
+    // Suppress the beep for all keys - let KeyDown handle everything
+    e->Handled = true;
   }
 
   void Cell_KeyDown(Object ^ sender, KeyEventArgs ^ e) {
@@ -738,16 +1011,40 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       case Keys::D7:
       case Keys::D8:
       case Keys::D9:
-        sudoku->Clean();
-        sudoku->SetValue(row, col, ((int)e->KeyCode - (int)Keys::D1));
-        UpdateGrid();
+        if (notesMode) {
+          // Toggle note for this number
+          int noteNum = ((int)e->KeyCode - (int)Keys::D1);
+          notes[row, col, noteNum] = !notes[row, col, noteNum];
+          DisplayNotes(row, col);
+          UpdateStatus("Note " + (noteNum + 1).ToString() + " " + (notes[row, col, noteNum] ? "added" : "removed"));
+        } else {
+          // Normal input mode - set the cell value
+          sudoku->Clean();
+          sudoku->SetValue(row, col, ((int)e->KeyCode - (int)Keys::D1));
+          UpdateGrid();
+        }
         e->Handled = true;
         break;
 
       // Clear cell with 0
       case Keys::D0:
-        sudoku->ClearValue(row, col);
-        UpdateGrid();
+        if (notesMode) {
+          // Clear all notes in the cell
+          for (int i = 0; i < 9; i++) {
+            notes[row, col, i] = false;
+          }
+          notesLabels[row, col]->Text = "";
+          UpdateStatus("All notes cleared");
+        } else {
+          sudoku->ClearValue(row, col);
+          UpdateGrid();
+        }
+        e->Handled = true;
+        break;
+
+      // Toggle notes mode with T key
+      case Keys::T:
+        ToggleNotesMode_Click(nullptr, nullptr);
         e->Handled = true;
         break;
 
@@ -974,6 +1271,14 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   // Menu event handlers
   void NewGame_Click(Object ^ sender, EventArgs ^ e) {
     sudoku->NewGame();
+    // Clear all notes
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        for (int k = 0; k < 9; k++) {
+          notes[i, j, k] = false;
+        }
+      }
+    }
     UpdateGrid();
     UpdateStatus("New game started");
   }
@@ -991,6 +1296,34 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
   void Exit_Click(Object ^ sender, EventArgs ^ e) {
      Application::Exit(); 
+  }
+
+  void About_Click(Object ^ sender, EventArgs ^ e) {
+    String^ aboutText = 
+      "Sudoku Solver\r\n\r\n" +
+      "(C) 2025 Jason Brian Hall\r\n" +
+      "MIT License - https://opensource.org/licenses/MIT\r\n\r\n" +
+      "GitHub: https://github.com/jasonbrianhall/sudoku_solver\r\n\r\n" +
+      "A powerful Sudoku puzzle generator and solver with support for multiple difficulty levels " +
+      "and advanced solving techniques including X-Wing, Swordfish, XY-Wing, and XYZ-Wing patterns.\r\n\r\n" +
+      "Features:\r\n" +
+      "- Generate puzzles at 6 difficulty levels\r\n" +
+      "- Real-time conflict detection and highlighting\r\n" +
+      "- Pencil mark notes for candidates\r\n" +
+      "- Multiple solving techniques\r\n" +
+      "- Save/load games\r\n" +
+      "- Export to Excel XML\r\n";
+
+    MessageBox::Show(this, aboutText, "About Sudoku Solver", MessageBoxButtons::OK, MessageBoxIcon::Information);
+  }
+
+  void SupportAuthor_Click(Object ^ sender, EventArgs ^ e) {
+    String^ supportText = 
+      "If you enjoy this Sudoku Solver, please consider supporting the author!\r\n\r\n" +
+      "Visit: https://buymeacoffee.com/jasonbrianhall\r\n\r\n" +
+      "Your support helps fund development and keeps this project active.";
+
+    MessageBox::Show(this, supportText, "Support the Author", MessageBoxButtons::OK, MessageBoxIcon::Information);
   }
 
   // Solving technique handlers
