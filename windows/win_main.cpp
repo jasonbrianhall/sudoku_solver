@@ -98,6 +98,8 @@ ref class MainForm : public System::Windows::Forms::Form {
  private:
   SudokuWrapper ^ sudoku;
   array<TextBox ^, 2> ^ grid;
+  array<TextBox ^, 2> ^ notes;  // 2D array for cell notes - changed to TextBox
+  bool notesVisible;  // Track whether notes are currently visible
   MenuStrip ^ menuStrip;
   ToolStrip ^ toolStrip;
   StatusStrip ^ statusStrip;
@@ -294,6 +296,15 @@ ref class MainForm : public System::Windows::Forms::Form {
     newGameBtn->AutoSize = false;
     newGameBtn->Size = System::Drawing::Size(100, 25);
     toolStrip->Items->Add(newGameBtn);
+    
+    // Add Toggle Notes button
+    ToolStripButton^ toggleNotesBtn = gcnew ToolStripButton(
+        "Toggle Notes (T)", nullptr,
+        gcnew EventHandler(this, &MainForm::ToggleNotes_Click));
+    toggleNotesBtn->AutoSize = false;
+    toggleNotesBtn->Size = System::Drawing::Size(110, 25);
+    toolStrip->Items->Add(toggleNotesBtn);
+    
     toolStrip->Items->Add(gcnew ToolStripSeparator());
     
     toolStrip->Items->Add(gcnew ToolStripButton(
@@ -316,12 +327,11 @@ ref class MainForm : public System::Windows::Forms::Form {
     instructionsBox->Size = System::Drawing::Size(700, 100);
 
     instructionsBox->Text = L"Instructions:\r\n\r\n"
-        L"  - Use the mouse cursor to move around the board (scroll button will change the value and middle mouse will clear)\r\n"
-        L"  - Use the keypad to enter numbers (0 to clear the current cell).\r\n"
-        L"  - Press 'A' to solve the puzzle.\r\n"
-        L"  - Press F1-F4 or Shift+F1 to generate increasingly difficult random puzzles.\r\n"
-        L"  - Press F5-F8 to save, and Shift+F5-F8 to load.";
-        L"  - Press F9-F12 to save as XML Spreadsheet in the format puzzle1.xml, puzzle2.xml, etc.";
+        L"  - Use keypad (1-9) to enter numbers in cells. Middle mouse click or press 0 to clear.\r\n"
+        L"  - Press 'T' or click 'Toggle Notes' to show/hide the notes areas under cells.\r\n"
+        L"  - Click in a notes area to add candidate numbers (e.g., '2 5 8').\r\n"
+        L"  - Press 'A' for auto-solve. Press F1-F4 for new puzzles (easy to expert). Press Shift+F1 for master.\r\n"
+        L"  - Press F5-F8 to save, Shift+F5-F8 to load. F9-F12 to export as XML. Arrow keys navigate cells.";
 
     instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9); // Consistent fixed-width font
     this->Controls->Add(instructionsBox);
@@ -372,14 +382,22 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     this->Controls->Add(toolStrip);
 
+    // Initialize notes visibility state (hidden by default)
+    notesVisible = false;
+
     // Initialize grid
     grid = gcnew array<TextBox ^, 2>(9, 9);
+    notes = gcnew array<TextBox ^, 2>(9, 9);  // Initialize notes array as TextBox
     int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
+
+    // Cell dimensions: 60x70 pixels (45 for main cell, 25 for notes below)
+    int cellWidth = 60;
+    int cellHeight = 70;
 
     // Create a container panel for the Sudoku grid with white background
     gridContainer = gcnew Panel();
     gridContainer->Location = Point(50, gridTop);
-    gridContainer->Size = System::Drawing::Size(405, 405);
+    gridContainer->Size = System::Drawing::Size(540, 630);  // 9 * 60 = 540 wide, 9 * 70 = 630 tall
     gridContainer->BackColor = Color::White;
     this->Controls->Add(gridContainer);
 
@@ -390,25 +408,26 @@ ref class MainForm : public System::Windows::Forms::Form {
       
       Panel ^ vline = gcnew Panel();
       vline->BorderStyle = BorderStyle::None;
-      vline->Location = Point(i * 45 - offset, 0);
-      vline->Size = System::Drawing::Size(thickness, 405);
+      vline->Location = Point(i * cellWidth - offset, 0);
+      vline->Size = System::Drawing::Size(thickness, 630);
       vline->BackColor = Color::Black;
       gridContainer->Controls->Add(vline);
 
       Panel ^ hline = gcnew Panel();
       hline->BorderStyle = BorderStyle::None;
-      hline->Location = Point(0, i * 45 - offset);
-      hline->Size = System::Drawing::Size(405, thickness);
+      hline->Location = Point(0, i * cellHeight - offset);
+      hline->Size = System::Drawing::Size(540, thickness);
       hline->BackColor = Color::Black;
       gridContainer->Controls->Add(hline);
     }
 
-    // Initialize grid cells as proper cells (45x45 pixels each, no gaps)
+    // Initialize grid cells with notes area below
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
+        // Create main cell TextBox (45 pixels tall)
         grid[i, j] = gcnew TextBox();
-        grid[i, j]->Size = System::Drawing::Size(45, 45);  // Full cell size
-        grid[i, j]->Location = System::Drawing::Point(j * 45, i * 45);  // Perfectly positioned
+        grid[i, j]->Size = System::Drawing::Size(60, 45);
+        grid[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight);
         grid[i, j]->MaxLength = 1;
         grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 20);
         grid[i, j]->TextAlign = HorizontalAlignment::Center;
@@ -424,12 +443,27 @@ ref class MainForm : public System::Windows::Forms::Form {
         gridContainer->Controls->Add(grid[i, j]);
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
+
+        // Create notes TextBox below the cell (25 pixels tall) - now editable!
+        notes[i, j] = gcnew TextBox();
+        notes[i, j]->Size = System::Drawing::Size(60, 25);
+        notes[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight + 45);
+        notes[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 7);
+        notes[i, j]->Multiline = true;
+        notes[i, j]->WordWrap = true;
+        notes[i, j]->BackColor = Color::WhiteSmoke;
+        notes[i, j]->BorderStyle = BorderStyle::FixedSingle;
+        notes[i, j]->Tag = gcnew array<int>{i, j};
+        notes[i, j]->ScrollBars = ScrollBars::None;
+        notes[i, j]->AcceptsTab = false;
+        notes[i, j]->Visible = false;  // Hidden by default
+        gridContainer->Controls->Add(notes[i, j]);
       }
     }
 
     Label^ debugLabel = gcnew Label();
     debugLabel->Text = "Debug Output";
-    debugLabel->Location = Point(500, gridTop);
+    debugLabel->Location = Point(600, gridTop);
     debugLabel->AutoSize = true;
     this->Controls->Add(debugLabel);
 
@@ -438,8 +472,8 @@ ref class MainForm : public System::Windows::Forms::Form {
     debugBox->Multiline = true;
     debugBox->ScrollBars = ScrollBars::Vertical;
     debugBox->ReadOnly = true;
-    debugBox->Location = Point(500, gridTop+20);  // Position next to grid
-    debugBox->Size = System::Drawing::Size(250, 385);  // Same height as grid
+    debugBox->Location = Point(600, gridTop+20);  // Position next to grid
+    debugBox->Size = System::Drawing::Size(150, 600);  // Adjusted height to match new grid
     debugBox->Font = gcnew System::Drawing::Font(L"Consolas", 9);
     this->Controls->Add(debugBox);
 
@@ -467,28 +501,54 @@ ref class MainForm : public System::Windows::Forms::Form {
 
   void Form_Resize(Object^ sender, EventArgs^ e) {
     int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
-    int availableWidth = this->ClientSize.Width - 100;  // 50px margin left, 50px for debug
+    int availableWidth = this->ClientSize.Width - 100;  // 50px margin left, 50px for debug box
     int availableHeight = this->ClientSize.Height - gridTop - statusStrip->Height - 20;
     
-    // Keep grid square and fit within available space
-    int gridSize = System::Math::Min(availableWidth, availableHeight);
-    gridSize = System::Math::Max(gridSize, 180);  // Minimum size
+    // Grid proportions: 60px per cell × 9 = 540 wide
+    //                   70px per cell × 9 = 630 tall (includes 25px notes area)
+    // Aspect ratio = 540:630 = 6:7
     
-    gridContainer->Size = System::Drawing::Size(gridSize, gridSize);
+    // Calculate grid size while maintaining aspect ratio
+    int gridWidth = availableWidth;
+    int gridHeight = (gridWidth * 7) / 6;  // Maintain 6:7 aspect ratio
+    
+    // If height is too large, scale down based on height instead
+    if (gridHeight > availableHeight) {
+      gridHeight = availableHeight;
+      gridWidth = (gridHeight * 6) / 7;  // Maintain 6:7 aspect ratio
+    }
+    
+    // Minimum sizes
+    gridWidth = System::Math::Max(gridWidth, 240);   // At least 60px × 4 cells
+    gridHeight = System::Math::Max(gridHeight, 280);  // At least 70px × 4 cells
+    
+    gridContainer->Size = System::Drawing::Size(gridWidth, gridHeight);
     gridContainer->Location = Point(50, gridTop);
     
-    // Calculate cell size based on grid size
-    int cellSize = gridSize / 9;
+    // Calculate cell sizes (width and height can be different)
+    int cellWidth = gridWidth / 9;
+    int cellHeight = gridHeight / 9;
+    int mainCellHeight = (cellHeight * 45) / 70;  // 45 pixels for main cell out of 70 total
+    int notesCellHeight = cellHeight - mainCellHeight;  // Remaining for notes
     
-    // Calculate font size based on cell size (proportional)
-    float fontSize = System::Math::Max(8.0f, (float)cellSize * 0.6f);
-    
-    // Update all cells and grid lines
+    // Update all cells and notes boxes
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
-        grid[i, j]->Size = System::Drawing::Size(cellSize, cellSize);
-        grid[i, j]->Location = System::Drawing::Point(j * cellSize, i * cellSize);
+        // Update main cell
+        grid[i, j]->Size = System::Drawing::Size(cellWidth, mainCellHeight);
+        grid[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight);
+        
+        // Scale font based on cell size
+        float fontSize = System::Math::Max(8.0f, (float)mainCellHeight * 0.5f);
         grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", fontSize);
+        
+        // Update notes box
+        notes[i, j]->Size = System::Drawing::Size(cellWidth, notesCellHeight);
+        notes[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight + mainCellHeight);
+        
+        // Scale notes font based on notes area size
+        float notesFontSize = System::Math::Max(6.0f, (float)notesCellHeight * 0.4f);
+        notes[i, j]->Font = gcnew System::Drawing::Font(L"Arial", notesFontSize);
       }
     }
     
@@ -498,31 +558,34 @@ ref class MainForm : public System::Windows::Forms::Form {
       int thickness = (i % 3 == 0) ? 3 : 1;
       int offset = (i % 3 == 0) ? 1 : 0;
       
+      // Vertical lines
       Panel ^ vline = gcnew Panel();
       vline->BorderStyle = BorderStyle::None;
-      vline->Location = Point(i * cellSize - offset, 0);
-      vline->Size = System::Drawing::Size(thickness, gridSize);
+      vline->Location = Point(i * cellWidth - offset, 0);
+      vline->Size = System::Drawing::Size(thickness, gridHeight);
       vline->BackColor = Color::Black;
       gridContainer->Controls->Add(vline);
 
+      // Horizontal lines
       Panel ^ hline = gcnew Panel();
       hline->BorderStyle = BorderStyle::None;
-      hline->Location = Point(0, i * cellSize - offset);
-      hline->Size = System::Drawing::Size(gridSize, thickness);
+      hline->Location = Point(0, i * cellHeight - offset);
+      hline->Size = System::Drawing::Size(gridWidth, thickness);
       hline->BackColor = Color::Black;
       gridContainer->Controls->Add(hline);
     }
     
-    // Re-add cells on top of grid lines
+    // Re-add all cells and notes on top of grid lines
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
         gridContainer->Controls->Add(grid[i, j]);
+        gridContainer->Controls->Add(notes[i, j]);
       }
     }
     
-    // Adjust debug box
-    debugBox->Location = Point(50 + gridSize + 20, gridTop);
-    debugBox->Size = System::Drawing::Size(availableWidth - gridSize - 20, gridSize);
+    // Update debug box position and size
+    debugBox->Location = Point(gridContainer->Right + 20, gridTop);
+    debugBox->Size = System::Drawing::Size(availableWidth - gridWidth - 70, gridHeight);
   }
 
 private: void SafeSetClipboard(DataObject^ data) {
@@ -544,6 +607,7 @@ private: void SafeSetClipboard(DataObject^ data) {
       for (int j = 0; j < 9; j++) {
         int value = sudoku->GetValue(i, j);
         grid[i, j]->Text = (value >= 0) ? (value + 1).ToString() : "";
+        ClearNotes(i, j);  // Clear notes when updating grid
       }
     }
     ValidateAndHighlight();
@@ -713,6 +777,23 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           // Clear the cell
           sudoku->ClearValue(row, col);
           textBox->Text = "";
+      }
+  }
+
+  // Method to clear notes from a cell
+  void ClearNotes(int row, int col) {
+      notes[row, col]->Text = "";
+  }
+
+  // Method to add a candidate number to notes (useful for programmatic usage)
+  void AddToNotes(int row, int col, String^ number) {
+      String^ currentNotes = notes[row, col]->Text;
+      if (!currentNotes->Contains(number)) {
+          if (currentNotes->Length > 0) {
+              notes[row, col]->Text = currentNotes + " " + number;
+          } else {
+              notes[row, col]->Text = number;
+          }
       }
   }
 
@@ -1037,6 +1118,17 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         UpdateStatus("New game started");
         e->Handled = true;
         break;
+      case Keys::T:
+        // Toggle notes
+        notesVisible = !notesVisible;
+        for (int i = 0; i < 9; i++) {
+          for (int j = 0; j < 9; j++) {
+            notes[i, j]->Visible = notesVisible;
+          }
+        }
+        UpdateStatus(notesVisible ? "Notes shown" : "Notes hidden");
+        e->Handled = true;
+        break;
       case Keys::F5:
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_1.txt")) {
@@ -1131,6 +1223,24 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     sudoku->NewGame();
     UpdateGrid();
     UpdateStatus("New game started");
+  }
+
+  void ToggleNotes_Click(Object ^ sender, EventArgs ^ e) {
+    notesVisible = !notesVisible;
+    
+    // Toggle visibility of all notes boxes
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        notes[i, j]->Visible = notesVisible;
+      }
+    }
+    
+    // Update status message
+    if (notesVisible) {
+      UpdateStatus("Notes shown");
+    } else {
+      UpdateStatus("Notes hidden");
+    }
   }
 
   void Load_Click(Object ^ sender, EventArgs ^ e) {
