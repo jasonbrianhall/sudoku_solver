@@ -2,7 +2,7 @@ name: Build Sudoku
 
 on:
   push:
-    branches: [ master, dev ]
+    branches: [ master, dev, windows ]
   pull_request:
     branches: [ master, dev ]
   workflow_dispatch:
@@ -70,7 +70,128 @@ jobs:
         path: |
           Sudoku-MSDOS.zip
 
+  build-msdos:
+    # Skipped on 'windows' branch for faster builds
+    if: github.ref != 'refs/heads/windows'
+    runs-on: ubuntu-latest
+    container: 
+      image: djfdyuruiry/djgpp
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        apt-get update
+        apt-get install -y wget unzip zip
+
+    - name: Download CSDPMI
+      working-directory: msdos
+      run: |
+        wget http://na.mirror.garr.it/mirrors/djgpp/current/v2misc/csdpmi7b.zip
+        unzip -o csdpmi7b.zip -d csdpmi
+
+    - name: Build MS-DOS Version
+      working-directory: msdos
+      run: |
+        cp ../shared/*.cpp .
+        cp ../shared/*.h .
+        g++ dosprint.cpp generatepuzzle.cpp msdos_main.cpp sudoku.cpp -o sudoku.exe
+        exe2coff sudoku.exe
+        cat csdpmi/bin/CWSDSTUB.EXE sudoku > sudoku.exe
+        
+    - name: Create MS-DOS Distribution
+      working-directory: msdos
+      run: |
+        mkdir sudoku-msdos-v1.0
+        cp sudoku.exe sudoku-msdos-v1.0/
+        cp ../README.md sudoku-msdos-v1.0/
+        cp ../LICENSE.md sudoku-msdos-v1.0/
+        
+        echo "Sudoku Solver for MS-DOS
+        Version 1.0
+
+        Installation:
+        1. dosbox sudoku.exe
+
+        Requirements:
+        - MS-DOS or compatible OS
+        - 4MB RAM
+        - VGA or better graphics" > sudoku-msdos-v1.0/README-MSDOS.txt
+        
+        zip -r ../Sudoku-MSDOS.zip sudoku-msdos-v1.0
+
+    - name: Upload MS-DOS Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: msdos-artifacts
+        path: |
+          Sudoku-MSDOS.zip
+
+  build-windows-minimal:
+    # Lightweight Windows build for the 'windows' branch only
+    # Builds only the C++ version without Python/QT5 for faster builds
+    if: github.ref == 'refs/heads/windows'
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ env.PRODUCT_VERSION }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.3.1
+      
+    - name: Setup Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Build C++ Executable (Release x64)
+      working-directory: windows
+      run: |
+        msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
+
+    - name: Create Portable ZIP
+      shell: powershell
+      run: |
+        $portableDir = "portable/Sudoku-${{ env.PRODUCT_VERSION }}-windows"
+        New-Item -ItemType Directory -Path $portableDir -Force | Out-Null
+        
+        Copy-Item "windows/x64/Release/SudokuSolver.exe" "$portableDir/" -ErrorAction SilentlyContinue
+        Copy-Item "README.md" "$portableDir/" -ErrorAction SilentlyContinue
+        Copy-Item "LICENSE.md" "$portableDir/" -ErrorAction SilentlyContinue
+        
+        Compress-Archive -Path $portableDir -DestinationPath "Sudoku-Portable-Windows-${{ env.PRODUCT_VERSION }}.zip"
+        Write-Host "✅ Portable Windows ZIP created"
+
+    - name: Prepare Release Artifacts
+      shell: powershell
+      run: |
+        New-Item -ItemType Directory -Path "release-artifacts" -Force | Out-Null
+        Copy-Item "Sudoku-Portable-Windows-*.zip" "release-artifacts/" -ErrorAction SilentlyContinue
+        Get-ChildItem "release-artifacts/"
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: sudoku-windows-minimal
+        path: release-artifacts/
+
+  build-msdos:
+    # Skipped on 'windows' branch for faster builds
+    if: github.ref != 'refs/heads/windows'
+    runs-on: ubuntu-latest
+    container: 
+      image: djfdyuruiry/djgpp
+    permissions:
+      contents: write
+
   build-windows:
+    # Full Windows build with Python/QT5 - skipped on 'windows' branch
+    if: github.ref != 'refs/heads/windows'
     runs-on: windows-latest
     permissions:
       contents: write
@@ -559,7 +680,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref != 'refs/heads/windows'
     
     steps:
     - name: Download MSI Artifact
