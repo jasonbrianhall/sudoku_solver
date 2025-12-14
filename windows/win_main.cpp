@@ -299,7 +299,7 @@ ref class MainForm : public System::Windows::Forms::Form {
     
     // Add Toggle Notes button
     ToolStripButton^ toggleNotesBtn = gcnew ToolStripButton(
-        "Toggle Notes (N)", nullptr,
+        "Toggle Notes (T)", nullptr,
         gcnew EventHandler(this, &MainForm::ToggleNotes_Click));
     toggleNotesBtn->AutoSize = false;
     toggleNotesBtn->Size = System::Drawing::Size(110, 25);
@@ -328,7 +328,7 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     instructionsBox->Text = L"Instructions:\r\n\r\n"
         L"  - Use keypad (1-9) to enter numbers in cells. Middle mouse click or press 0 to clear.\r\n"
-        L"  - Press 'N' or click 'Toggle Notes' to show/hide the notes areas under cells.\r\n"
+        L"  - Press 'T' or click 'Toggle Notes' to show/hide the notes areas under cells.\r\n"
         L"  - Click in a notes area to add candidate numbers (e.g., '2 5 8').\r\n"
         L"  - Press 'A' for auto-solve. Press F1-F4 for new puzzles (easy to expert). Press Shift+F1 for master.\r\n"
         L"  - Press F5-F8 to save, Shift+F5-F8 to load. F9-F12 to export as XML. Arrow keys navigate cells.";
@@ -1118,7 +1118,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         UpdateStatus("New game started");
         e->Handled = true;
         break;
-      case Keys::N:
+      case Keys::T:
         // Toggle notes
         notesVisible = !notesVisible;
         for (int i = 0; i < 9; i++) {
