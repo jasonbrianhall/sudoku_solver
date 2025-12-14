@@ -366,12 +366,32 @@ ref class MainForm : public System::Windows::Forms::Form {
     grid = gcnew array<TextBox ^, 2>(9, 9);
     int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
 
-    // Create a container panel for the Sudoku grid
+    // Create a container panel for the Sudoku grid with white background
     Panel ^ gridContainer = gcnew Panel();
     gridContainer->Location = Point(50, gridTop);
     gridContainer->Size = System::Drawing::Size(405, 405);
-    gridContainer->BackColor = Color::Black;
+    gridContainer->BackColor = Color::White;
     this->Controls->Add(gridContainer);
+
+    // Draw bold grid lines for 3x3 boxes FIRST (underneath cells)
+    for (int i = 0; i <= 9; i++) {
+      int thickness = (i % 3 == 0) ? 3 : 1;
+      int offset = (i % 3 == 0) ? 1 : 0;
+      
+      Panel ^ vline = gcnew Panel();
+      vline->BorderStyle = BorderStyle::None;
+      vline->Location = Point(i * 45 - offset, 0);
+      vline->Size = System::Drawing::Size(thickness, 405);
+      vline->BackColor = Color::Black;
+      gridContainer->Controls->Add(vline);
+
+      Panel ^ hline = gcnew Panel();
+      hline->BorderStyle = BorderStyle::None;
+      hline->Location = Point(0, i * 45 - offset);
+      hline->Size = System::Drawing::Size(405, thickness);
+      hline->BackColor = Color::Black;
+      gridContainer->Controls->Add(hline);
+    }
 
     // Initialize grid cells as proper cells (45x45 pixels each, no gaps)
     for (int i = 0; i < 9; i++) {
@@ -387,31 +407,14 @@ ref class MainForm : public System::Windows::Forms::Form {
             gcnew EventHandler(this, &MainForm::Cell_TextChanged);
         grid[i, j]->KeyDown +=
             gcnew KeyEventHandler(this, &MainForm::Cell_KeyDown);
+        grid[i, j]->KeyPress +=
+            gcnew KeyPressEventHandler(this, &MainForm::Cell_KeyPress);
         grid[i, j]->BackColor = Color::White;
-        grid[i, j]->BorderStyle = BorderStyle::FixedSingle;
+        grid[i, j]->BorderStyle = BorderStyle::None;
         gridContainer->Controls->Add(grid[i, j]);
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
       }
-    }
-
-    // Draw bold grid lines for 3x3 boxes (on top of cells)
-    for (int i = 1; i < 9; i++) {
-      Panel ^ vline = gcnew Panel();
-      vline->BorderStyle = BorderStyle::None;
-      vline->Location = Point(i * 45 - (i % 3 == 0 ? 2 : 1), 0);
-      vline->Size = System::Drawing::Size(i % 3 == 0 ? 2 : 1, 405);
-      vline->BackColor = i % 3 == 0 ? Color::Black : Color::LightGray;
-      vline->BringToFront();
-      gridContainer->Controls->Add(vline);
-
-      Panel ^ hline = gcnew Panel();
-      hline->BorderStyle = BorderStyle::None;
-      hline->Location = Point(0, i * 45 - (i % 3 == 0 ? 2 : 1));
-      hline->Size = System::Drawing::Size(405, i % 3 == 0 ? 2 : 1);
-      hline->BackColor = i % 3 == 0 ? Color::Black : Color::LightGray;
-      hline->BringToFront();
-      gridContainer->Controls->Add(hline);
     }
 
     Label^ debugLabel = gcnew Label();
@@ -662,6 +665,13 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       } else {
         textBox->Text = "";
       }
+    }
+  }
+
+  void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
+    // Suppress the beep for unhandled characters
+    if (!Char::IsDigit(e->KeyChar) && e->KeyChar != 8) {  // 8 is backspace
+      e->Handled = true;
     }
   }
 
