@@ -13,64 +13,6 @@ env:
 
 jobs:
   build-msdos:
-    runs-on: ubuntu-latest
-    container: 
-      image: djfdyuruiry/djgpp
-    permissions:
-      contents: write
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install Dependencies
-      run: |
-        apt-get update
-        apt-get install -y wget unzip zip
-
-    - name: Download CSDPMI
-      working-directory: msdos
-      run: |
-        wget http://na.mirror.garr.it/mirrors/djgpp/current/v2misc/csdpmi7b.zip
-        unzip -o csdpmi7b.zip -d csdpmi
-
-    - name: Build MS-DOS Version
-      working-directory: msdos
-      run: |
-        cp ../shared/*.cpp .
-        cp ../shared/*.h .
-        g++ dosprint.cpp generatepuzzle.cpp msdos_main.cpp sudoku.cpp -o sudoku.exe
-        exe2coff sudoku.exe
-        cat csdpmi/bin/CWSDSTUB.EXE sudoku > sudoku.exe
-        
-    - name: Create MS-DOS Distribution
-      working-directory: msdos
-      run: |
-        mkdir sudoku-msdos-v1.0
-        cp sudoku.exe sudoku-msdos-v1.0/
-        cp ../README.md sudoku-msdos-v1.0/
-        cp ../LICENSE.md sudoku-msdos-v1.0/
-        
-        echo "Sudoku Solver for MS-DOS
-        Version 1.0
-
-        Installation:
-        1. dosbox sudoku.exe
-
-        Requirements:
-        - MS-DOS or compatible OS
-        - 4MB RAM
-        - VGA or better graphics" > sudoku-msdos-v1.0/README-MSDOS.txt
-        
-        zip -r ../Sudoku-MSDOS.zip sudoku-msdos-v1.0
-
-    - name: Upload MS-DOS Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: msdos-artifacts
-        path: |
-          Sudoku-MSDOS.zip
-
-  build-msdos:
     # Skipped on 'windows' branch for faster builds
     if: github.ref != 'refs/heads/windows'
     runs-on: ubuntu-latest
@@ -179,15 +121,6 @@ jobs:
       with:
         name: sudoku-windows-minimal
         path: release-artifacts/
-
-  build-msdos:
-    # Skipped on 'windows' branch for faster builds
-    if: github.ref != 'refs/heads/windows'
-    runs-on: ubuntu-latest
-    container: 
-      image: djfdyuruiry/djgpp
-    permissions:
-      contents: write
 
   build-windows:
     # Full Windows build with Python/QT5 - skipped on 'windows' branch
