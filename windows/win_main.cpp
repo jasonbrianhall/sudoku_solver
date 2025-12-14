@@ -731,7 +731,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   void Cell_KeyPress(Object ^ sender, KeyPressEventArgs ^ e) {
     // Suppress the beep for all keys - let KeyDown handle everything
     e->Handled = true;
-    e->SuppressKeyPress = true;
   }
 
   void Cell_KeyDown(Object ^ sender, KeyEventArgs ^ e) {
