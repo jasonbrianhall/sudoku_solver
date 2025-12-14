@@ -99,7 +99,6 @@ ref class MainForm : public System::Windows::Forms::Form {
  private:
   SudokuWrapper ^ sudoku;
   array<TextBox ^, 2> ^ grid;
-  array<Label ^, 2> ^ notesLabels;  // Labels for displaying pencil marks
   MenuStrip ^ menuStrip;
   ToolStrip ^ toolStrip;
   StatusStrip ^ statusStrip;
@@ -107,8 +106,6 @@ ref class MainForm : public System::Windows::Forms::Form {
   TextBox^ instructionsBox;
   TextBox^ debugBox;
   Panel^ gridContainer;
-  bool notesMode = false;
-  array<bool, 3> ^ notes;  // notes[row,col,candidate] - true if candidate 0-8 is marked
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle1.xml");
@@ -199,16 +196,6 @@ ref class MainForm : public System::Windows::Forms::Form {
     this->Size = System::Drawing::Size(800, 600);
     this->Text = L"Sudoku Solver";
     this->StartPosition = FormStartPosition::CenterScreen;
-
-    // Initialize notes array for pencil marks
-    notes = gcnew array<bool, 3>(9, 9, 9);
-    for (int i = 0; i < 9; i++) {
-      for (int j = 0; j < 9; j++) {
-        for (int k = 0; k < 9; k++) {
-          notes[i, j, k] = false;
-        }
-      }
-    }
 
     // Initialize StatusStrip
     statusStrip = gcnew StatusStrip();
@@ -303,15 +290,6 @@ ref class MainForm : public System::Windows::Forms::Form {
     // Initialize ToolStrip
     toolStrip = gcnew ToolStrip();
     
-    // Notes Mode section
-    toolStrip->Items->Add(gcnew ToolStripLabel("Notes Mode: "));
-    ToolStripButton^ notesBtn = gcnew ToolStripButton(
-        "Toggle (T)", nullptr,
-        gcnew EventHandler(this, &MainForm::ToggleNotesMode_Click));
-    notesBtn->CheckOnClick = true;
-    toolStrip->Items->Add(notesBtn);
-    toolStrip->Items->Add(gcnew ToolStripSeparator());
-    
     // Game section
     ToolStripButton^ newGameBtn = gcnew ToolStripButton(
         "New Game (Z)", nullptr,
@@ -399,7 +377,6 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize grid
     grid = gcnew array<TextBox ^, 2>(9, 9);
-    notesLabels = gcnew array<Label ^, 2>(9, 9);
     int gridTop = menuStrip->Height + toolStrip->Height + instructionsBox->Height + 25;
 
     // Create a container panel for the Sudoku grid with white background
@@ -561,24 +538,6 @@ ref class MainForm : public System::Windows::Forms::Form {
       }
     }
 
-    // Add notes labels on TOP of cells so they're visible
-    for (int i = 0; i < 9; i++) {
-      for (int j = 0; j < 9; j++) {
-        gridContainer->Controls->Add(notesLabels[i, j]);
-        notesLabels[i, j]->BringToFront();
-      }
-    }
-
-    // Update notes labels size and position
-    float notesfontSize = System::Math::Max(5.0f, (float)cellSize * 0.2f);
-    for (int i = 0; i < 9; i++) {
-      for (int j = 0; j < 9; j++) {
-        notesLabels[i, j]->Location = System::Drawing::Point(j * cellSize, i * cellSize);
-        notesLabels[i, j]->Size = System::Drawing::Size(cellSize, cellSize);
-        notesLabels[i, j]->Font = gcnew System::Drawing::Font(L"Courier New", notesfontSize, FontStyle::Bold);
-      }
-    }
-    
     // Adjust debug box
     debugBox->Location = Point(50 + gridSize + 20, gridTop);
     debugBox->Size = System::Drawing::Size(availableWidth - gridSize - 20, gridSize);
@@ -786,61 +745,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
   }
 
-  void ToggleNotesMode_Click(Object ^ sender, EventArgs ^ e) {
-    notesMode = !notesMode;
-    
-    // When switching modes, update all cells
-    if (notesMode) {
-      // Entering notes mode - display notes
-      for (int i = 0; i < 9; i++) {
-        for (int j = 0; j < 9; j++) {
-          DisplayNotes(i, j);
-        }
-      }
-      UpdateStatus("Notes Mode ON (numbers 1-9 add/remove notes)");
-    } else {
-      // Exiting notes mode - show values again
-      UpdateGrid();
-      UpdateStatus("Notes Mode OFF");
-    }
-  }
-
-  void DisplayNotes(int row, int col) {
-    // Only display notes if in notes mode
-    if (!notesMode) {
-      return;
-    }
-    
-    // Create a 3x3 grid representation of candidates 1-9
-    // Layout: 1 2 3
-    //         4 5 6
-    //         7 8 9
-    String^ noteText = "";
-    
-    for (int i = 0; i < 9; i++) {
-      if (notes[row, col, i]) {
-        noteText += (i + 1).ToString();
-      } else {
-        noteText += " ";
-      }
-      
-      // Add spacing between columns
-      if ((i + 1) % 3 != 0) {
-        noteText += " ";
-      } else if (i < 8) {
-        // Line break after rows (except last)
-        noteText += "\r\n";
-      }
-    }
-    
-    // Display in cell's text if there are notes
-    if (!String::IsNullOrWhiteSpace(noteText)) {
-      grid[row, col]->Text = noteText;
-      grid[row, col]->Font = gcnew System::Drawing::Font(L"Courier New", 6);
-      grid[row, col]->ForeColor = Color::Blue;
-    }
-  }
-
   void ValidateAndHighlight() {
     // Clear all previous highlights
     for (int i = 0; i < 9; i++) {
@@ -899,11 +803,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   void Cell_TextChanged(Object ^ sender, EventArgs ^ e) {
     TextBox ^ textBox = safe_cast<TextBox ^>(sender);
     array<int> ^ position = safe_cast<array<int> ^>(textBox->Tag);
-
-    // Don't process if in notes mode - notes are handled by KeyDown
-    if (notesMode) {
-      return;
-    }
 
     if (textBox->Text->Length > 0) {
       int value;
@@ -1011,40 +910,17 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       case Keys::D7:
       case Keys::D8:
       case Keys::D9:
-        if (notesMode) {
-          // Toggle note for this number
-          int noteNum = ((int)e->KeyCode - (int)Keys::D1);
-          notes[row, col, noteNum] = !notes[row, col, noteNum];
-          DisplayNotes(row, col);
-          UpdateStatus("Note " + (noteNum + 1).ToString() + " " + (notes[row, col, noteNum] ? "added" : "removed"));
-        } else {
-          // Normal input mode - set the cell value
-          sudoku->Clean();
-          sudoku->SetValue(row, col, ((int)e->KeyCode - (int)Keys::D1));
-          UpdateGrid();
-        }
+        // Normal input mode - set the cell value
+        sudoku->Clean();
+        sudoku->SetValue(row, col, ((int)e->KeyCode - (int)Keys::D1));
+        UpdateGrid();
         e->Handled = true;
         break;
 
       // Clear cell with 0
       case Keys::D0:
-        if (notesMode) {
-          // Clear all notes in the cell
-          for (int i = 0; i < 9; i++) {
-            notes[row, col, i] = false;
-          }
-          notesLabels[row, col]->Text = "";
-          UpdateStatus("All notes cleared");
-        } else {
-          sudoku->ClearValue(row, col);
-          UpdateGrid();
-        }
-        e->Handled = true;
-        break;
-
-      // Toggle notes mode with T key
-      case Keys::T:
-        ToggleNotesMode_Click(nullptr, nullptr);
+        sudoku->ClearValue(row, col);
+        UpdateGrid();
         e->Handled = true;
         break;
 
@@ -1271,14 +1147,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   // Menu event handlers
   void NewGame_Click(Object ^ sender, EventArgs ^ e) {
     sudoku->NewGame();
-    // Clear all notes
-    for (int i = 0; i < 9; i++) {
-      for (int j = 0; j < 9; j++) {
-        for (int k = 0; k < 9; k++) {
-          notes[i, j, k] = false;
-        }
-      }
-    }
     UpdateGrid();
     UpdateStatus("New game started");
   }
