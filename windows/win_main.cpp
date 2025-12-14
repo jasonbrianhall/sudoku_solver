@@ -99,6 +99,7 @@ ref class MainForm : public System::Windows::Forms::Form {
   SudokuWrapper ^ sudoku;
   array<TextBox ^, 2> ^ grid;
   array<TextBox ^, 2> ^ notes;  // 2D array for cell notes - changed to TextBox
+  bool notesVisible;  // Track whether notes are currently visible
   MenuStrip ^ menuStrip;
   ToolStrip ^ toolStrip;
   StatusStrip ^ statusStrip;
@@ -295,6 +296,15 @@ ref class MainForm : public System::Windows::Forms::Form {
     newGameBtn->AutoSize = false;
     newGameBtn->Size = System::Drawing::Size(100, 25);
     toolStrip->Items->Add(newGameBtn);
+    
+    // Add Toggle Notes button
+    ToolStripButton^ toggleNotesBtn = gcnew ToolStripButton(
+        "Toggle Notes (N)", nullptr,
+        gcnew EventHandler(this, &MainForm::ToggleNotes_Click));
+    toggleNotesBtn->AutoSize = false;
+    toggleNotesBtn->Size = System::Drawing::Size(110, 25);
+    toolStrip->Items->Add(toggleNotesBtn);
+    
     toolStrip->Items->Add(gcnew ToolStripSeparator());
     
     toolStrip->Items->Add(gcnew ToolStripButton(
@@ -318,7 +328,8 @@ ref class MainForm : public System::Windows::Forms::Form {
 
     instructionsBox->Text = L"Instructions:\r\n\r\n"
         L"  - Use keypad (1-9) to enter numbers in cells. Middle mouse click or press 0 to clear.\r\n"
-        L"  - Each cell has a NOTES area below it (gray box). Click on it to add candidate numbers (e.g., '2 5 8').\r\n"
+        L"  - Press 'N' or click 'Toggle Notes' to show/hide the notes areas under cells.\r\n"
+        L"  - Click in a notes area to add candidate numbers (e.g., '2 5 8').\r\n"
         L"  - Press 'A' for auto-solve. Press F1-F4 for new puzzles (easy to expert). Press Shift+F1 for master.\r\n"
         L"  - Press F5-F8 to save, Shift+F5-F8 to load. F9-F12 to export as XML. Arrow keys navigate cells.";
 
@@ -370,6 +381,9 @@ ref class MainForm : public System::Windows::Forms::Form {
 
 
     this->Controls->Add(toolStrip);
+
+    // Initialize notes visibility state (hidden by default)
+    notesVisible = false;
 
     // Initialize grid
     grid = gcnew array<TextBox ^, 2>(9, 9);
@@ -442,6 +456,7 @@ ref class MainForm : public System::Windows::Forms::Form {
         notes[i, j]->Tag = gcnew array<int>{i, j};
         notes[i, j]->ScrollBars = ScrollBars::None;
         notes[i, j]->AcceptsTab = false;
+        notes[i, j]->Visible = false;  // Hidden by default
         gridContainer->Controls->Add(notes[i, j]);
       }
     }
@@ -1103,6 +1118,17 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         UpdateStatus("New game started");
         e->Handled = true;
         break;
+      case Keys::N:
+        // Toggle notes
+        notesVisible = !notesVisible;
+        for (int i = 0; i < 9; i++) {
+          for (int j = 0; j < 9; j++) {
+            notes[i, j]->Visible = notesVisible;
+          }
+        }
+        UpdateStatus(notesVisible ? "Notes shown" : "Notes hidden");
+        e->Handled = true;
+        break;
       case Keys::F5:
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_1.txt")) {
@@ -1197,6 +1223,24 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     sudoku->NewGame();
     UpdateGrid();
     UpdateStatus("New game started");
+  }
+
+  void ToggleNotes_Click(Object ^ sender, EventArgs ^ e) {
+    notesVisible = !notesVisible;
+    
+    // Toggle visibility of all notes boxes
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        notes[i, j]->Visible = notesVisible;
+      }
+    }
+    
+    // Update status message
+    if (notesVisible) {
+      UpdateStatus("Notes shown");
+    } else {
+      UpdateStatus("Notes hidden");
+    }
   }
 
   void Load_Click(Object ^ sender, EventArgs ^ e) {
