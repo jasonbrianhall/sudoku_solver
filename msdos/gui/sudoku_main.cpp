@@ -486,16 +486,60 @@ void draw_menu_bar() {
     }
 }
 
+/**
+ * Check if a cell has a conflict (duplicate in row, column, or 3x3 box)
+ */
+bool has_conflict(int col, int row) {
+    int value = sudoku_gui.game.GetValue(col, row);
+    if (value < 0) return false;  /* Empty cell, no conflict */
+    
+    /* Check row for duplicates */
+    for (int c = 0; c < 9; c++) {
+        if (c != col && sudoku_gui.game.GetValue(c, row) == value) {
+            return true;
+        }
+    }
+    
+    /* Check column for duplicates */
+    for (int r = 0; r < 9; r++) {
+        if (r != row && sudoku_gui.game.GetValue(col, r) == value) {
+            return true;
+        }
+    }
+    
+    /* Check 3x3 box for duplicates */
+    int box_row = (row / 3) * 3;
+    int box_col = (col / 3) * 3;
+    for (int r = box_row; r < box_row + 3; r++) {
+        for (int c = box_col; c < box_col + 3; c++) {
+            if ((r != row || c != col) && sudoku_gui.game.GetValue(c, r) == value) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
 void draw_cell(int x, int y, int value, bool selected, bool is_clue) {
     int screen_x = GRID_START_X + x * CELL_SIZE;
     int screen_y = GRID_START_Y + y * CELL_SIZE;
     int color, text_color;
     char text[4];
     
-    /* Background */
-    color = ((x + y) % 2 == 0) ? COLOR_WHITE : COLOR_LIGHT_GRAY;
-    if (selected) {
-        color = COLOR_YELLOW;
+    /* Check for conflicts */
+    bool conflict = has_conflict(x, y);
+    
+    /* Background color */
+    if (conflict) {
+        color = COLOR_RED;      /* Red if there's a conflict */
+        text_color = COLOR_WHITE;
+    } else if (selected) {
+        color = 14;             /* Light blue for selected (close to cyan) */
+        text_color = COLOR_BLACK;
+    } else {
+        color = COLOR_WHITE;    /* All cells white, no checkerboard */
+        text_color = COLOR_BLACK;
     }
     
     rectfill(active_buffer, screen_x, screen_y, screen_x + CELL_SIZE - 1, screen_y + CELL_SIZE - 1, color);
@@ -506,7 +550,13 @@ void draw_cell(int x, int y, int value, bool selected, bool is_clue) {
     
     /* Value */
     if (value >= 0 && value <= 8) {
-        text_color = is_clue ? COLOR_BLACK : COLOR_BLUE;
+        if (conflict) {
+            text_color = COLOR_WHITE;  /* White text on red background */
+        } else if (is_clue) {
+            text_color = COLOR_BLACK;  /* Black for clues */
+        } else {
+            text_color = COLOR_BLUE;   /* Blue for user-entered */
+        }
         snprintf(text, sizeof(text), "%d", value + 1);
         textout_ex(active_buffer, font, text, screen_x + CELL_SIZE/2 - 3, screen_y + CELL_SIZE/2 - 4, 
                    text_color, -1);
