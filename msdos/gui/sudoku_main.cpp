@@ -524,7 +524,7 @@ bool has_conflict(int col, int row) {
 void draw_cell(int x, int y, int value, bool selected, bool is_clue) {
     int screen_x = GRID_START_X + x * CELL_SIZE;
     int screen_y = GRID_START_Y + y * CELL_SIZE;
-    int color, text_color;
+    int color, text_color, bg_color;
     char text[4];
     
     /* Check for conflicts */
@@ -535,7 +535,7 @@ void draw_cell(int x, int y, int value, bool selected, bool is_clue) {
         color = COLOR_RED;      /* Red if there's a conflict */
         text_color = COLOR_WHITE;
     } else if (selected) {
-        color = 14;             /* Light blue for selected (close to cyan) */
+        color = 14;             /* Light yellow for selected */
         text_color = COLOR_BLACK;
     } else {
         color = COLOR_WHITE;    /* All cells white, no checkerboard */
@@ -552,14 +552,18 @@ void draw_cell(int x, int y, int value, bool selected, bool is_clue) {
     if (value >= 0 && value <= 8) {
         if (conflict) {
             text_color = COLOR_WHITE;  /* White text on red background */
+            bg_color = COLOR_RED;
         } else if (is_clue) {
             text_color = COLOR_BLACK;  /* Black for clues */
+            bg_color = color;
         } else {
             text_color = COLOR_BLUE;   /* Blue for user-entered */
+            bg_color = color;
         }
         snprintf(text, sizeof(text), "%d", value + 1);
+        /* Use opaque text rendering with matching background color to prevent bleeding */
         textout_ex(active_buffer, font, text, screen_x + CELL_SIZE/2 - 3, screen_y + CELL_SIZE/2 - 4, 
-                   text_color, -1);
+                   text_color, bg_color);
     }
 }
 
