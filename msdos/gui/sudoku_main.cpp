@@ -605,6 +605,10 @@ int main(void) {
         }
         
         prev_mouse_b = mouse_b;
+        
+        /* Mark screen dirty every frame to ensure continuous redraw (critical for DOS) */
+        mark_screen_dirty();
+        
         rest(10);  /* 10ms delay like beatchess */
     }
     
