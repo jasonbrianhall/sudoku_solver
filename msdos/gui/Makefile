@@ -5,8 +5,8 @@ VERSION=1.0
 SRCS = sudoku.cpp generatepuzzle.cpp sudoku_main.cpp dosprint.cpp
 
 # Output files
-DOS_TARGET = sud.exe
-DOS_COFF = sud
+DOS_TARGET = sudoku.exe
+DOS_COFF = sudoku
 
 # Build directories
 BUILD_DIR = build/dos
@@ -119,13 +119,13 @@ compile: allegro
 			echo 'Compiling dosprint.cpp...' && \
 			g++ -c dosprint.cpp -I$(BUILD_DIR)/source-install/include $(CFLAGS) -o $(OBJ_DIR)/dosprint.o && \
 			echo 'Linking executable...' && \
-			g++ $(OBJ_DIR)/sudoku.o $(OBJ_DIR)/generatepuzzle.o $(OBJ_DIR)/sudoku_main.o $(OBJ_DIR)/dosprint.o -L$(BUILD_DIR)/source-install/lib -lalleg -lm $(CFLAGS) -s -o $(BUILD_DIR)/sudoku && \
+			g++ $(OBJ_DIR)/sudoku.o $(OBJ_DIR)/generatepuzzle.o $(OBJ_DIR)/sudoku_main.o $(OBJ_DIR)/dosprint.o -L$(BUILD_DIR)/source-install/lib -lalleg -lm $(CFLAGS) -s -o $(BUILD_DIR)/sudoku.exe && \
 			echo 'Converting to COFF format...' && \
-			exe2coff $(BUILD_DIR)/sudoku && \
+			exe2coff $(BUILD_DIR)/sudoku.exe && \
 			echo 'Adding DPMI stub...' && \
 			cat $(CSDPMI_DIR)/bin/CWSDSTUB.EXE $(BUILD_DIR)/sudoku > $(BUILD_DIR)/$(DOS_TARGET) && \
 			echo 'DOS build complete!' && \
-			rm $(BUILD_DIR)/sudoku \
+			rm $(BUILD_DIR)/sudoku.exe \
 		"
 	@echo "✅ Build successful!"
 	@echo "📁 Output: $(BUILD_DIR)/$(DOS_TARGET)"
