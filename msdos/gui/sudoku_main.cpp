@@ -159,6 +159,13 @@ void init_sudoku_gui() {
 static int screen_dirty = 1;
 static int screen_needs_full_redraw = 1;
 
+/* Close button state (Linux only) */
+volatile bool window_close_requested = false;
+
+void close_button_callback() {
+    window_close_requested = true;
+}
+
 /**
  * Initialize double buffering
  */
@@ -480,24 +487,22 @@ void draw_status_bar() {
 }
 
 void draw_help() {
-    char *help_line1 = "Arrow keys: Move | 1-9: Input | 0/Del: Clear | S: Solve";
-    char *help_line2 = "Z: Undo | Y: Redo | N: New | P: Puzzle | File menu for Save/Load/Quit";
-    textout_ex(active_buffer, font, help_line1, GRID_START_X, HELP_TEXT_Y, COLOR_BLACK, -1);
-    textout_ex(active_buffer, font, help_line2, GRID_START_X, HELP_TEXT_Y + 12, COLOR_BLACK, -1);
+    char *h1 = "Move: Arrows | Input: 1-9 | Clear: 0/Del";
+    char *h2 = "Solve: S | Undo: Z | Redo: Y | New: N";
+    textout_ex(active_buffer, font, h1, GRID_START_X, HELP_TEXT_Y, COLOR_BLACK, -1);
+    textout_ex(active_buffer, font, h2, GRID_START_X, HELP_TEXT_Y + 12, COLOR_BLACK, -1);
 }
 
 void redraw_screen() {
     /* Always draw if full redraw needed, otherwise only if dirty */
     if (!screen_dirty && !screen_needs_full_redraw) return;
     
-    /* Get buffer to draw into */
-    active_buffer = get_next_buffer_and_swap();
-    
-    /* Always clear the buffer to avoid old content showing through */
-    clear_to_color(active_buffer, COLOR_WHITE);
-    
+    /* Clear the buffer before drawing */
     if (screen_needs_full_redraw) {
+        clear_to_color(active_buffer, COLOR_WHITE);
         screen_needs_full_redraw = 0;
+    } else {
+        clear_to_color(active_buffer, COLOR_WHITE);
     }
     
     /* Hide mouse cursor during drawing */
@@ -514,6 +519,17 @@ void redraw_screen() {
     
     /* Show mouse cursor again */
     unscare_mouse();
+    
+    /* NOW swap/display the buffer AFTER drawing to it */
+    if (screen_dirty) {
+        vsync();  /* Wait for vertical sync */
+        blit(active_buffer, screen, 0, 0, 0, 0, 640, 480);  /* Display what we just drew */
+        screen_dirty = 0;  /* Mark screen as clean after update */
+        
+        /* Swap to next buffer for next frame */
+        current_buffer = (current_buffer + 1) % NUM_BUFFERS;
+        active_buffer = buffers[current_buffer];
+    }
 }
 
 void generate_puzzle(int difficulty) {
@@ -672,6 +688,11 @@ int main(void) {
     
     show_mouse(screen);
     
+    /* Register close button callback (Linux only) */
+    #ifdef LINUX_BUILD
+    set_close_button_callback(close_button_callback);
+    #endif
+    
     /* Initialize double buffering */
     init_double_buffers();
     
@@ -688,7 +709,12 @@ int main(void) {
     
     /* Main game loop - like beatchess */
     while (running) {
-        /* Check if mouse moved and redraw if it did */
+        /* Check if window close button was clicked (Linux) */
+        if (window_close_requested) {
+            running = false;
+            break;
+        }
+        
         if (mouse_x != prev_mouse_x || mouse_y != prev_mouse_y) {
             prev_mouse_x = mouse_x;
             prev_mouse_y = mouse_y;
