@@ -688,7 +688,7 @@ void redraw_screen() {
     }
     
     /* Hide mouse cursor during drawing and buffer operations */
-    scare_mouse();
+    //scare_mouse();
     
     /* Draw game elements FIRST */
     draw_grid();
@@ -713,7 +713,7 @@ void redraw_screen() {
     }
     
     /* Show mouse cursor again after all buffer operations complete */
-    unscare_mouse();
+    //unscare_mouse();
 }
 
 void generate_puzzle(int difficulty) {
