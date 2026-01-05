@@ -125,7 +125,6 @@ compile: allegro
 			echo 'Adding DPMI stub...' && \
 			cat $(CSDPMI_DIR)/bin/CWSDSTUB.EXE $(BUILD_DIR)/sudoku > $(BUILD_DIR)/$(DOS_TARGET) && \
 			echo 'DOS build complete!' && \
-			rm $(BUILD_DIR)/sudoku.exe \
 		"
 	@echo "✅ Build successful!"
 	@echo "📁 Output: $(BUILD_DIR)/$(DOS_TARGET)"
