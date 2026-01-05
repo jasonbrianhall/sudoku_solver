@@ -583,16 +583,44 @@ void draw_grid() {
         }
     }
     
-    /* Draw thick grid lines every 3 squares */
+    /* Draw vertical grid lines with varying thickness */
     for (i = 0; i <= 9; i++) {
-        int thickness = (i % 3 == 0) ? 3 : 1;
         int screen_pos = GRID_START_X + i * CELL_SIZE;
-        vline(active_buffer, screen_pos, GRID_START_Y, GRID_START_Y + GRID_HEIGHT - 1, COLOR_BLACK);
+        int thickness;
+        
+        /* Outer lines (i=0, i=9) and 3x3 box dividers (i=3, i=6) get thicker lines */
+        if (i == 0 || i == 9) {
+            thickness = 3;  /* Outer border - thickest */
+        } else if (i % 3 == 0) {
+            thickness = 2;  /* 3x3 box dividers - medium thickness */
+        } else {
+            thickness = 1;  /* Regular cell dividers - thin */
+        }
+        
+        /* Draw multiple parallel lines to create thickness effect */
+        for (int t = 0; t < thickness; t++) {
+            vline(active_buffer, screen_pos + t, GRID_START_Y, GRID_START_Y + GRID_HEIGHT - 1, COLOR_BLACK);
+        }
     }
     
+    /* Draw horizontal grid lines with varying thickness */
     for (i = 0; i <= 9; i++) {
         int screen_pos = GRID_START_Y + i * CELL_SIZE;
-        hline(active_buffer, GRID_START_X, screen_pos, GRID_START_X + GRID_WIDTH - 1, COLOR_BLACK);
+        int thickness;
+        
+        /* Outer lines (i=0, i=9) and 3x3 box dividers (i=3, i=6) get thicker lines */
+        if (i == 0 || i == 9) {
+            thickness = 3;  /* Outer border - thickest */
+        } else if (i % 3 == 0) {
+            thickness = 2;  /* 3x3 box dividers - medium thickness */
+        } else {
+            thickness = 1;  /* Regular cell dividers - thin */
+        }
+        
+        /* Draw multiple parallel lines to create thickness effect */
+        for (int t = 0; t < thickness; t++) {
+            hline(active_buffer, GRID_START_X, screen_pos + t, GRID_START_X + GRID_WIDTH - 1, COLOR_BLACK);
+        }
     }
 }
 
