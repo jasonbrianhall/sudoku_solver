@@ -1,6 +1,6 @@
 /*
  * sudoku_main.cpp - Sudoku GUI using Allegro 4 for DOS/DJGPP
- * Fixed to use actual Allegro 4 patterns (no Allegro 5 features)
+ * With triple buffering, file menu, and proper layout
  */
 
 /* Declare far pointer functions BEFORE including allegro.h */
@@ -29,6 +29,12 @@ extern unsigned long _farnspeekl(unsigned long addr);
 #else
     #define DOS_BUILD 1
 #endif
+
+/* Double buffering setup */
+#define NUM_BUFFERS 2
+BITMAP *buffers[NUM_BUFFERS];
+int current_buffer = 0;
+BITMAP *active_buffer = NULL;
 
 /* Allegro keyboard constants */
 #ifndef KEY_UP
@@ -60,17 +66,18 @@ extern unsigned long _farnspeekl(unsigned long addr);
 #endif
 
 /* UI Layout */
+#define MENU_BAR_HEIGHT 25
 #define GRID_START_X 50
-#define GRID_START_Y 60
+#define GRID_START_Y (MENU_BAR_HEIGHT + 30)
 #define CELL_SIZE 40
 #define GRID_WIDTH (9 * CELL_SIZE)
 #define GRID_HEIGHT (9 * CELL_SIZE)
 
 #define BUTTON_PANEL_X (GRID_START_X + GRID_WIDTH + 30)
-#define BUTTON_PANEL_Y (GRID_START_Y + 20)  /* Increased from GRID_START_Y to add space for headers */
-#define BUTTON_WIDTH 120
-#define BUTTON_HEIGHT 25
-#define BUTTON_SPACING 8
+#define BUTTON_PANEL_Y (GRID_START_Y + 10)
+#define BUTTON_WIDTH 110
+#define BUTTON_HEIGHT 22
+#define BUTTON_SPACING 5
 
 #define STATUS_BAR_Y (GRID_START_Y + GRID_HEIGHT + 20)
 #define HELP_TEXT_Y (STATUS_BAR_Y + 30)
@@ -118,6 +125,10 @@ struct SudokuGUI {
     int status_timer;
     bool show_candidates;
     
+    /* Menu state */
+    bool show_file_menu;
+    int file_menu_selected;
+    
     /* Timing */
     time_t last_action_time;
     
@@ -139,12 +150,51 @@ void init_sudoku_gui() {
     sudoku_gui.history_index = 0;
     sudoku_gui.status_timer = 0;
     sudoku_gui.show_candidates = false;
+    sudoku_gui.show_file_menu = false;
+    sudoku_gui.file_menu_selected = 0;
     sudoku_gui.game.NewGame();
 }
 
 /* Screen dirty tracking (like beatchess) */
 static int screen_dirty = 1;
 static int screen_needs_full_redraw = 1;
+
+/**
+ * Initialize double buffering
+ */
+void init_double_buffers() {
+    for (int i = 0; i < NUM_BUFFERS; i++) {
+        buffers[i] = create_bitmap(640, 480);
+        if (!buffers[i]) {
+            allegro_exit();
+            fprintf(stderr, "Failed to allocate buffer %d\n", i);
+            exit(1);
+        }
+        /* Initialize buffers to white */
+        clear_to_color(buffers[i], COLOR_WHITE);
+    }
+    current_buffer = 0;
+    active_buffer = buffers[0];
+}
+
+/**
+ * Swap buffers and get the next one to draw into
+ * Only blits to screen if screen_dirty is true
+ */
+BITMAP* get_next_buffer_and_swap() {
+    /* Only update screen if it's marked as dirty */
+    if (screen_dirty) {
+        vsync();  /* Wait for vertical sync */
+        blit(active_buffer, screen, 0, 0, 0, 0, 640, 480);
+        screen_dirty = 0;  /* Mark screen as clean after update */
+    }
+    
+    /* Swap to next buffer for drawing */
+    current_buffer = (current_buffer + 1) % NUM_BUFFERS;
+    active_buffer = buffers[current_buffer];
+    
+    return active_buffer;
+}
 
 void mark_screen_dirty() {
     screen_dirty = 1;
@@ -166,6 +216,19 @@ void display_status(const char *message) {
     mark_screen_dirty();
 }
 
+/* File menu items */
+const char *file_menu_items[] = {
+    "New Game      N",
+    "New Puzzle    P",
+    "",  /* separator */
+    "Save Game     S",
+    "Load Game     L",
+    "",  /* separator */
+    "Quit          Q"
+};
+
+#define NUM_FILE_MENU_ITEMS (sizeof(file_menu_items) / sizeof(file_menu_items[0]))
+
 /* Button definitions */
 struct Button {
     int x;
@@ -177,18 +240,18 @@ struct Button {
 };
 
 static Button buttons[] = {
-    {BUTTON_PANEL_X, BUTTON_PANEL_Y,                    BUTTON_WIDTH, BUTTON_HEIGHT, "Easy", 1},
-    {BUTTON_PANEL_X, BUTTON_PANEL_Y + BUTTON_HEIGHT + BUTTON_SPACING, BUTTON_WIDTH, BUTTON_HEIGHT, "Medium", 2},
+    /* Difficulty buttons */
+    {BUTTON_PANEL_X, BUTTON_PANEL_Y,                                    BUTTON_WIDTH, BUTTON_HEIGHT, "Easy", 1},
+    {BUTTON_PANEL_X, BUTTON_PANEL_Y + 1*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Medium", 2},
     {BUTTON_PANEL_X, BUTTON_PANEL_Y + 2*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Hard", 3},
     {BUTTON_PANEL_X, BUTTON_PANEL_Y + 3*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Expert", 4},
     {BUTTON_PANEL_X, BUTTON_PANEL_Y + 4*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Extreme", 5},
+    
+    /* Game control buttons */
     {BUTTON_PANEL_X, BUTTON_PANEL_Y + 6*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Solve", 10},
     {BUTTON_PANEL_X, BUTTON_PANEL_Y + 7*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Undo", 14},
     {BUTTON_PANEL_X, BUTTON_PANEL_Y + 8*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Redo", 15},
     {BUTTON_PANEL_X, BUTTON_PANEL_Y + 9*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Clear", 11},
-    {BUTTON_PANEL_X, BUTTON_PANEL_Y + 10*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Save", 12},
-    {BUTTON_PANEL_X, BUTTON_PANEL_Y + 11*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Load", 13},
-    {BUTTON_PANEL_X, BUTTON_PANEL_Y + 13*(BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT, "Quit", 20},
 };
 
 #define NUM_BUTTONS (sizeof(buttons) / sizeof(buttons[0]))
@@ -271,6 +334,51 @@ void redo_last_move() {
 }
 
 /* Draw cell using Allegro 4 only */
+void draw_menu_bar() {
+    /* Menu bar background */
+    rectfill(active_buffer, 0, 0, 640, MENU_BAR_HEIGHT, COLOR_BLUE);
+    
+    /* File menu button */
+    textout_ex(active_buffer, font, "File", 5, 5, COLOR_WHITE, -1);
+    
+    /* Title */
+    textout_ex(active_buffer, font, "Sudoku - Allegro Edition", 200, 5, COLOR_YELLOW, -1);
+    
+    /* Draw File dropdown menu if active */
+    if (sudoku_gui.show_file_menu) {
+        int menu_x = 0;
+        int menu_y = MENU_BAR_HEIGHT;
+        int menu_w = 180;
+        int item_h = 18;
+        int menu_h = NUM_FILE_MENU_ITEMS * item_h;
+        
+        /* Menu background with border */
+        rectfill(active_buffer, menu_x, menu_y, menu_x + menu_w, menu_y + menu_h, COLOR_BLUE);
+        rect(active_buffer, menu_x, menu_y, menu_x + menu_w, menu_y + menu_h, COLOR_WHITE);
+        
+        /* Menu items */
+        for (int i = 0; i < NUM_FILE_MENU_ITEMS; i++) {
+            int item_y = menu_y + i * item_h;
+            
+            /* Separator */
+            if (strlen(file_menu_items[i]) == 0) {
+                hline(active_buffer, menu_x + 5, item_y + item_h/2, menu_x + menu_w - 5, COLOR_DARK_GRAY);
+                continue;
+            }
+            
+            /* Highlight selected */
+            if (i == sudoku_gui.file_menu_selected) {
+                rectfill(active_buffer, menu_x + 2, item_y + 2, 
+                        menu_x + menu_w - 2, item_y + item_h - 2, COLOR_CYAN);
+            }
+            
+            /* Draw menu item text */
+            int text_color = (i == sudoku_gui.file_menu_selected) ? COLOR_BLACK : COLOR_WHITE;
+            textout_ex(active_buffer, font, file_menu_items[i], menu_x + 10, item_y + 3, text_color, -1);
+        }
+    }
+}
+
 void draw_cell(int x, int y, int value, bool selected, bool is_clue) {
     int screen_x = GRID_START_X + x * CELL_SIZE;
     int screen_y = GRID_START_Y + y * CELL_SIZE;
@@ -283,17 +391,17 @@ void draw_cell(int x, int y, int value, bool selected, bool is_clue) {
         color = COLOR_YELLOW;
     }
     
-    rectfill(screen, screen_x, screen_y, screen_x + CELL_SIZE - 1, screen_y + CELL_SIZE - 1, color);
+    rectfill(active_buffer, screen_x, screen_y, screen_x + CELL_SIZE - 1, screen_y + CELL_SIZE - 1, color);
     
     /* Border */
     int border_color = COLOR_BLACK;
-    rect(screen, screen_x, screen_y, screen_x + CELL_SIZE - 1, screen_y + CELL_SIZE - 1, border_color);
+    rect(active_buffer, screen_x, screen_y, screen_x + CELL_SIZE - 1, screen_y + CELL_SIZE - 1, border_color);
     
     /* Value */
     if (value >= 0 && value <= 8) {
         text_color = is_clue ? COLOR_BLACK : COLOR_BLUE;
         snprintf(text, sizeof(text), "%d", value + 1);
-        textout_ex(screen, font, text, screen_x + CELL_SIZE/2 - 3, screen_y + CELL_SIZE/2 - 4, 
+        textout_ex(active_buffer, font, text, screen_x + CELL_SIZE/2 - 3, screen_y + CELL_SIZE/2 - 4, 
                    text_color, -1);
     }
 }
@@ -318,12 +426,12 @@ void draw_grid() {
     for (i = 0; i <= 9; i++) {
         int thickness = (i % 3 == 0) ? 3 : 1;
         int screen_pos = GRID_START_X + i * CELL_SIZE;
-        vline(screen, screen_pos, GRID_START_Y, GRID_START_Y + GRID_HEIGHT - 1, COLOR_BLACK);
+        vline(active_buffer, screen_pos, GRID_START_Y, GRID_START_Y + GRID_HEIGHT - 1, COLOR_BLACK);
     }
     
     for (i = 0; i <= 9; i++) {
         int screen_pos = GRID_START_Y + i * CELL_SIZE;
-        hline(screen, GRID_START_X, screen_pos, GRID_START_X + GRID_WIDTH - 1, COLOR_BLACK);
+        hline(active_buffer, GRID_START_X, screen_pos, GRID_START_X + GRID_WIDTH - 1, COLOR_BLACK);
     }
 }
 
@@ -332,93 +440,80 @@ void draw_buttons() {
     
     /* Draw section headers for better organization */
     int header_x = BUTTON_PANEL_X + 5;
-    textout_ex(screen, font, "DIFFICULTY:", header_x, BUTTON_PANEL_Y - 20, COLOR_BLACK, -1);
+    textout_ex(active_buffer, font, "Difficulty:", header_x, BUTTON_PANEL_Y - 15, COLOR_BLACK, -1);
     
     for (i = 0; i < 5; i++) {  /* Difficulty buttons */
         Button *btn = &buttons[i];
-        rectfill(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
+        rectfill(active_buffer, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
                 COLOR_LIGHT_GRAY);
-        rect(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
+        rect(active_buffer, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
             COLOR_BLACK);
-        textout_ex(screen, font, btn->label, btn->x + 5, btn->y + 6, COLOR_BLACK, -1);
+        textout_ex(active_buffer, font, btn->label, btn->x + 5, btn->y + 4, COLOR_BLACK, -1);
     }
     
     /* Game controls section */
-    textout_ex(screen, font, "GAME:", header_x, BUTTON_PANEL_Y + 6 * (BUTTON_HEIGHT + BUTTON_SPACING) - 20, 
+    textout_ex(active_buffer, font, "Game:", header_x, BUTTON_PANEL_Y + 5 * (BUTTON_HEIGHT + BUTTON_SPACING) + 5, 
                COLOR_BLACK, -1);
     
-    for (i = 5; i < 9; i++) {  /* Game control buttons (Solve, Undo, Redo, Clear) */
+    for (i = 5; i < 9; i++) {  /* Game control buttons */
         Button *btn = &buttons[i];
-        rectfill(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
+        rectfill(active_buffer, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
                 COLOR_LIGHT_GRAY);
-        rect(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
+        rect(active_buffer, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
             COLOR_BLACK);
-        textout_ex(screen, font, btn->label, btn->x + 5, btn->y + 6, COLOR_BLACK, -1);
+        textout_ex(active_buffer, font, btn->label, btn->x + 5, btn->y + 4, COLOR_BLACK, -1);
     }
-    
-    /* File menu section */
-    textout_ex(screen, font, "FILE:", header_x, BUTTON_PANEL_Y + 10 * (BUTTON_HEIGHT + BUTTON_SPACING) - 20,
-               COLOR_BLACK, -1);
-    
-    for (i = 9; i < 11; i++) {  /* Save and Load buttons */
-        Button *btn = &buttons[i];
-        rectfill(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
-                COLOR_LIGHT_GRAY);
-        rect(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
-            COLOR_BLACK);
-        textout_ex(screen, font, btn->label, btn->x + 5, btn->y + 6, COLOR_BLACK, -1);
-    }
-    
-    /* Quit button */
-    Button *quit_btn = &buttons[11];
-    rectfill(screen, quit_btn->x, quit_btn->y, quit_btn->x + quit_btn->width - 1, quit_btn->y + quit_btn->height - 1, 
-            COLOR_RED);
-    rect(screen, quit_btn->x, quit_btn->y, quit_btn->x + quit_btn->width - 1, quit_btn->y + quit_btn->height - 1, 
-        COLOR_BLACK);
-    textout_ex(screen, font, quit_btn->label, quit_btn->x + 5, quit_btn->y + 6, COLOR_BLACK, -1);
 }
 
 void draw_status_bar() {
     char buf[256];
     
     /* Status background */
-    rectfill(screen, 0, STATUS_BAR_Y, 640, STATUS_BAR_Y + 20, COLOR_LIGHT_GRAY);
+    rectfill(active_buffer, 0, STATUS_BAR_Y, 640, STATUS_BAR_Y + 20, COLOR_LIGHT_GRAY);
     
     /* Status text */
     if (sudoku_gui.status_timer > 0) {
         snprintf(buf, sizeof(buf), "%s", sudoku_gui.status_message);
-        textout_ex(screen, font, buf, 10, STATUS_BAR_Y + 3, COLOR_BLACK, -1);
+        textout_ex(active_buffer, font, buf, 10, STATUS_BAR_Y + 3, COLOR_BLACK, -1);
         sudoku_gui.status_timer--;
     }
 }
 
 void draw_help() {
     char *help_line1 = "Arrow keys: Move | 1-9: Input | 0/Del: Clear | S: Solve";
-    char *help_line2 = "Z: Undo | Y: Redo | Q: Quit | Save/Load with buttons";
-    textout_ex(screen, font, help_line1, GRID_START_X, HELP_TEXT_Y, COLOR_BLACK, -1);
-    textout_ex(screen, font, help_line2, GRID_START_X, HELP_TEXT_Y + 12, COLOR_BLACK, -1);
+    char *help_line2 = "Z: Undo | Y: Redo | N: New | P: Puzzle | File menu for Save/Load/Quit";
+    textout_ex(active_buffer, font, help_line1, GRID_START_X, HELP_TEXT_Y, COLOR_BLACK, -1);
+    textout_ex(active_buffer, font, help_line2, GRID_START_X, HELP_TEXT_Y + 12, COLOR_BLACK, -1);
 }
 
 void redraw_screen() {
-    if (!screen_dirty) return;
+    /* Always draw if full redraw needed, otherwise only if dirty */
+    if (!screen_dirty && !screen_needs_full_redraw) return;
+    
+    /* Get buffer to draw into */
+    active_buffer = get_next_buffer_and_swap();
+    
+    /* Always clear the buffer to avoid old content showing through */
+    clear_to_color(active_buffer, COLOR_WHITE);
     
     if (screen_needs_full_redraw) {
-        clear_to_color(screen, COLOR_WHITE);
         screen_needs_full_redraw = 0;
     }
     
-    /* Hide mouse cursor during drawing to prevent overlap with buttons */
+    /* Hide mouse cursor during drawing */
     scare_mouse();
     
+    /* Draw game elements FIRST */
     draw_grid();
     draw_buttons();
     draw_status_bar();
     draw_help();
     
+    /* Draw menu LAST so it appears on top */
+    draw_menu_bar();
+    
     /* Show mouse cursor again */
     unscare_mouse();
-    
-    mark_screen_clean();
 }
 
 void generate_puzzle(int difficulty) {
@@ -447,6 +542,46 @@ void generate_puzzle(int difficulty) {
     }
     
     sudoku_gui.is_generating = false;
+    mark_screen_dirty();
+}
+
+void handle_file_menu_selection(int item) {
+    int i, j;
+    
+    switch (item) {
+        case 0:  /* New Game */
+            sudoku_gui.game.NewGame();
+            for (i = 0; i < 9; i++) {
+                for (j = 0; j < 9; j++) {
+                    sudoku_gui.original_clues[i][j] = -1;
+                }
+            }
+            sudoku_gui.history_count = 0;
+            sudoku_gui.history_index = 0;
+            display_status("New game started");
+            break;
+        case 1:  /* New Puzzle */
+            generate_puzzle(1);  /* Medium difficulty */
+            break;
+        case 3:  /* Save Game */
+            sudoku_gui.game.SaveToFile("sudoku_save.txt");
+            display_status("Game saved");
+            break;
+        case 4:  /* Load Game */
+            if (sudoku_gui.game.LoadFromFile("sudoku_save.txt")) {
+                display_status("Game loaded");
+            } else {
+                display_status("Load failed");
+            }
+            sudoku_gui.history_count = 0;
+            sudoku_gui.history_index = 0;
+            break;
+        case 6:  /* Quit */
+            exit(0);
+            break;
+    }
+    
+    sudoku_gui.show_file_menu = false;
     mark_screen_dirty();
 }
 
@@ -486,28 +621,11 @@ void handle_button_click(int button_id) {
             display_status("Board cleared");
             mark_screen_dirty();
             break;
-        case 12:
-            sudoku_gui.game.SaveToFile("sudoku_save.txt");
-            display_status("Game saved");
-            break;
-        case 13:
-            if (sudoku_gui.game.LoadFromFile("sudoku_save.txt")) {
-                display_status("Game loaded");
-            } else {
-                display_status("Load failed");
-            }
-            sudoku_gui.history_count = 0;
-            sudoku_gui.history_index = 0;
-            mark_screen_dirty();
-            break;
         case 14:
             undo_last_move();
             break;
         case 15:
             redo_last_move();
-            break;
-        case 20:
-            exit(0);  /* Quit button - exit the program */
             break;
     }
 }
@@ -531,8 +649,22 @@ int main(void) {
     install_mouse();
     install_timer();
     
-    /* Set graphics mode - use GFX_AUTODETECT like beatchess */
-    if (set_gfx_mode(GFX_AUTODETECT, 640, 480, 0, 0) != 0) {
+    /* Set graphics mode - windowed on Linux, fullscreen on DOS */
+    int gfx_result = -1;
+    
+    #ifdef LINUX_BUILD
+    /* On Linux, try windowed mode first */
+    gfx_result = set_gfx_mode(GFX_AUTODETECT_WINDOWED, 640, 480, 0, 0);
+    if (gfx_result != 0) {
+        /* Fallback to autodetect if windowed fails */
+        gfx_result = set_gfx_mode(GFX_AUTODETECT, 640, 480, 0, 0);
+    }
+    #else
+    /* On DOS, use fullscreen autodetect */
+    gfx_result = set_gfx_mode(GFX_AUTODETECT, 640, 480, 0, 0);
+    #endif
+    
+    if (gfx_result != 0) {
         allegro_exit();
         printf("Error setting graphics mode: %s\n", allegro_error);
         return 1;
@@ -540,15 +672,45 @@ int main(void) {
     
     show_mouse(screen);
     
+    /* Initialize double buffering */
+    init_double_buffers();
+    
     /* Initialize GUI */
     init_sudoku_gui();
+    
+    /* Mark screen dirty to draw initial board */
+    mark_screen_needs_full_redraw();
+    
+    int prev_mouse_x = -1;
+    int prev_mouse_y = -1;
     
     running = true;
     
     /* Main game loop - like beatchess */
     while (running) {
-        redraw_screen();
-        
+        /* Check if mouse moved and redraw if it did */
+        if (mouse_x != prev_mouse_x || mouse_y != prev_mouse_y) {
+            prev_mouse_x = mouse_x;
+            prev_mouse_y = mouse_y;
+            
+            /* If menu is open, update which item is highlighted based on mouse position */
+            if (sudoku_gui.show_file_menu) {
+                if (mouse_x >= 0 && mouse_x < 180 &&
+                    mouse_y >= MENU_BAR_HEIGHT && mouse_y < MENU_BAR_HEIGHT + NUM_FILE_MENU_ITEMS * 18) {
+                    /* Mouse is over menu - highlight the item under cursor */
+                    int hovered_item = (mouse_y - MENU_BAR_HEIGHT) / 18;
+                    /* Only select non-separator items */
+                    if (hovered_item < NUM_FILE_MENU_ITEMS && strlen(file_menu_items[hovered_item]) > 0) {
+                        sudoku_gui.file_menu_selected = hovered_item;
+                    }
+                } else {
+                    /* Mouse moved away from menu - reset to first item */
+                    sudoku_gui.file_menu_selected = 0;
+                }
+            }
+            
+            mark_screen_dirty();  /* Redraw when mouse moves */
+        }
         /* Keyboard input - use keypressed/readkey like beatchess */
         if (keypressed()) {
             key_code = readkey();
@@ -561,11 +723,27 @@ int main(void) {
             
             switch (key_scancode) {
                 case KEY_UP:
-                    sudoku_gui.selected_row = (sudoku_gui.selected_row - 1 + 9) % 9;
+                    if (sudoku_gui.show_file_menu) {
+                        sudoku_gui.file_menu_selected = (sudoku_gui.file_menu_selected - 1 + NUM_FILE_MENU_ITEMS) % NUM_FILE_MENU_ITEMS;
+                        /* Skip separators */
+                        while (strlen(file_menu_items[sudoku_gui.file_menu_selected]) == 0) {
+                            sudoku_gui.file_menu_selected = (sudoku_gui.file_menu_selected - 1 + NUM_FILE_MENU_ITEMS) % NUM_FILE_MENU_ITEMS;
+                        }
+                    } else {
+                        sudoku_gui.selected_row = (sudoku_gui.selected_row - 1 + 9) % 9;
+                    }
                     mark_screen_dirty();
                     break;
                 case KEY_DOWN:
-                    sudoku_gui.selected_row = (sudoku_gui.selected_row + 1) % 9;
+                    if (sudoku_gui.show_file_menu) {
+                        sudoku_gui.file_menu_selected = (sudoku_gui.file_menu_selected + 1) % NUM_FILE_MENU_ITEMS;
+                        /* Skip separators */
+                        while (strlen(file_menu_items[sudoku_gui.file_menu_selected]) == 0) {
+                            sudoku_gui.file_menu_selected = (sudoku_gui.file_menu_selected + 1) % NUM_FILE_MENU_ITEMS;
+                        }
+                    } else {
+                        sudoku_gui.selected_row = (sudoku_gui.selected_row + 1) % 9;
+                    }
                     mark_screen_dirty();
                     break;
                 case KEY_LEFT:
@@ -580,45 +758,98 @@ int main(void) {
                     switch (key_ascii) {
                         case '0':
                         case KEY_DEL:
-                            old_val = sudoku_gui.game.GetValue(sudoku_gui.selected_col, 
-                                                                sudoku_gui.selected_row);
-                            add_to_history(sudoku_gui.selected_col, sudoku_gui.selected_row, 
-                                         old_val, -1);
-                            sudoku_gui.game.ClearValue(sudoku_gui.selected_col, 
-                                                      sudoku_gui.selected_row);
-                            mark_screen_dirty();
+                            if (!sudoku_gui.show_file_menu) {
+                                old_val = sudoku_gui.game.GetValue(sudoku_gui.selected_col, 
+                                                                    sudoku_gui.selected_row);
+                                add_to_history(sudoku_gui.selected_col, sudoku_gui.selected_row, 
+                                             old_val, -1);
+                                sudoku_gui.game.ClearValue(sudoku_gui.selected_col, 
+                                                          sudoku_gui.selected_row);
+                                mark_screen_dirty();
+                            }
                             break;
                         case '1': case '2': case '3': case '4': case '5':
                         case '6': case '7': case '8': case '9':
-                            old_val = sudoku_gui.game.GetValue(sudoku_gui.selected_col, 
-                                                                sudoku_gui.selected_row);
-                            new_val = key_ascii - '1';
-                            add_to_history(sudoku_gui.selected_col, sudoku_gui.selected_row, 
-                                         old_val, new_val);
-                            sudoku_gui.game.SetValue(sudoku_gui.selected_col, 
-                                                    sudoku_gui.selected_row, new_val);
-                            mark_screen_dirty();
+                            if (!sudoku_gui.show_file_menu) {
+                                old_val = sudoku_gui.game.GetValue(sudoku_gui.selected_col, 
+                                                                    sudoku_gui.selected_row);
+                                new_val = key_ascii - '1';
+                                add_to_history(sudoku_gui.selected_col, sudoku_gui.selected_row, 
+                                             old_val, new_val);
+                                sudoku_gui.game.SetValue(sudoku_gui.selected_col, 
+                                                        sudoku_gui.selected_row, new_val);
+                                mark_screen_dirty();
+                            }
                             break;
                         case 'S':
-                            sudoku_gui.game.Solve();
-                            display_status("Puzzle solved!");
+                            if (sudoku_gui.show_file_menu) {
+                                sudoku_gui.show_file_menu = false;
+                                sudoku_gui.game.SaveToFile("sudoku_save.txt");
+                                display_status("Game saved");
+                            } else {
+                                sudoku_gui.game.Solve();
+                                display_status("Puzzle solved!");
+                            }
                             mark_screen_dirty();
                             break;
                         case 'Q':
-                            running = false;
-                            break;
-                        case 'Z':
-                            undo_last_move();
-                            break;
-                        case 'Y':
-                            redo_last_move();
+                            if (sudoku_gui.show_file_menu) {
+                                exit(0);
+                            } else {
+                                running = false;
+                            }
                             break;
                         case 'N':
-                            sudoku_gui.game.NewGame();
-                            sudoku_gui.history_count = 0;
-                            sudoku_gui.history_index = 0;
+                            if (sudoku_gui.show_file_menu) {
+                                sudoku_gui.show_file_menu = false;
+                                handle_file_menu_selection(0);  /* New Game */
+                            } else {
+                                sudoku_gui.game.NewGame();
+                                sudoku_gui.history_count = 0;
+                                sudoku_gui.history_index = 0;
+                                mark_screen_dirty();
+                            }
+                            break;
+                        case 'P':
+                            if (sudoku_gui.show_file_menu) {
+                                sudoku_gui.show_file_menu = false;
+                                handle_file_menu_selection(1);  /* New Puzzle */
+                            }
+                            break;
+                        case 'L':
+                            if (sudoku_gui.show_file_menu) {
+                                sudoku_gui.show_file_menu = false;
+                                if (sudoku_gui.game.LoadFromFile("sudoku_save.txt")) {
+                                    display_status("Game loaded");
+                                } else {
+                                    display_status("Load failed");
+                                }
+                                sudoku_gui.history_count = 0;
+                                sudoku_gui.history_index = 0;
+                                mark_screen_dirty();
+                            }
+                            break;
+                        case 'Z':
+                            if (!sudoku_gui.show_file_menu) {
+                                undo_last_move();
+                            }
+                            break;
+                        case 'Y':
+                            if (!sudoku_gui.show_file_menu) {
+                                redo_last_move();
+                            }
+                            break;
+                        case 'F':
+                            /* Toggle File menu with Alt+F, but since we don't have Alt, use F */
+                            sudoku_gui.show_file_menu = !sudoku_gui.show_file_menu;
+                            sudoku_gui.file_menu_selected = 0;
                             mark_screen_dirty();
                             break;
+                    }
+                    /* Handle Enter key for menu selection */
+                    if (key_scancode == KEY_ENTER && sudoku_gui.show_file_menu) {
+                        handle_file_menu_selection(sudoku_gui.file_menu_selected);
+                        mark_screen_dirty();
                     }
                     break;
             }
@@ -635,27 +866,46 @@ int main(void) {
             if (my < 0) my = 0;
             if (my >= 480) my = 479;
             
-            if (screen_to_grid(mx, my, &grid_x, &grid_y)) {
+            /* Check if click is on a menu item (when menu is open) */
+            if (sudoku_gui.show_file_menu && mx >= 0 && mx < 180 && 
+                my >= MENU_BAR_HEIGHT && my < MENU_BAR_HEIGHT + NUM_FILE_MENU_ITEMS * 18) {
+                int menu_item = (my - MENU_BAR_HEIGHT) / 18;
+                if (menu_item < NUM_FILE_MENU_ITEMS && strlen(file_menu_items[menu_item]) > 0) {
+                    handle_file_menu_selection(menu_item);
+                }
+                mark_screen_dirty();
+            }
+            /* Check if click is on the File menu button */
+            else if (my < MENU_BAR_HEIGHT && mx >= 0 && mx < 50) {
+                sudoku_gui.show_file_menu = !sudoku_gui.show_file_menu;
+                sudoku_gui.file_menu_selected = 0;
+                mark_screen_dirty();
+            }
+            /* If menu is open and click is elsewhere - close menu */
+            else if (sudoku_gui.show_file_menu) {
+                sudoku_gui.show_file_menu = false;
+                mark_screen_dirty();
+            }
+            /* Check if click is on grid */
+            else if (screen_to_grid(mx, my, &grid_x, &grid_y)) {
                 sudoku_gui.selected_col = grid_x;
                 sudoku_gui.selected_row = grid_y;
                 mark_screen_dirty();
-            } else {
+            }
+            /* Check if click is on a button */
+            else {
                 button_id = get_button_at(mx, my);
                 if (button_id >= 0) {
-                    if (button_id == 20) {
-                        running = false;
-                    } else {
-                        handle_button_click(button_id);
-                        mark_screen_dirty();
-                    }
+                    handle_button_click(button_id);
+                    mark_screen_dirty();
                 }
             }
         }
         
         prev_mouse_b = mouse_b;
         
-        /* Mark screen dirty every frame to ensure continuous redraw (critical for DOS) */
-        mark_screen_dirty();
+        /* Redraw screen after processing all input */
+        redraw_screen();
         
         rest(10);  /* 10ms delay like beatchess */
     }
