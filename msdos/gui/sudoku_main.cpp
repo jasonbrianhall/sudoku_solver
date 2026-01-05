@@ -129,6 +129,12 @@ struct SudokuGUI {
     bool show_file_menu;
     int file_menu_selected;
     
+    bool show_options_menu;
+    int options_menu_selected;
+    
+    bool show_help_menu;
+    int help_menu_selected;
+    
     /* Timing */
     time_t last_action_time;
     
@@ -152,6 +158,10 @@ void init_sudoku_gui() {
     sudoku_gui.show_candidates = false;
     sudoku_gui.show_file_menu = false;
     sudoku_gui.file_menu_selected = 0;
+    sudoku_gui.show_options_menu = false;
+    sudoku_gui.options_menu_selected = 0;
+    sudoku_gui.show_help_menu = false;
+    sudoku_gui.help_menu_selected = 0;
     sudoku_gui.game.NewGame();
 }
 
@@ -235,6 +245,26 @@ const char *file_menu_items[] = {
 };
 
 #define NUM_FILE_MENU_ITEMS (sizeof(file_menu_items) / sizeof(file_menu_items[0]))
+
+/* Options menu items */
+const char *options_menu_items[] = {
+    "Difficulty: Easy",
+    "Difficulty: Medium",
+    "Difficulty: Hard",
+    "",  /* separator */
+    "Generate New",
+};
+
+#define NUM_OPTIONS_MENU_ITEMS (sizeof(options_menu_items) / sizeof(options_menu_items[0]))
+
+/* Help menu items */
+const char *help_menu_items[] = {
+    "How to Play",
+    "Keyboard Shortcuts",
+    "About Sudoku",
+};
+
+#define NUM_HELP_MENU_ITEMS (sizeof(help_menu_items) / sizeof(help_menu_items[0]))
 
 /* Button definitions */
 struct Button {
@@ -345,11 +375,13 @@ void draw_menu_bar() {
     /* Menu bar background */
     rectfill(active_buffer, 0, 0, 640, MENU_BAR_HEIGHT, COLOR_BLUE);
     
-    /* File menu button */
+    /* Menu buttons */
     textout_ex(active_buffer, font, "File", 5, 5, COLOR_WHITE, -1);
+    textout_ex(active_buffer, font, "Options", 50, 5, COLOR_WHITE, -1);
+    textout_ex(active_buffer, font, "Help", 125, 5, COLOR_WHITE, -1);
     
     /* Title */
-    textout_ex(active_buffer, font, "Sudoku - Allegro Edition", 200, 5, COLOR_YELLOW, -1);
+    textout_ex(active_buffer, font, "Sudoku - Allegro Edition", 250, 5, COLOR_YELLOW, -1);
     
     /* Draw File dropdown menu if active */
     if (sudoku_gui.show_file_menu) {
@@ -382,6 +414,74 @@ void draw_menu_bar() {
             /* Draw menu item text */
             int text_color = (i == sudoku_gui.file_menu_selected) ? COLOR_BLACK : COLOR_WHITE;
             textout_ex(active_buffer, font, file_menu_items[i], menu_x + 10, item_y + 3, text_color, -1);
+        }
+    }
+    
+    /* Draw Options dropdown menu if active */
+    if (sudoku_gui.show_options_menu) {
+        int menu_x = 50;
+        int menu_y = MENU_BAR_HEIGHT;
+        int menu_w = 180;
+        int item_h = 18;
+        int menu_h = NUM_OPTIONS_MENU_ITEMS * item_h;
+        
+        /* Menu background with border */
+        rectfill(active_buffer, menu_x, menu_y, menu_x + menu_w, menu_y + menu_h, COLOR_BLUE);
+        rect(active_buffer, menu_x, menu_y, menu_x + menu_w, menu_y + menu_h, COLOR_WHITE);
+        
+        /* Menu items */
+        for (int i = 0; i < NUM_OPTIONS_MENU_ITEMS; i++) {
+            int item_y = menu_y + i * item_h;
+            
+            /* Separator */
+            if (strlen(options_menu_items[i]) == 0) {
+                hline(active_buffer, menu_x + 5, item_y + item_h/2, menu_x + menu_w - 5, COLOR_DARK_GRAY);
+                continue;
+            }
+            
+            /* Highlight selected */
+            if (i == sudoku_gui.options_menu_selected) {
+                rectfill(active_buffer, menu_x + 2, item_y + 2, 
+                        menu_x + menu_w - 2, item_y + item_h - 2, COLOR_CYAN);
+            }
+            
+            /* Draw menu item text */
+            int text_color = (i == sudoku_gui.options_menu_selected) ? COLOR_BLACK : COLOR_WHITE;
+            textout_ex(active_buffer, font, options_menu_items[i], menu_x + 10, item_y + 3, text_color, -1);
+        }
+    }
+    
+    /* Draw Help dropdown menu if active */
+    if (sudoku_gui.show_help_menu) {
+        int menu_x = 125;
+        int menu_y = MENU_BAR_HEIGHT;
+        int menu_w = 180;
+        int item_h = 18;
+        int menu_h = NUM_HELP_MENU_ITEMS * item_h;
+        
+        /* Menu background with border */
+        rectfill(active_buffer, menu_x, menu_y, menu_x + menu_w, menu_y + menu_h, COLOR_BLUE);
+        rect(active_buffer, menu_x, menu_y, menu_x + menu_w, menu_y + menu_h, COLOR_WHITE);
+        
+        /* Menu items */
+        for (int i = 0; i < NUM_HELP_MENU_ITEMS; i++) {
+            int item_y = menu_y + i * item_h;
+            
+            /* Separator */
+            if (strlen(help_menu_items[i]) == 0) {
+                hline(active_buffer, menu_x + 5, item_y + item_h/2, menu_x + menu_w - 5, COLOR_DARK_GRAY);
+                continue;
+            }
+            
+            /* Highlight selected */
+            if (i == sudoku_gui.help_menu_selected) {
+                rectfill(active_buffer, menu_x + 2, item_y + 2, 
+                        menu_x + menu_w - 2, item_y + item_h - 2, COLOR_CYAN);
+            }
+            
+            /* Draw menu item text */
+            int text_color = (i == sudoku_gui.help_menu_selected) ? COLOR_BLACK : COLOR_WHITE;
+            textout_ex(active_buffer, font, help_menu_items[i], menu_x + 10, item_y + 3, text_color, -1);
         }
     }
 }
@@ -512,7 +612,6 @@ void redraw_screen() {
     draw_grid();
     draw_buttons();
     draw_status_bar();
-    draw_help();
     
     /* Draw menu LAST so it appears on top */
     draw_menu_bar();
@@ -709,6 +808,9 @@ int main(void) {
     
     /* Main game loop - like beatchess */
     while (running) {
+        /* Always ensure mouse is visible (might be hidden from previous draw) */
+        show_mouse(screen);
+        
         /* Check if window close button was clicked (Linux) */
         if (window_close_requested) {
             running = false;
@@ -732,6 +834,32 @@ int main(void) {
                 } else {
                     /* Mouse moved away from menu - reset to first item */
                     sudoku_gui.file_menu_selected = 0;
+                }
+            } else if (sudoku_gui.show_options_menu) {
+                if (mouse_x >= 50 && mouse_x < 230 &&
+                    mouse_y >= MENU_BAR_HEIGHT && mouse_y < MENU_BAR_HEIGHT + NUM_OPTIONS_MENU_ITEMS * 18) {
+                    /* Mouse is over menu - highlight the item under cursor */
+                    int hovered_item = (mouse_y - MENU_BAR_HEIGHT) / 18;
+                    /* Only select non-separator items */
+                    if (hovered_item < NUM_OPTIONS_MENU_ITEMS && strlen(options_menu_items[hovered_item]) > 0) {
+                        sudoku_gui.options_menu_selected = hovered_item;
+                    }
+                } else {
+                    /* Mouse moved away from menu - reset to first item */
+                    sudoku_gui.options_menu_selected = 0;
+                }
+            } else if (sudoku_gui.show_help_menu) {
+                if (mouse_x >= 125 && mouse_x < 305 &&
+                    mouse_y >= MENU_BAR_HEIGHT && mouse_y < MENU_BAR_HEIGHT + NUM_HELP_MENU_ITEMS * 18) {
+                    /* Mouse is over menu - highlight the item under cursor */
+                    int hovered_item = (mouse_y - MENU_BAR_HEIGHT) / 18;
+                    /* Only select non-separator items */
+                    if (hovered_item < NUM_HELP_MENU_ITEMS && strlen(help_menu_items[hovered_item]) > 0) {
+                        sudoku_gui.help_menu_selected = hovered_item;
+                    }
+                } else {
+                    /* Mouse moved away from menu - reset to first item */
+                    sudoku_gui.help_menu_selected = 0;
                 }
             }
             
@@ -892,7 +1020,7 @@ int main(void) {
             if (my < 0) my = 0;
             if (my >= 480) my = 479;
             
-            /* Check if click is on a menu item (when menu is open) */
+            /* Check if click is on a File menu item (when menu is open) */
             if (sudoku_gui.show_file_menu && mx >= 0 && mx < 180 && 
                 my >= MENU_BAR_HEIGHT && my < MENU_BAR_HEIGHT + NUM_FILE_MENU_ITEMS * 18) {
                 int menu_item = (my - MENU_BAR_HEIGHT) / 18;
@@ -901,15 +1029,67 @@ int main(void) {
                 }
                 mark_screen_dirty();
             }
+            /* Check if click is on an Options menu item (when menu is open) */
+            else if (sudoku_gui.show_options_menu && mx >= 50 && mx < 230 && 
+                my >= MENU_BAR_HEIGHT && my < MENU_BAR_HEIGHT + NUM_OPTIONS_MENU_ITEMS * 18) {
+                int menu_item = (my - MENU_BAR_HEIGHT) / 18;
+                if (menu_item < NUM_OPTIONS_MENU_ITEMS && strlen(options_menu_items[menu_item]) > 0) {
+                    if (menu_item == 0) {
+                        generate_puzzle(0);  /* Easy */
+                    } else if (menu_item == 1) {
+                        generate_puzzle(1);  /* Medium */
+                    } else if (menu_item == 2) {
+                        generate_puzzle(2);  /* Hard */
+                    } else if (menu_item == 4) {
+                        generate_puzzle(1);  /* Generate new at medium */
+                    }
+                }
+                mark_screen_dirty();
+            }
+            /* Check if click is on a Help menu item (when menu is open) */
+            else if (sudoku_gui.show_help_menu && mx >= 125 && mx < 305 && 
+                my >= MENU_BAR_HEIGHT && my < MENU_BAR_HEIGHT + NUM_HELP_MENU_ITEMS * 18) {
+                int menu_item = (my - MENU_BAR_HEIGHT) / 18;
+                if (menu_item < NUM_HELP_MENU_ITEMS && strlen(help_menu_items[menu_item]) > 0) {
+                    if (menu_item == 0) {
+                        display_status("Sudoku: Fill the 9x9 grid so each row, column, and 3x3 box contains 1-9");
+                    } else if (menu_item == 1) {
+                        display_status("Arrows=Move, 1-9=Input, 0/Del=Clear, S=Solve, Z=Undo, Y=Redo, N=New");
+                    } else if (menu_item == 2) {
+                        display_status("Sudoku puzzle - fill grid with numbers 1-9. One number per cell, no repeats");
+                    }
+                }
+                mark_screen_dirty();
+            }
             /* Check if click is on the File menu button */
             else if (my < MENU_BAR_HEIGHT && mx >= 0 && mx < 50) {
                 sudoku_gui.show_file_menu = !sudoku_gui.show_file_menu;
+                sudoku_gui.show_options_menu = false;
+                sudoku_gui.show_help_menu = false;
                 sudoku_gui.file_menu_selected = 0;
                 mark_screen_dirty();
             }
-            /* If menu is open and click is elsewhere - close menu */
-            else if (sudoku_gui.show_file_menu) {
+            /* Check if click is on the Options menu button */
+            else if (my < MENU_BAR_HEIGHT && mx >= 50 && mx < 125) {
+                sudoku_gui.show_options_menu = !sudoku_gui.show_options_menu;
                 sudoku_gui.show_file_menu = false;
+                sudoku_gui.show_help_menu = false;
+                sudoku_gui.options_menu_selected = 0;
+                mark_screen_dirty();
+            }
+            /* Check if click is on the Help menu button */
+            else if (my < MENU_BAR_HEIGHT && mx >= 125 && mx < 180) {
+                sudoku_gui.show_help_menu = !sudoku_gui.show_help_menu;
+                sudoku_gui.show_file_menu = false;
+                sudoku_gui.show_options_menu = false;
+                sudoku_gui.help_menu_selected = 0;
+                mark_screen_dirty();
+            }
+            /* If any menu is open and click is elsewhere - close all menus */
+            else if (sudoku_gui.show_file_menu || sudoku_gui.show_options_menu || sudoku_gui.show_help_menu) {
+                sudoku_gui.show_file_menu = false;
+                sudoku_gui.show_options_menu = false;
+                sudoku_gui.show_help_menu = false;
                 mark_screen_dirty();
             }
             /* Check if click is on grid */
