@@ -687,7 +687,7 @@ void redraw_screen() {
         clear_to_color(active_buffer, COLOR_WHITE);
     }
     
-    /* Hide mouse cursor during drawing */
+    /* Hide mouse cursor during drawing and buffer operations */
     scare_mouse();
     
     /* Draw game elements FIRST */
@@ -698,10 +698,7 @@ void redraw_screen() {
     /* Draw menu LAST so it appears on top */
     draw_menu_bar();
     
-    /* Show mouse cursor again */
-    unscare_mouse();
-    
-    /* NOW swap/display the buffer AFTER drawing to it */
+    /* Display and swap buffer while mouse is still scared */
     if (screen_dirty) {
         vsync();  /* Wait for vertical sync */
         blit(active_buffer, screen, 0, 0, 0, 0, 640, 480);  /* Display what we just drew */
@@ -710,7 +707,13 @@ void redraw_screen() {
         /* Swap to next buffer for next frame */
         current_buffer = (current_buffer + 1) % NUM_BUFFERS;
         active_buffer = buffers[current_buffer];
+        
+        /* Clear the new active buffer to prevent mouse artifacts */
+        clear_to_color(active_buffer, COLOR_WHITE);
     }
+    
+    /* Show mouse cursor again after all buffer operations complete */
+    unscare_mouse();
 }
 
 void generate_puzzle(int difficulty) {
