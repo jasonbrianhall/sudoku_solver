@@ -1,8 +1,18 @@
 /*
  * sudoku_main.cpp - Sudoku GUI using Allegro 4 for DOS/DJGPP
- * DOS-compatible version - no C++20 features
- * Compiles with DJGPP and older GCC versions
+ * Fixed to use actual Allegro 4 patterns (no Allegro 5 features)
  */
+
+/* Declare far pointer functions BEFORE including allegro.h */
+#ifdef __DJGPP__
+extern int _farsetsel(unsigned short selector);
+extern void _farnspokeb(unsigned long addr, unsigned char val);
+extern unsigned char _farnspeekb(unsigned long addr);
+extern void _farnspokew(unsigned long addr, unsigned short val);
+extern unsigned short _farnspeekw(unsigned long addr);
+extern void _farnspokel(unsigned long addr, unsigned long val);
+extern unsigned long _farnspeekl(unsigned long addr);
+#endif
 
 #include "sudoku.h"
 #include "generatepuzzle.h"
@@ -11,19 +21,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <limits.h>
 #include <time.h>
 
-void Sudoku::print_debug(const char *format, ...);
-
 /* Platform detection */
-#ifdef MSDOS
-    #define DOS_BUILD 1
-#else
+#if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
     #define LINUX_BUILD 1
+#else
+    #define DOS_BUILD 1
 #endif
 
-/* Keyboard constants */
+/* Allegro keyboard constants */
 #ifndef KEY_UP
     #define KEY_UP 0x48
 #endif
@@ -68,7 +75,7 @@ void Sudoku::print_debug(const char *format, ...);
 #define STATUS_BAR_Y (GRID_START_Y + GRID_HEIGHT + 20)
 #define HELP_TEXT_Y (STATUS_BAR_Y + 30)
 
-/* Colors */
+/* Colors - Allegro 4 palette colors */
 #define COLOR_BLACK 0
 #define COLOR_WHITE 15
 #define COLOR_LIGHT_GRAY 7
@@ -93,7 +100,6 @@ struct MoveHistory {
 /* Sudoku GUI State */
 struct SudokuGUI {
     Sudoku game;
-    Sudoku backup_for_generation;
     
     int selected_row;
     int selected_col;
@@ -119,7 +125,7 @@ struct SudokuGUI {
     int original_clues[9][9];
 };
 
-/* Initialize sudoku_gui using constructor-like function to avoid C++20 features */
+/* Global GUI state */
 static SudokuGUI sudoku_gui;
 
 void init_sudoku_gui() {
@@ -136,6 +142,7 @@ void init_sudoku_gui() {
     sudoku_gui.game.NewGame();
 }
 
+/* Screen dirty tracking (like beatchess) */
 static int screen_dirty = 1;
 static int screen_needs_full_redraw = 1;
 
@@ -217,14 +224,12 @@ bool screen_to_grid(int screen_x, int screen_y, int *grid_x, int *grid_y) {
 void add_to_history(int x, int y, int old_value, int new_value) {
     if (sudoku_gui.history_count >= MAX_HISTORY) {
         int i;
-        /* Shift history down */
         for (i = 0; i < MAX_HISTORY - 1; i++) {
             sudoku_gui.history[i] = sudoku_gui.history[i + 1];
         }
         sudoku_gui.history_count = MAX_HISTORY - 1;
     }
     
-    /* Add new move */
     sudoku_gui.history[sudoku_gui.history_count].x = x;
     sudoku_gui.history[sudoku_gui.history_count].y = y;
     sudoku_gui.history[sudoku_gui.history_count].old_value = old_value;
@@ -265,102 +270,91 @@ void redo_last_move() {
     mark_screen_dirty();
 }
 
-/* Draw a cell with enhanced visuals */
+/* Draw cell using Allegro 4 only */
 void draw_cell(int x, int y, int value, bool selected, bool is_clue) {
     int screen_x = GRID_START_X + x * CELL_SIZE;
     int screen_y = GRID_START_Y + y * CELL_SIZE;
+    int color, text_color;
+    char text[4];
     
-    /* Cell background */
-    int bg_color;
+    /* Background */
+    color = ((x + y) % 2 == 0) ? COLOR_WHITE : COLOR_LIGHT_GRAY;
     if (selected) {
-        bg_color = COLOR_YELLOW;
-    } else if (is_clue) {
-        bg_color = COLOR_LIGHT_GRAY;
-    } else {
-        bg_color = ((x + y) % 2 == 0) ? COLOR_WHITE : 7;
+        color = COLOR_YELLOW;
     }
     
-    rectfill(screen, screen_x, screen_y, 
-             screen_x + CELL_SIZE - 1, screen_y + CELL_SIZE - 1, 
-             bg_color);
+    rectfill(screen, screen_x, screen_y, screen_x + CELL_SIZE - 1, screen_y + CELL_SIZE - 1, color);
     
-    /* Borders */
-    int border_thickness = 1;
-    int i;
-    if (x % 3 == 0) border_thickness = 2;
-    if (y % 3 == 0) border_thickness = 2;
-    
-    for (i = 0; i < border_thickness; i++) {
-        hline(screen, screen_x, screen_y + i, screen_x + CELL_SIZE - 1, COLOR_BLACK);
-        vline(screen, screen_x + i, screen_y, screen_y + CELL_SIZE - 1, COLOR_BLACK);
-    }
+    /* Border */
+    int border_color = COLOR_BLACK;
+    rect(screen, screen_x, screen_y, screen_x + CELL_SIZE - 1, screen_y + CELL_SIZE - 1, border_color);
     
     /* Value */
-    if (value >= 0 && value < 9) {
-        char str[2];
-        sprintf(str, "%d", value + 1);
-        int text_x = screen_x + CELL_SIZE / 2 - 3;
-        int text_y = screen_y + CELL_SIZE / 2 - 4;
-        int text_color = is_clue ? COLOR_BLACK : COLOR_BLUE;
-        textout_ex(screen, font, str, text_x, text_y, text_color, -1);
+    if (value >= 0 && value <= 8) {
+        text_color = is_clue ? COLOR_BLACK : COLOR_BLUE;
+        snprintf(text, sizeof(text), "%d", value + 1);
+        textout_ex(screen, font, text, screen_x + CELL_SIZE/2 - 3, screen_y + CELL_SIZE/2 - 4, 
+                   text_color, -1);
     }
 }
 
 void draw_grid() {
-    int x, y;
-    int value;
-    bool selected;
+    int i, j, value;
     bool is_clue;
+    bool selected;
     
-    /* Title */
-    textout_ex(screen, font, "Sudoku Solver - Allegro 4 DOS", 50, 20, COLOR_BLACK, -1);
-    
-    /* Grid cells */
-    for (y = 0; y < 9; y++) {
-        for (x = 0; x < 9; x++) {
-            value = sudoku_gui.game.GetValue(x, y);
-            selected = (x == sudoku_gui.selected_col && y == sudoku_gui.selected_row);
-            is_clue = (sudoku_gui.original_clues[y][x] != -1);
+    /* Draw all cells */
+    for (i = 0; i < 9; i++) {
+        for (j = 0; j < 9; j++) {
+            value = sudoku_gui.game.GetValue(j, i);
+            is_clue = (sudoku_gui.original_clues[i][j] != -1);
+            selected = (sudoku_gui.selected_row == i && sudoku_gui.selected_col == j);
             
-            draw_cell(x, y, value, selected, is_clue);
+            draw_cell(j, i, value, selected, is_clue);
         }
     }
-}
-
-void draw_button(const Button *btn, bool highlighted) {
-    int bg_color = highlighted ? COLOR_BLUE : COLOR_LIGHT_GRAY;
-    int text_color = highlighted ? COLOR_WHITE : COLOR_BLACK;
     
-    rectfill(screen, btn->x, btn->y, 
-             btn->x + btn->width, btn->y + btn->height, 
-             bg_color);
+    /* Draw thick grid lines every 3 squares */
+    for (i = 0; i <= 9; i++) {
+        int thickness = (i % 3 == 0) ? 3 : 1;
+        int screen_pos = GRID_START_X + i * CELL_SIZE;
+        vline(screen, screen_pos, GRID_START_Y, GRID_START_Y + GRID_HEIGHT - 1, COLOR_BLACK);
+    }
     
-    rect(screen, btn->x, btn->y, 
-         btn->x + btn->width, btn->y + btn->height, 
-         COLOR_BLACK);
-    
-    textout_ex(screen, font, btn->label, btn->x + 5, btn->y + 5, text_color, -1);
+    for (i = 0; i <= 9; i++) {
+        int screen_pos = GRID_START_Y + i * CELL_SIZE;
+        hline(screen, GRID_START_X, screen_pos, GRID_START_X + GRID_WIDTH - 1, COLOR_BLACK);
+    }
 }
 
 void draw_buttons() {
     int i;
-    textout_ex(screen, font, "Actions", BUTTON_PANEL_X, BUTTON_PANEL_Y - 30, COLOR_BLACK, -1);
-    
     for (i = 0; i < NUM_BUTTONS; i++) {
-        draw_button(&buttons[i], false);
+        Button *btn = &buttons[i];
+        rectfill(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
+                COLOR_LIGHT_GRAY);
+        rect(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
+            COLOR_BLACK);
+        textout_ex(screen, font, btn->label, btn->x + 5, btn->y + 6, COLOR_BLACK, -1);
     }
 }
 
 void draw_status_bar() {
+    char buf[256];
+    
+    /* Status background */
+    rectfill(screen, 0, STATUS_BAR_Y, 640, STATUS_BAR_Y + 20, COLOR_LIGHT_GRAY);
+    
+    /* Status text */
     if (sudoku_gui.status_timer > 0) {
-        textout_ex(screen, font, sudoku_gui.status_message, GRID_START_X, STATUS_BAR_Y, 
-                  COLOR_BLACK, -1);
+        snprintf(buf, sizeof(buf), "%s", sudoku_gui.status_message);
+        textout_ex(screen, font, buf, 10, STATUS_BAR_Y + 3, COLOR_BLACK, -1);
         sudoku_gui.status_timer--;
     }
 }
 
 void draw_help() {
-    const char *help = "Arrow: Move | 1-9: Fill | 0: Clear | S: Solve | Q: Quit";
+    char *help = "Arrow keys: Move | 1-9: Input | 0/Del: Clear | S: Solve | Z: Undo | Y: Redo | Q: Quit";
     textout_ex(screen, font, help, GRID_START_X, HELP_TEXT_Y, COLOR_BLACK, -1);
 }
 
@@ -391,7 +385,6 @@ void generate_puzzle(int difficulty) {
     PuzzleGenerator generator(sudoku_gui.game);
     if (generator.generatePuzzle(difficulty_names[difficulty])) {
         int y, x;
-        /* Save clues for reference */
         for (y = 0; y < 9; y++) {
             for (x = 0; x < 9; x++) {
                 sudoku_gui.original_clues[y][x] = sudoku_gui.game.GetValue(x, y);
@@ -448,13 +441,13 @@ void handle_button_click(int button_id) {
             break;
         case 12:
             sudoku_gui.game.SaveToFile("sudoku_save.txt");
-            display_status("Game saved to sudoku_save.txt");
+            display_status("Game saved");
             break;
         case 13:
             if (sudoku_gui.game.LoadFromFile("sudoku_save.txt")) {
-                display_status("Game loaded from sudoku_save.txt");
+                display_status("Game loaded");
             } else {
-                display_status("Failed to load game");
+                display_status("Load failed");
             }
             sudoku_gui.history_count = 0;
             sudoku_gui.history_index = 0;
@@ -472,16 +465,15 @@ void handle_button_click(int button_id) {
 }
 
 int main(void) {
-    int key_code, key_ascii, key_scancode;
+    int key_code;
     int mx, my;
     int grid_x, grid_y;
     int button_id;
     int prev_mouse_b = 0;
     int old_val, new_val;
-    bool need_redraw;
     bool running;
     
-    /* Initialize Allegro */
+    /* Initialize Allegro - exactly like beatchess */
     if (allegro_init() != 0) {
         printf("Failed to initialize Allegro\n");
         return 1;
@@ -491,9 +483,10 @@ int main(void) {
     install_mouse();
     install_timer();
     
-    /* Set graphics mode */
+    /* Set graphics mode - use GFX_AUTODETECT like beatchess */
     if (set_gfx_mode(GFX_AUTODETECT, 640, 480, 0, 0) != 0) {
-        printf("Error setting graphics mode\n");
+        allegro_exit();
+        printf("Error setting graphics mode: %s\n", allegro_error);
         return 1;
     }
     
@@ -504,106 +497,95 @@ int main(void) {
     
     running = true;
     
-    /* Game loop */
+    /* Main game loop - like beatchess */
     while (running) {
         redraw_screen();
         
-        /* Keyboard input */
+        /* Keyboard input - use keypressed/readkey like beatchess */
         if (keypressed()) {
             key_code = readkey();
-            key_ascii = key_code & 0xFF;
-            key_scancode = (key_code >> 8) & 0xFF;
+            int key_ascii = key_code & 0xFF;
+            int key_scancode = (key_code >> 8) & 0xFF;
             
             if (key_ascii >= 'a' && key_ascii <= 'z') {
                 key_ascii = key_ascii - 'a' + 'A';
             }
             
-            need_redraw = true;
-            
             switch (key_scancode) {
                 case KEY_UP:
                     sudoku_gui.selected_row = (sudoku_gui.selected_row - 1 + 9) % 9;
+                    mark_screen_dirty();
                     break;
                 case KEY_DOWN:
                     sudoku_gui.selected_row = (sudoku_gui.selected_row + 1) % 9;
+                    mark_screen_dirty();
                     break;
                 case KEY_LEFT:
                     sudoku_gui.selected_col = (sudoku_gui.selected_col - 1 + 9) % 9;
+                    mark_screen_dirty();
                     break;
                 case KEY_RIGHT:
                     sudoku_gui.selected_col = (sudoku_gui.selected_col + 1) % 9;
+                    mark_screen_dirty();
                     break;
                 default:
-                    need_redraw = false;
+                    switch (key_ascii) {
+                        case '0':
+                        case KEY_DEL:
+                            old_val = sudoku_gui.game.GetValue(sudoku_gui.selected_col, 
+                                                                sudoku_gui.selected_row);
+                            add_to_history(sudoku_gui.selected_col, sudoku_gui.selected_row, 
+                                         old_val, -1);
+                            sudoku_gui.game.ClearValue(sudoku_gui.selected_col, 
+                                                      sudoku_gui.selected_row);
+                            mark_screen_dirty();
+                            break;
+                        case '1': case '2': case '3': case '4': case '5':
+                        case '6': case '7': case '8': case '9':
+                            old_val = sudoku_gui.game.GetValue(sudoku_gui.selected_col, 
+                                                                sudoku_gui.selected_row);
+                            new_val = key_ascii - '1';
+                            add_to_history(sudoku_gui.selected_col, sudoku_gui.selected_row, 
+                                         old_val, new_val);
+                            sudoku_gui.game.SetValue(sudoku_gui.selected_col, 
+                                                    sudoku_gui.selected_row, new_val);
+                            mark_screen_dirty();
+                            break;
+                        case 'S':
+                            sudoku_gui.game.Solve();
+                            display_status("Puzzle solved!");
+                            mark_screen_dirty();
+                            break;
+                        case 'Q':
+                            running = false;
+                            break;
+                        case 'Z':
+                            undo_last_move();
+                            break;
+                        case 'Y':
+                            redo_last_move();
+                            break;
+                        case 'N':
+                            sudoku_gui.game.NewGame();
+                            sudoku_gui.history_count = 0;
+                            sudoku_gui.history_index = 0;
+                            mark_screen_dirty();
+                            break;
+                    }
                     break;
-            }
-            
-            if (!need_redraw) {
-                switch (key_ascii) {
-                    case '0':
-                    case KEY_DEL:
-                        old_val = sudoku_gui.game.GetValue(sudoku_gui.selected_col, 
-                                                            sudoku_gui.selected_row);
-                        add_to_history(sudoku_gui.selected_col, sudoku_gui.selected_row, 
-                                     old_val, -1);
-                        sudoku_gui.game.ClearValue(sudoku_gui.selected_col, 
-                                                  sudoku_gui.selected_row);
-                        need_redraw = true;
-                        break;
-                    case '1':
-                    case '2':
-                    case '3':
-                    case '4':
-                    case '5':
-                    case '6':
-                    case '7':
-                    case '8':
-                    case '9':
-                        old_val = sudoku_gui.game.GetValue(sudoku_gui.selected_col, 
-                                                            sudoku_gui.selected_row);
-                        new_val = key_ascii - '1';
-                        add_to_history(sudoku_gui.selected_col, sudoku_gui.selected_row, 
-                                     old_val, new_val);
-                        sudoku_gui.game.SetValue(sudoku_gui.selected_col, 
-                                                sudoku_gui.selected_row, new_val);
-                        need_redraw = true;
-                        break;
-                    case 'S':
-                        sudoku_gui.game.Solve();
-                        display_status("Puzzle solved!");
-                        need_redraw = true;
-                        break;
-                    case 'Q':
-                        running = false;
-                        break;
-                    case 'Z':
-                        undo_last_move();
-                        need_redraw = true;
-                        break;
-                    case 'Y':
-                        redo_last_move();
-                        need_redraw = true;
-                        break;
-                    case 'N':
-                        sudoku_gui.game.NewGame();
-                        sudoku_gui.history_count = 0;
-                        sudoku_gui.history_index = 0;
-                        need_redraw = true;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            
-            if (need_redraw) {
-                mark_screen_dirty();
             }
         }
         
-        /* Mouse input */
+        /* Mouse input - like beatchess */
         if ((mouse_b & 1) && !(prev_mouse_b & 1)) {
             mx = mouse_x;
             my = mouse_y;
+            
+            /* Bounds check */
+            if (mx < 0) mx = 0;
+            if (mx >= 640) mx = 639;
+            if (my < 0) my = 0;
+            if (my >= 480) my = 479;
             
             if (screen_to_grid(mx, my, &grid_x, &grid_y)) {
                 sudoku_gui.selected_col = grid_x;
@@ -623,9 +605,10 @@ int main(void) {
         }
         
         prev_mouse_b = mouse_b;
-        rest(10);
+        rest(10);  /* 10ms delay like beatchess */
     }
     
+    /* Cleanup */
     allegro_exit();
     return 0;
 }

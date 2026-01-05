@@ -1,3 +1,4 @@
+#include "sudoku.h"
 #include <iostream>
 using namespace std;
 #include <stdlib.h>
@@ -9,7 +10,6 @@ using namespace std;
 #include <fstream>
 #include <ctime>
 #include <cstring>
-#include "sudoku.h"
 
 // Implementation of new file loading functions
 bool Sudoku::LoadFromFile(const string& filename) {

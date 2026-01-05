@@ -1,14 +1,11 @@
-#ifdef MSDOS
-
+#include "sudoku.h"
 #include <conio.h>
 #include <stdarg.h>  // Required for va_list, va_start, va_end
 #include <stdio.h>   // Required for vsprintf
-#include "sudoku.h"
-
 
 #define DEBUG_BUFFER_SIZE 10
 void Sudoku::print_debug(const char *format, ...) {
-    char buffer[256];
+/*    char buffer[256];
     
     // Format the string
     va_list args;
@@ -26,6 +23,6 @@ void Sudoku::print_debug(const char *format, ...) {
     
     // Return to start of line and print the message
     gotoxy(1, 23);
-    cputs(buffer);
+    cputs(buffer);*/
 }
-#endif
+
