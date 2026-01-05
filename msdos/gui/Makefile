@@ -1,26 +1,39 @@
-# Makefile for sudoku DOS with Allegro 4 and DPMI support
-# DJGPP/DOS-compatible version - no C++20 features
+# Makefile for Sudoku - Multi-platform support (Linux and DOS)
+# Supports both native Linux builds and DOS builds via DJGPP/Docker
 VERSION=1.0
 
+# Platform detection
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    PLATFORM := linux
+else
+    PLATFORM := dos
+endif
+
 # Source files - using DOS-compatible versions
-SRCS = sudoku.cpp generatepuzzle.cpp sudoku_main.cpp
+SRCS = sudoku.cpp generatepuzzle.cpp sudoku_main.cpp dosprint.cpp
 
 # Output files
 DOS_TARGET = sud.exe
 DOS_COFF = sud
+LINUX_TARGET = sudoku
 
 # Build directories
-BUILD_DIR = build/dos
+ifeq ($(PLATFORM),linux)
+    BUILD_DIR = build/linux
+else
+    BUILD_DIR = build/dos
+endif
 OBJ_DIR = $(BUILD_DIR)/obj
 
-# Docker image for DJGPP
+# Docker image for DJGPP (DOS only)
 DJGPP_IMAGE = djfdyuruiry/djgpp
 
-# Allegro paths
+# Allegro paths (DOS only)
 ALLEGRO_URL = https://github.com/superjamie/allegro-4.2.3.1-xc/archive/refs/heads/master.tar.gz
 ALLEGRO_BUILD = $(BUILD_DIR)/source-install
 
-# CSDPMI URL and paths
+# CSDPMI URL and paths (DOS only)
 CSDPMI_URL = http://na.mirror.garr.it/mirrors/djgpp/current/v2misc/csdpmi7b.zip
 CSDPMI_DIR = $(BUILD_DIR)/csdpmi
 
@@ -29,25 +42,81 @@ USER_ID = $(shell id -u)
 GROUP_ID = $(shell id -g)
 
 # Compiler flags - C++11 compatible, no C++20 features
-CFLAGS = -O3 -march=i586 -fomit-frame-pointer -ffast-math -funroll-loops -fpermissive -w -std=c++11
+LINUX_CFLAGS = -O3 -fomit-frame-pointer -ffast-math -funroll-loops -fpermissive -w -std=c++11
+DOS_CFLAGS = -O3 -march=i586 -fomit-frame-pointer -ffast-math -funroll-loops -fpermissive -w -std=c++11
 
-# Default target
-all: dos
+# Default target - build for current platform
+all: $(PLATFORM)
 
 # Help target
 help:
-	@echo "Sudoku DOS Makefile - DJGPP Version"
-	@echo "===================================="
-	@echo "Targets:"
-	@echo "  make dos          - Build for DOS (full build)"
-	@echo "  make setup        - Setup DJGPP environment and CSDPMI"
-	@echo "  make allegro      - Build Allegro 4 library"
-	@echo "  make compile      - Quick compile (assumes Allegro is built)"
+	@echo "Sudoku Makefile - Multi-platform Build System"
+	@echo "=============================================="
+	@echo "Detected platform: $(PLATFORM)"
+	@echo ""
+	@echo "Platform-specific targets:"
+	@echo "  make linux        - Build native Linux executable"
+	@echo "  make dos          - Build DOS executable (requires Docker and DJGPP)"
+	@echo ""
+	@echo "Linux build targets:"
+	@echo "  make linux-build  - Compile for Linux"
+	@echo "  make linux-run    - Build and run on Linux"
+	@echo ""
+	@echo "DOS build targets:"
+	@echo "  make setup        - Setup DJGPP environment and CSDPMI (DOS)"
+	@echo "  make allegro      - Build Allegro 4 library (DOS)"
+	@echo "  make compile      - Quick compile with DJGPP (DOS)"
 	@echo "  make run          - Run in DOSBox"
+	@echo ""
+	@echo "Common targets:"
 	@echo "  make clean        - Clean all build files"
 	@echo "  make clean-obj    - Clean only object files"
+	@echo "  make status       - Show build status"
+	@echo "  make help         - Show this help message"
 	@echo ""
-	@echo "NOTE: Uses sudoku_main.cpp (C++11 compatible, DJGPP-friendly)"
+	@echo "Examples:"
+	@echo "  make              - Build for current platform ($(PLATFORM))"
+	@echo "  make linux        - Force build for Linux"
+	@echo "  make dos          - Force build for DOS"
+
+# ============================================================================
+# LINUX BUILD TARGETS
+# ============================================================================
+
+linux: linux-build
+	@echo "✅ Linux build complete!"
+	@echo "📁 Output: $(BUILD_DIR)/$(LINUX_TARGET)"
+
+linux-build: $(BUILD_DIR)/$(LINUX_TARGET)
+
+$(BUILD_DIR)/$(LINUX_TARGET): $(OBJ_DIR)/sudoku.o $(OBJ_DIR)/generatepuzzle.o $(OBJ_DIR)/linux_main.o
+	@mkdir -p $(BUILD_DIR)
+	@echo "Linking Linux executable..."
+	g++ $^ -o $@ $(LINUX_CFLAGS) -lm
+	@echo "✅ Linux executable created successfully"
+
+$(OBJ_DIR)/sudoku.o: sudoku.cpp sudoku.h
+	@mkdir -p $(OBJ_DIR)
+	@echo "Compiling sudoku.cpp for Linux..."
+	g++ -c sudoku.cpp -o $@ $(LINUX_CFLAGS)
+
+$(OBJ_DIR)/generatepuzzle.o: generatepuzzle.cpp generatepuzzle.h sudoku.h
+	@mkdir -p $(OBJ_DIR)
+	@echo "Compiling generatepuzzle.cpp for Linux..."
+	g++ -c generatepuzzle.cpp -o $@ $(LINUX_CFLAGS)
+
+$(OBJ_DIR)/linux_main.o: sudoku_main.cpp sudoku.h generatepuzzle.h
+	@mkdir -p $(OBJ_DIR)
+	@echo "Compiling sudoku_main.cpp for Linux..."
+	g++ -c sudoku_main.cpp -o $@ $(LINUX_CFLAGS)
+
+linux-run: linux
+	@echo "Running Sudoku on Linux..."
+	@./$(BUILD_DIR)/$(LINUX_TARGET)
+
+# ============================================================================
+# DOS BUILD TARGETS
+# ============================================================================
 
 # Setup DJGPP environment
 setup: pull-djgpp get-csdpmi
@@ -113,13 +182,13 @@ compile: allegro
 		/bin/sh -c " \
 			cd /src && \
 			echo 'Compiling sudoku.cpp...' && \
-			g++ -c sudoku.cpp -I$(BUILD_DIR)/source-install/include $(CFLAGS) -o $(OBJ_DIR)/sudoku.o && \
+			g++ -c sudoku.cpp -I$(BUILD_DIR)/source-install/include $(DOS_CFLAGS) -o $(OBJ_DIR)/sudoku.o && \
 			echo 'Compiling generatepuzzle.cpp...' && \
-			g++ -c generatepuzzle.cpp -I$(BUILD_DIR)/source-install/include $(CFLAGS) -o $(OBJ_DIR)/generatepuzzle.o && \
+			g++ -c generatepuzzle.cpp -I$(BUILD_DIR)/source-install/include $(DOS_CFLAGS) -o $(OBJ_DIR)/generatepuzzle.o && \
 			echo 'Compiling sudoku_main.cpp (DOS-compatible)...' && \
-			g++ -c sudoku_main.cpp -I$(BUILD_DIR)/source-install/include $(CFLAGS) -o $(OBJ_DIR)/dos_main.o && \
+			g++ -c sudoku_main.cpp -I$(BUILD_DIR)/source-install/include $(DOS_CFLAGS) -o $(OBJ_DIR)/dos_main.o && \
 			echo 'Linking executable...' && \
-			g++ $(OBJ_DIR)/*.o -L$(BUILD_DIR)/source-install/lib -lalleg -lm $(CFLAGS) -s -o $(BUILD_DIR)/sudoku && \
+			g++ $(OBJ_DIR)/*.o -L$(BUILD_DIR)/source-install/lib -lalleg -lm $(DOS_CFLAGS) -s -o $(BUILD_DIR)/sudoku && \
 			echo 'Converting to COFF format...' && \
 			exe2coff $(BUILD_DIR)/sudoku && \
 			echo 'Adding DPMI stub...' && \
@@ -172,20 +241,30 @@ clean-allegro:
 status:
 	@echo "Build Status:"
 	@echo "============"
-	@if [ -d "$(CSDPMI_DIR)" ]; then \
+	@echo "Current Platform: $(PLATFORM)"
+	@echo ""
+	@echo "Linux Build:"
+	@if [ -f "build/linux/$(LINUX_TARGET)" ]; then \
+		echo "✅ Executable: build/linux/$(LINUX_TARGET) ($(shell ls -lh build/linux/$(LINUX_TARGET) 2>/dev/null | awk '{print $$5}'))"; \
+	else \
+		echo "❌ Executable: Not built"; \
+	fi
+	@echo ""
+	@echo "DOS Build:"
+	@if [ -d "build/dos/csdpmi" ]; then \
 		echo "✅ CSDPMI: Downloaded"; \
 	else \
 		echo "❌ CSDPMI: Not downloaded"; \
 	fi
-	@if [ -d "$(ALLEGRO_BUILD)" ]; then \
+	@if [ -d "build/dos/source-install" ]; then \
 		echo "✅ Allegro 4: Built"; \
 	else \
 		echo "❌ Allegro 4: Not built"; \
 	fi
-	@if [ -f "$(BUILD_DIR)/$(DOS_TARGET)" ]; then \
-		echo "✅ Executable: $(BUILD_DIR)/$(DOS_TARGET) ($(shell ls -lh $(BUILD_DIR)/$(DOS_TARGET) 2>/dev/null | awk '{print $$5}'))"; \
+	@if [ -f "build/dos/$(DOS_TARGET)" ]; then \
+		echo "✅ Executable: build/dos/$(DOS_TARGET) ($(shell ls -lh build/dos/$(DOS_TARGET) 2>/dev/null | awk '{print $$5}'))"; \
 	else \
 		echo "❌ Executable: Not built"; \
 	fi
 
-.PHONY: all help setup pull-djgpp get-csdpmi allegro compile dos run clean clean-obj clean-allegro status
+.PHONY: all help setup pull-djgpp get-csdpmi allegro compile dos linux linux-build linux-run run clean clean-obj clean-allegro status

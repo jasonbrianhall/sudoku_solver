@@ -6,13 +6,15 @@
 
 #include "sudoku.h"
 #include "generatepuzzle.h"
-
 #include <allegro.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <limits.h>
 #include <time.h>
+
+void Sudoku::print_debug(const char *format, ...);
 
 /* Platform detection */
 #ifdef MSDOS
