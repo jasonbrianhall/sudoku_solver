@@ -67,7 +67,7 @@ extern unsigned long _farnspeekl(unsigned long addr);
 #define GRID_HEIGHT (9 * CELL_SIZE)
 
 #define BUTTON_PANEL_X (GRID_START_X + GRID_WIDTH + 30)
-#define BUTTON_PANEL_Y GRID_START_Y
+#define BUTTON_PANEL_Y (GRID_START_Y + 20)  /* Increased from GRID_START_Y to add space for headers */
 #define BUTTON_WIDTH 120
 #define BUTTON_HEIGHT 25
 #define BUTTON_SPACING 8
@@ -329,7 +329,12 @@ void draw_grid() {
 
 void draw_buttons() {
     int i;
-    for (i = 0; i < NUM_BUTTONS; i++) {
+    
+    /* Draw section headers for better organization */
+    int header_x = BUTTON_PANEL_X + 5;
+    textout_ex(screen, font, "DIFFICULTY:", header_x, BUTTON_PANEL_Y - 20, COLOR_BLACK, -1);
+    
+    for (i = 0; i < 5; i++) {  /* Difficulty buttons */
         Button *btn = &buttons[i];
         rectfill(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
                 COLOR_LIGHT_GRAY);
@@ -337,6 +342,40 @@ void draw_buttons() {
             COLOR_BLACK);
         textout_ex(screen, font, btn->label, btn->x + 5, btn->y + 6, COLOR_BLACK, -1);
     }
+    
+    /* Game controls section */
+    textout_ex(screen, font, "GAME:", header_x, BUTTON_PANEL_Y + 6 * (BUTTON_HEIGHT + BUTTON_SPACING) - 20, 
+               COLOR_BLACK, -1);
+    
+    for (i = 5; i < 9; i++) {  /* Game control buttons (Solve, Undo, Redo, Clear) */
+        Button *btn = &buttons[i];
+        rectfill(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
+                COLOR_LIGHT_GRAY);
+        rect(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
+            COLOR_BLACK);
+        textout_ex(screen, font, btn->label, btn->x + 5, btn->y + 6, COLOR_BLACK, -1);
+    }
+    
+    /* File menu section */
+    textout_ex(screen, font, "FILE:", header_x, BUTTON_PANEL_Y + 10 * (BUTTON_HEIGHT + BUTTON_SPACING) - 20,
+               COLOR_BLACK, -1);
+    
+    for (i = 9; i < 11; i++) {  /* Save and Load buttons */
+        Button *btn = &buttons[i];
+        rectfill(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
+                COLOR_LIGHT_GRAY);
+        rect(screen, btn->x, btn->y, btn->x + btn->width - 1, btn->y + btn->height - 1, 
+            COLOR_BLACK);
+        textout_ex(screen, font, btn->label, btn->x + 5, btn->y + 6, COLOR_BLACK, -1);
+    }
+    
+    /* Quit button */
+    Button *quit_btn = &buttons[11];
+    rectfill(screen, quit_btn->x, quit_btn->y, quit_btn->x + quit_btn->width - 1, quit_btn->y + quit_btn->height - 1, 
+            COLOR_RED);
+    rect(screen, quit_btn->x, quit_btn->y, quit_btn->x + quit_btn->width - 1, quit_btn->y + quit_btn->height - 1, 
+        COLOR_BLACK);
+    textout_ex(screen, font, quit_btn->label, quit_btn->x + 5, quit_btn->y + 6, COLOR_BLACK, -1);
 }
 
 void draw_status_bar() {
@@ -354,8 +393,10 @@ void draw_status_bar() {
 }
 
 void draw_help() {
-    char *help = "Arrow keys: Move | 1-9: Input | 0/Del: Clear | S: Solve | Z: Undo | Y: Redo | Q: Quit";
-    textout_ex(screen, font, help, GRID_START_X, HELP_TEXT_Y, COLOR_BLACK, -1);
+    char *help_line1 = "Arrow keys: Move | 1-9: Input | 0/Del: Clear | S: Solve";
+    char *help_line2 = "Z: Undo | Y: Redo | Q: Quit | Save/Load with buttons";
+    textout_ex(screen, font, help_line1, GRID_START_X, HELP_TEXT_Y, COLOR_BLACK, -1);
+    textout_ex(screen, font, help_line2, GRID_START_X, HELP_TEXT_Y + 12, COLOR_BLACK, -1);
 }
 
 void redraw_screen() {
@@ -366,10 +407,16 @@ void redraw_screen() {
         screen_needs_full_redraw = 0;
     }
     
+    /* Hide mouse cursor during drawing to prevent overlap with buttons */
+    scare_mouse();
+    
     draw_grid();
     draw_buttons();
     draw_status_bar();
     draw_help();
+    
+    /* Show mouse cursor again */
+    unscare_mouse();
     
     mark_screen_clean();
 }
@@ -460,6 +507,7 @@ void handle_button_click(int button_id) {
             redo_last_move();
             break;
         case 20:
+            exit(0);  /* Quit button - exit the program */
             break;
     }
 }
