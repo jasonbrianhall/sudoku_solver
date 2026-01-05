@@ -11,7 +11,7 @@ OBJS = $(SRCS:.cpp=.o)
 TARGET = sudoku
 
 # Allegro 4 configuration
-ALLEGRO_CFLAGS = -DMSDOS
+ALLEGRO_CFLAGS =
 ALLEGRO_LIBS = -lalleg -lm
 
 # Build directories
