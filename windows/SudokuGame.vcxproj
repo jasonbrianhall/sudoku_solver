@@ -12,7 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
-    <ProjectGuid>{5d3f28a8-5856-11f1-abe5-00e04c6821d4}</ProjectGuid>
+    <ProjectGuid>{6faa6cb4-5856-11f1-a968-00e04c6821d4}</ProjectGuid>
     <Keyword>ManagedCProj</Keyword>
     <RootNamespace>SudokuSolver</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
@@ -53,7 +53,7 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="win_main.cpp" />
+    <ClCompile Include="sudoku_game.cpp" />
     <ClCompile Include="sudoku.cpp" />
     <ClCompile Include="generatepuzzle.cpp"/>
     <ClCompile Include="winprint.cpp"/>
