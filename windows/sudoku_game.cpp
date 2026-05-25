@@ -165,9 +165,14 @@ private:
                 SudokuButton^ btn = gcnew SudokuButton(x, y);
                 btn->Location = Drawing::Point(x * 60, y * 60);
                 
-                // Add borders for 3x3 boxes
-                if (x % 3 == 0) btn->Margin = Windows::Forms::Padding(2, 0, 0, 0);
-                if (y % 3 == 0) btn->Margin = Windows::Forms::Padding(0, 2, 0, 0);
+                // Add borders for 3x3 boxes and edges
+                int top = 1, left = 1, right = 1, bottom = 1;
+                if (x % 3 == 0) left = 3;
+                if ((x + 1) % 3 == 0) right = 3;
+                if (y % 3 == 0) top = 3;
+                if ((y + 1) % 3 == 0) bottom = 3;
+                
+                btn->Margin = Windows::Forms::Padding(left, top, right, bottom);
                 
                 btn->Click += gcnew EventHandler(this, &SudokuGameWindow::OnButtonClick);
                 buttons[y][x] = btn;
@@ -260,7 +265,7 @@ private:
         for (int y = 0; y < 9; y++) {
             for (int x = 0; x < 9; x++) {
                 int value = nativeSudoku->GetValue(x, y);
-                if (value >= 0 && value <= 8) {
+                if (value >= 1 && value <= 9) {
                     buttons[y][x]->SetValue(Nullable<int>(value - 1));
                 } else {
                     buttons[y][x]->SetValue(Nullable<int>());
