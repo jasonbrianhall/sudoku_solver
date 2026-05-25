@@ -166,8 +166,8 @@ private:
                 btn->Location = Drawing::Point(x * 60, y * 60);
                 
                 // Add borders for 3x3 boxes
-                if (x % 3 == 0) btn->Margin = Padding(2, 0, 0, 0);
-                if (y % 3 == 0) btn->Margin = Padding(0, 2, 0, 0);
+                if (x % 3 == 0) btn->Margin = Windows::Forms::Padding(2, 0, 0, 0);
+                if (y % 3 == 0) btn->Margin = Windows::Forms::Padding(0, 2, 0, 0);
                 
                 btn->Click += gcnew EventHandler(this, &SudokuGameWindow::OnButtonClick);
                 buttons[y][x] = btn;
