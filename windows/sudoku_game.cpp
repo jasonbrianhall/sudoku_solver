@@ -63,6 +63,7 @@ private:
     PuzzleGenerator* puzzleGenerator;
     array<array<SudokuButton^>^>^ buttons;
     Label^ statusLabel;
+    Panel^ boardPanel;
     String^ currentDifficulty;
     array<array<bool>^>^ immutableCells;
     
