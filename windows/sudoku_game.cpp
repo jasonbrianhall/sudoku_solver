@@ -1,5 +1,5 @@
 // Sudoku Game - Windows Forms C++/CLI Interface
-// Similar to the Python Qt5 version but using .NET Windows Forms
+// Using TextBox grid similar to win_main.cpp
 
 #define _HAS_STD_BYTE 0
 #include <msclr/marshal_cppstd.h>
@@ -18,51 +18,14 @@ using namespace System::Collections::Generic;
 
 namespace SudokuGame {
 
-// Custom button for sudoku cells
-public ref class SudokuButton : public Button {
-public:
-    int cellX, cellY;
-    Nullable<int> cellValue;
-    bool isImmutable;
-    
-    SudokuButton(int x, int y) : cellX(x), cellY(y), cellValue(Nullable<int>()), isImmutable(false) {
-        this->AutoSize = false;
-        this->MinimumSize = Drawing::Size(50, 50);
-        this->Size = Drawing::Size(60, 60);
-        this->Font = gcnew Drawing::Font("Arial", 14);
-        this->TextAlign = ContentAlignment::MiddleCenter;
-        this->FlatStyle = Windows::Forms::FlatStyle::Flat;
-        this->BackColor = Drawing::Color::White;
-        this->FlatAppearance->BorderColor = Drawing::Color::Black;
-        this->FlatAppearance->BorderSize = 1;
-    }
-    
-    void SetValue(Nullable<int> value) {
-        cellValue = value;
-        if (value.HasValue && value.Value >= 0 && value.Value <= 8) {
-            this->Text = (value.Value + 1).ToString();  // Display 1-9
-            this->ForeColor = Drawing::Color::Black;
-        } else {
-            this->Text = "";
-            this->ForeColor = Drawing::Color::Black;
-        }
-    }
-    
-    Nullable<int> GetValue() {
-        return cellValue;
-    }
-};
-
 // Main game window
 public ref class SudokuGameWindow : public Form {
 private:
     Sudoku* nativeSudoku;
     PuzzleGenerator* puzzleGenerator;
-    array<array<SudokuButton^>^>^ buttons;
+    array<TextBox^, 2>^ grid;
     Label^ statusLabel;
-    Panel^ boardPanel;
     String^ currentDifficulty;
-    array<array<bool>^>^ immutableCells;
     
     MenuStrip^ menuStrip;
     ToolStripMenuItem^ fileMenu;
@@ -75,12 +38,6 @@ public:
         nativeSudoku = new Sudoku();
         puzzleGenerator = new PuzzleGenerator(*nativeSudoku);
         currentDifficulty = "medium";
-        
-        // Initialize immutable cells tracking
-        immutableCells = gcnew array<array<bool>^>(9);
-        for (int i = 0; i < 9; i++) {
-            immutableCells[i] = gcnew array<bool>(9);
-        }
         
         InitializeComponent();
         InitializeMenu();
@@ -153,47 +110,25 @@ private:
     }
     
     void CreateGameBoard() {
-        buttons = gcnew array<array<SudokuButton^>^>(9);
-        int cellWidth = 60;
-        int cellHeight = 60;
+        grid = gcnew array<TextBox^, 2>(9, 9);
+        int cellSize = 40;
+        int startX = 70;
+        int startY = 50;
         
-        // Create a container panel for the Sudoku grid with white background
-        boardPanel = gcnew Panel();
-        boardPanel->Location = Drawing::Point(70, 50);
-        boardPanel->Size = Drawing::Size(540, 540);
-        boardPanel->BackColor = Drawing::Color::White;
-        this->Controls->Add(boardPanel);
-
-        // Draw bold grid lines for 3x3 boxes FIRST (underneath cells)
-        for (int i = 0; i <= 9; i++) {
-            int thickness = (i % 3 == 0) ? 3 : 1;
-            int offset = (i % 3 == 0) ? 1 : 0;
-            
-            Panel ^ vline = gcnew Panel();
-            vline->BorderStyle = BorderStyle::None;
-            vline->Location = Drawing::Point(i * cellWidth - offset, 0);
-            vline->Size = Drawing::Size(thickness, 540);
-            vline->BackColor = Drawing::Color::Black;
-            boardPanel->Controls->Add(vline);
-
-            Panel ^ hline = gcnew Panel();
-            hline->BorderStyle = BorderStyle::None;
-            hline->Location = Drawing::Point(0, i * cellHeight - offset);
-            hline->Size = Drawing::Size(540, thickness);
-            hline->BackColor = Drawing::Color::Black;
-            boardPanel->Controls->Add(hline);
-        }
-
-        // Initialize grid cells
-        for (int y = 0; y < 9; y++) {
-            buttons[y] = gcnew array<SudokuButton^>(9);
-            for (int x = 0; x < 9; x++) {
-                SudokuButton^ btn = gcnew SudokuButton(x, y);
-                btn->Location = Drawing::Point(x * cellWidth, y * cellHeight);
-                btn->Size = Drawing::Size(cellWidth, cellHeight);
-                btn->Click += gcnew EventHandler(this, &SudokuGameWindow::OnButtonClick);
-                buttons[y][x] = btn;
-                boardPanel->Controls->Add(btn);
+        // Create grid of TextBox controls
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                TextBox^ tb = gcnew TextBox();
+                tb->Size = Drawing::Size(cellSize, cellSize);
+                tb->Location = Drawing::Point(startX + j * cellSize, startY + i * cellSize);
+                tb->TextAlign = HorizontalAlignment::Center;
+                tb->Font = gcnew Drawing::Font("Arial", 14, FontStyle::Bold);
+                tb->MaxLength = 1;
+                tb->BorderStyle = BorderStyle::FixedSingle;
+                tb->TextChanged += gcnew EventHandler(this, &SudokuGameWindow::OnCellTextChanged);
+                
+                grid[i, j] = tb;
+                this->Controls->Add(tb);
             }
         }
     }
@@ -203,97 +138,27 @@ private:
         this->KeyDown += gcnew KeyEventHandler(this, &SudokuGameWindow::OnKeyDown);
     }
     
-    void OnButtonClick(Object^ sender, EventArgs^ e) {
-        SudokuButton^ btn = safe_cast<SudokuButton^>(sender);
-        if (btn->isImmutable) return;
-        
-        int value = btn->cellValue.HasValue ? btn->cellValue.Value : -1;
-        
-        // Check if control key pressed (clear)
-        if (Control::ModifierKeys == Windows::Forms::Keys::Control) {
-            nativeSudoku->ClearValue(btn->cellX, btn->cellY);
-        } else {
-            // Left-click: increment 0-8, wrapping to -1 (empty)
-            value = (value >= 8) ? -1 : value + 1;
-            if (value == -1) {
-                nativeSudoku->ClearValue(btn->cellX, btn->cellY);
-            } else {
-                nativeSudoku->SetValue(btn->cellX, btn->cellY, value + 1);  // Convert to 1-9
-            }
-        }
-        
-        UpdateDisplay();
-    }
-    
-    void OnKeyDown(Object^ sender, KeyEventArgs^ e) {
-        // Handle number keys 1-9 and Delete
-        if (e->KeyCode >= Keys::D1 && e->KeyCode <= Keys::D9) {
-            int num = (int)e->KeyCode - (int)Keys::D1 + 1;
-            // Find focused button and set value
-            for (int y = 0; y < 9; y++) {
-                for (int x = 0; x < 9; x++) {
-                    if (buttons[y][x]->Focused && !buttons[y][x]->isImmutable) {
-                        nativeSudoku->SetValue(x, y, num);
-                        UpdateDisplay();
-                        e->Handled = true;
-                        return;
-                    }
-                }
-            }
-        }
-        
-        if (e->KeyCode == Keys::Delete || e->KeyCode == Keys::Back) {
-            for (int y = 0; y < 9; y++) {
-                for (int x = 0; x < 9; x++) {
-                    if (buttons[y][x]->Focused && !buttons[y][x]->isImmutable) {
-                        nativeSudoku->ClearValue(x, y);
-                        UpdateDisplay();
-                        e->Handled = true;
-                        return;
-                    }
-                }
-            }
-        }
-        
-        switch (e->KeyCode) {
-            case Keys::F1:
-                if (e->Shift) OnGenerateExtreme(nullptr, nullptr);
-                else OnGenerateEasy(nullptr, nullptr);
-                e->Handled = true;
-                break;
-            case Keys::F2:
-                OnGenerateMedium(nullptr, nullptr);
-                e->Handled = true;
-                break;
-            case Keys::F3:
-                OnGenerateHard(nullptr, nullptr);
-                e->Handled = true;
-                break;
-            case Keys::F4:
-                OnGenerateExpert(nullptr, nullptr);
-                e->Handled = true;
-                break;
-        }
-    }
-    
-    void UpdateDisplay() {
-        for (int y = 0; y < 9; y++) {
-            for (int x = 0; x < 9; x++) {
-                int value = nativeSudoku->GetValue(x, y);
-                if (value >= 1 && value <= 9) {
-                    buttons[y][x]->SetValue(Nullable<int>(value - 1));  // Convert 1-9 to 0-8
+    void UpdateGrid() {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                int value = nativeSudoku->GetValue(i, j);
+                grid[i, j]->Text = (value >= 0 && value <= 8) ? (value + 1).ToString() : "";
+                
+                // Check if cell is a clue (immutable)
+                // A clue is a cell that was filled during puzzle generation
+                // Since we generate puzzles, we mark filled cells as immutable
+                if (value >= 0 && value <= 8) {
+                    grid[i, j]->BackColor = Color::LightBlue;
+                    grid[i, j]->ForeColor = Color::DarkBlue;
+                    grid[i, j]->ReadOnly = true;
+                    grid[i, j]->Font = gcnew System::Drawing::Font(grid[i, j]->Font, System::Drawing::FontStyle::Bold);
                 } else {
-                    buttons[y][x]->SetValue(Nullable<int>());
+                    grid[i, j]->BackColor = Color::White;
+                    grid[i, j]->ForeColor = Color::Black;
+                    grid[i, j]->ReadOnly = false;
+                    grid[i, j]->Font = gcnew System::Drawing::Font(grid[i, j]->Font, System::Drawing::FontStyle::Regular);
                 }
             }
-        }
-        
-        if (!nativeSudoku->IsValidSolution()) {
-            statusLabel->Text = "Invalid solution! Please check your entries.";
-            statusLabel->ForeColor = Color::Red;
-        } else {
-            statusLabel->Text = "Valid solution!";
-            statusLabel->ForeColor = Color::Green;
         }
     }
     
@@ -303,43 +168,72 @@ private:
         if (puzzleGenerator->generatePuzzle(diff)) {
             nativeSudoku->Clean();
             currentDifficulty = difficulty;
-            
-            // Mark clue cells as immutable
-            for (int y = 0; y < 9; y++) {
-                for (int x = 0; x < 9; x++) {
-                    int value = nativeSudoku->GetValue(x, y);
-                    immutableCells[y][x] = (value >= 0 && value <= 8);
-                    if (immutableCells[y][x]) {
-                        buttons[y][x]->isImmutable = true;
-                        buttons[y][x]->BackColor = Color::LightGray;
-                        buttons[y][x]->Enabled = false;
-                    } else {
-                        buttons[y][x]->isImmutable = false;
-                        buttons[y][x]->BackColor = Color::White;
-                        buttons[y][x]->Enabled = true;
-                    }
-                }
-            }
-            
-            UpdateDisplay();
+            UpdateGrid();
             statusLabel->Text = String::Format("Generated {0} puzzle", difficulty);
         } else {
             MessageBox::Show("Failed to generate puzzle", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
         }
     }
     
+    void OnCellTextChanged(Object^ sender, EventArgs^ e) {
+        TextBox^ tb = safe_cast<TextBox^>(sender);
+        
+        if (tb->Text->Length > 0) {
+            if (!Char::IsDigit(tb->Text[0]) || tb->Text[0] < '1' || tb->Text[0] > '9') {
+                tb->Text = "";
+                return;
+            }
+            
+            // Find cell position
+            int row = -1, col = -1;
+            for (int i = 0; i < 9 && row == -1; i++) {
+                for (int j = 0; j < 9; j++) {
+                    if (grid[i, j] == tb) {
+                        row = i;
+                        col = j;
+                        break;
+                    }
+                }
+            }
+            
+            if (row >= 0 && col >= 0) {
+                int val = Int32::Parse(tb->Text);
+                nativeSudoku->SetValue(col, row, val);
+                
+                if (!nativeSudoku->IsValidSolution()) {
+                    statusLabel->Text = "Invalid solution! Please check your entries.";
+                    statusLabel->ForeColor = Color::Red;
+                } else {
+                    statusLabel->Text = "Valid solution!";
+                    statusLabel->ForeColor = Color::Green;
+                }
+            }
+        }
+    }
+    
+    void OnKeyDown(Object^ sender, KeyEventArgs^ e) {
+        if (e->KeyCode == Keys::F1) {
+            OnGenerateEasy(nullptr, nullptr);
+            e->Handled = true;
+        } else if (e->KeyCode == Keys::F2) {
+            OnGenerateMedium(nullptr, nullptr);
+            e->Handled = true;
+        } else if (e->KeyCode == Keys::F3) {
+            OnGenerateHard(nullptr, nullptr);
+            e->Handled = true;
+        } else if (e->KeyCode == Keys::F4) {
+            OnGenerateExpert(nullptr, nullptr);
+            e->Handled = true;
+        } else if (e->KeyCode == Keys::F1 && e->Shift) {
+            OnGenerateExtreme(nullptr, nullptr);
+            e->Handled = true;
+        }
+    }
+    
     // Event handlers for menu items
     void OnNewGame(Object^ sender, EventArgs^ e) {
         nativeSudoku->NewGame();
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                immutableCells[i][j] = false;
-                buttons[i][j]->isImmutable = false;
-                buttons[i][j]->BackColor = Color::White;
-                buttons[i][j]->Enabled = true;
-            }
-        }
-        UpdateDisplay();
+        UpdateGrid();
         statusLabel->Text = "New empty game started";
     }
     
@@ -349,7 +243,7 @@ private:
         if (ofd->ShowDialog() == Windows::Forms::DialogResult::OK) {
             std::string filename = msclr::interop::marshal_as<std::string>(ofd->FileName);
             if (nativeSudoku->LoadFromFile(filename)) {
-                UpdateDisplay();
+                UpdateGrid();
                 statusLabel->Text = "Game loaded successfully";
             } else {
                 MessageBox::Show("Failed to load game", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
@@ -374,7 +268,7 @@ private:
         sfd->DefaultExt = "xml";
         if (sfd->ShowDialog() == Windows::Forms::DialogResult::OK) {
             std::string filename = msclr::interop::marshal_as<std::string>(sfd->FileName);
-            nativeSudoku->ExportToExcelXML(msclr::interop::marshal_as<std::string>(sfd->FileName));
+            nativeSudoku->ExportToExcelXML(filename);
             statusLabel->Text = "Exported to Excel";
         }
     }
@@ -387,61 +281,61 @@ private:
     
     void OnStdElim(Object^ sender, EventArgs^ e) {
         nativeSudoku->StdElim();
-        UpdateDisplay();
+        UpdateGrid();
         statusLabel->Text = "Standard Elimination applied";
     }
     
     void OnLinElim(Object^ sender, EventArgs^ e) {
         nativeSudoku->LinElim();
-        UpdateDisplay();
+        UpdateGrid();
         statusLabel->Text = "Line Elimination applied";
     }
     
     void OnHiddenSingles(Object^ sender, EventArgs^ e) {
         nativeSudoku->FindHiddenSingles();
-        UpdateDisplay();
+        UpdateGrid();
         statusLabel->Text = "Hidden Singles applied";
     }
     
     void OnHiddenPairs(Object^ sender, EventArgs^ e) {
         nativeSudoku->FindHiddenPairs();
-        UpdateDisplay();
+        UpdateGrid();
         statusLabel->Text = "Hidden Pairs applied";
     }
     
     void OnPointingPairs(Object^ sender, EventArgs^ e) {
         nativeSudoku->FindPointingPairs();
-        UpdateDisplay();
+        UpdateGrid();
         statusLabel->Text = "Pointing Pairs applied";
     }
     
     void OnXWing(Object^ sender, EventArgs^ e) {
         nativeSudoku->FindXWing();
-        UpdateDisplay();
+        UpdateGrid();
         statusLabel->Text = "X-Wing applied";
     }
     
     void OnSwordfish(Object^ sender, EventArgs^ e) {
         nativeSudoku->FindSwordFish();
-        UpdateDisplay();
+        UpdateGrid();
         statusLabel->Text = "Swordfish applied";
     }
     
     void OnXYWing(Object^ sender, EventArgs^ e) {
         nativeSudoku->FindXYWing();
-        UpdateDisplay();
+        UpdateGrid();
         statusLabel->Text = "XY-Wing applied";
     }
     
     void OnXYZWing(Object^ sender, EventArgs^ e) {
         nativeSudoku->FindXYZWing();
-        UpdateDisplay();
+        UpdateGrid();
         statusLabel->Text = "XYZ-Wing applied";
     }
     
     void OnSolveAll(Object^ sender, EventArgs^ e) {
         int result = nativeSudoku->Solve();
-        UpdateDisplay();
+        UpdateGrid();
         if (result == 0) {
             statusLabel->Text = "Puzzle solved!";
             statusLabel->ForeColor = Color::Green;
@@ -456,7 +350,7 @@ private:
     }
     
     void OnAbout(Object^ sender, EventArgs^ e) {
-        MessageBox::Show("Sudoku Solver - Game Edition\n\nA modern sudoku game with advanced solving techniques.", 
+        MessageBox::Show("Sudoku Solver - Game Edition\r\n\r\nA modern sudoku game with advanced solving techniques.\r\n\r\nBlue cells are immutable clues from puzzle generation.\r\nWhite cells can be edited.", 
                         "About", MessageBoxButtons::OK, MessageBoxIcon::Information);
     }
 };
