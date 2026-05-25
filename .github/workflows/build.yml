@@ -159,10 +159,15 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller pybind11
 
-    - name: Build C++ Executable
+    - name: Build C++ Executable (Release x64) (sudoku solver)
       working-directory: windows
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
+
+    - name: Build C++ Executable (Release x64) (sudoku game)
+      working-directory: windows
+      run: |
+        msbuild /p:Configuration=Release /p:Platform=x64 SudokuGame.vcxproj
 
     - name: Build Python Extension
       working-directory: python_generate_puzzles
