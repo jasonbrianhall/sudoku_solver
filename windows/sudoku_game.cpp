@@ -31,7 +31,7 @@ public:
         this->Size = Drawing::Size(60, 60);
         this->Font = gcnew Drawing::Font("Arial", 14);
         this->TextAlign = ContentAlignment::MiddleCenter;
-        this->FlatStyle = FlatStyle::Flat;
+        this->FlatStyle = Windows::Forms::FlatStyle::Flat;
     }
     
     void SetValue(Nullable<int> value) {
@@ -80,7 +80,7 @@ public:
         InitializeMenu();
         CreateGameBoard();
         SetupKeyBindings();
-        NewGame();
+        OnNewGame(nullptr, nullptr);
     }
 
 private:
@@ -161,8 +161,8 @@ private:
                 btn->Location = Drawing::Point(x * 60, y * 60);
                 
                 // Add borders for 3x3 boxes
-                if (x % 3 == 0) btn->Margin = Padding(2, btn->Margin.Top, btn->Margin.Right, btn->Margin.Bottom);
-                if (y % 3 == 0) btn->Margin = Padding(btn->Margin.Left, 2, btn->Margin.Right, btn->Margin.Bottom);
+                if (x % 3 == 0) btn->Margin = Padding(2, 0, 0, 0);
+                if (y % 3 == 0) btn->Margin = Padding(0, 2, 0, 0);
                 
                 btn->Click += gcnew EventHandler(this, &SudokuGameWindow::OnButtonClick);
                 buttons[y][x] = btn;
@@ -288,7 +288,7 @@ private:
     void OnLoadGame(Object^ sender, EventArgs^ e) {
         OpenFileDialog^ ofd = gcnew OpenFileDialog();
         ofd->Filter = "Sudoku Files (*.sud)|*.sud|All Files (*.*)|*.*";
-        if (ofd->ShowDialog() == DialogResult::OK) {
+        if (ofd->ShowDialog() == Windows::Forms::DialogResult::OK) {
             std::string filename = msclr::interop::marshal_as<std::string>(ofd->FileName);
             if (nativeSudoku->LoadFromFile(filename)) {
                 UpdateDisplay();
@@ -303,7 +303,7 @@ private:
         SaveFileDialog^ sfd = gcnew SaveFileDialog();
         sfd->Filter = "Sudoku Files (*.sud)|*.sud";
         sfd->DefaultExt = "sud";
-        if (sfd->ShowDialog() == DialogResult::OK) {
+        if (sfd->ShowDialog() == Windows::Forms::DialogResult::OK) {
             std::string filename = msclr::interop::marshal_as<std::string>(sfd->FileName);
             nativeSudoku->SaveToFile(filename);
             statusLabel->Text = "Game saved successfully";
@@ -314,7 +314,7 @@ private:
         SaveFileDialog^ sfd = gcnew SaveFileDialog();
         sfd->Filter = "Excel XML Files (*.xml)|*.xml";
         sfd->DefaultExt = "xml";
-        if (sfd->ShowDialog() == DialogResult::OK) {
+        if (sfd->ShowDialog() == Windows::Forms::DialogResult::OK) {
             std::string filename = msclr::interop::marshal_as<std::string>(sfd->FileName);
             nativeSudoku->ExportToExcelXML(msclr::interop::marshal_as<std::string>(sfd->FileName));
             statusLabel->Text = "Exported to Excel";
