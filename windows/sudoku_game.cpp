@@ -156,19 +156,13 @@ private:
     }
     
     void CreateGameBoard() {
-        // Create outer border panel
-        Panel^ borderPanel = gcnew Panel();
-        borderPanel->Size = Drawing::Size(560, 560);
-        borderPanel->Location = Drawing::Point(70, 50);
-        borderPanel->BackColor = Drawing::Color::Black;
-        borderPanel->BorderStyle = BorderStyle::Fixed3D;
-        this->Controls->Add(borderPanel);
-        
+        // Create main board panel with border
         boardPanel = gcnew Panel();
-        boardPanel->Size = Drawing::Size(540, 540);
-        boardPanel->Location = Drawing::Point(10, 10);
-        boardPanel->BackColor = Drawing::Color::White;
-        borderPanel->Controls->Add(boardPanel);
+        boardPanel->Size = Drawing::Size(542, 542);
+        boardPanel->Location = Drawing::Point(70, 50);
+        boardPanel->BackColor = Drawing::Color::Black;
+        boardPanel->BorderStyle = BorderStyle::Fixed3D;
+        this->Controls->Add(boardPanel);
         
         buttons = gcnew array<array<SudokuButton^>^>(9);
         
@@ -176,14 +170,14 @@ private:
             buttons[y] = gcnew array<SudokuButton^>(9);
             for (int x = 0; x < 9; x++) {
                 SudokuButton^ btn = gcnew SudokuButton(x, y);
-                btn->Location = Drawing::Point(x * 60, y * 60);
+                btn->Location = Drawing::Point(x * 60 + 1, y * 60 + 1);
                 
                 // Borders for 3x3 boxes
                 int top = 1, left = 1, right = 1, bottom = 1;
-                if (x % 3 == 0) left = 3;
-                if ((x + 1) % 3 == 0) right = 3;
-                if (y % 3 == 0) top = 3;
-                if ((y + 1) % 3 == 0) bottom = 3;
+                if (x % 3 == 0) left = 2;
+                if ((x + 1) % 3 == 0) right = 2;
+                if (y % 3 == 0) top = 2;
+                if ((y + 1) % 3 == 0) bottom = 2;
                 
                 btn->Margin = Windows::Forms::Padding(left, top, right, bottom);
                 
