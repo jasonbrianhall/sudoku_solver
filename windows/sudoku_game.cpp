@@ -32,14 +32,19 @@ public:
         this->Font = gcnew Drawing::Font("Arial", 14);
         this->TextAlign = ContentAlignment::MiddleCenter;
         this->FlatStyle = Windows::Forms::FlatStyle::Flat;
+        this->BackColor = Drawing::Color::White;
+        this->FlatAppearance->BorderColor = Drawing::Color::Black;
+        this->FlatAppearance->BorderSize = 1;
     }
     
     void SetValue(Nullable<int> value) {
         cellValue = value;
         if (value.HasValue && value.Value >= 0 && value.Value <= 8) {
             this->Text = (value.Value + 1).ToString();
+            this->ForeColor = Drawing::Color::Red;  // User-entered values in red
         } else {
             this->Text = "";
+            this->ForeColor = Drawing::Color::Black;
         }
     }
     
@@ -161,8 +166,8 @@ private:
                 btn->Location = Drawing::Point(x * 60, y * 60);
                 
                 // Add borders for 3x3 boxes
-                if (x % 3 == 0) btn->Margin = Windows::Forms::Padding(2, 0, 0, 0);
-                if (y % 3 == 0) btn->Margin = Windows::Forms::Padding(0, 2, 0, 0);
+                if (x % 3 == 0) btn->Margin = Padding(2, 0, 0, 0);
+                if (y % 3 == 0) btn->Margin = Padding(0, 2, 0, 0);
                 
                 btn->Click += gcnew EventHandler(this, &SudokuGameWindow::OnButtonClick);
                 buttons[y][x] = btn;
@@ -182,21 +187,54 @@ private:
         SudokuButton^ btn = safe_cast<SudokuButton^>(sender);
         if (btn->isImmutable) return;
         
-        int value = btn->cellValue.HasValue ? btn->cellValue.Value : -1;
-        value = (value + 1) % 9;
+        int value = btn->cellValue.HasValue ? btn->cellValue.Value : 0;
         
-        Nullable<int> newValue = (value == -1) ? Nullable<int>() : Nullable<int>(value);
-        
-        if (newValue.HasValue) {
-            nativeSudoku->SetValue(btn->cellX, btn->cellY, newValue.Value + 1);
-        } else {
+        // Check if right-click (clear)
+        if (Control::ModifierKeys == Windows::Forms::Keys::Control) {
             nativeSudoku->ClearValue(btn->cellX, btn->cellY);
+        } else {
+            // Left-click: increment 1-9, wrapping to empty
+            value = (value >= 8) ? -1 : value + 1;
+            if (value == -1) {
+                nativeSudoku->ClearValue(btn->cellX, btn->cellY);
+            } else {
+                nativeSudoku->SetValue(btn->cellX, btn->cellY, value + 1);
+            }
         }
         
         UpdateDisplay();
     }
     
     void OnKeyDown(Object^ sender, KeyEventArgs^ e) {
+        // Handle number keys 1-9 and Delete
+        if (e->KeyCode >= Keys::D1 && e->KeyCode <= Keys::D9) {
+            int num = (int)e->KeyCode - (int)Keys::D1 + 1;
+            // Find focused button and set value
+            for (int y = 0; y < 9; y++) {
+                for (int x = 0; x < 9; x++) {
+                    if (buttons[y][x]->Focused && !buttons[y][x]->isImmutable) {
+                        nativeSudoku->SetValue(x, y, num);
+                        UpdateDisplay();
+                        e->Handled = true;
+                        return;
+                    }
+                }
+            }
+        }
+        
+        if (e->KeyCode == Keys::Delete || e->KeyCode == Keys::Back) {
+            for (int y = 0; y < 9; y++) {
+                for (int x = 0; x < 9; x++) {
+                    if (buttons[y][x]->Focused && !buttons[y][x]->isImmutable) {
+                        nativeSudoku->ClearValue(x, y);
+                        UpdateDisplay();
+                        e->Handled = true;
+                        return;
+                    }
+                }
+            }
+        }
+        
         switch (e->KeyCode) {
             case Keys::F1:
                 if (e->Shift) OnGenerateExtreme(nullptr, nullptr);
