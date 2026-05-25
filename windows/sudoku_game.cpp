@@ -39,9 +39,12 @@ public:
     
     void SetValue(Nullable<int> value) {
         cellValue = value;
-        if (value.HasValue && value.Value >= 0 && value.Value <= 8) {
-            this->Text = (value.Value + 1).ToString();
-            this->ForeColor = Drawing::Color::Red;  // User-entered values in red
+        if (value.HasValue && value.Value >= 1 && value.Value <= 9) {
+            this->Text = value.Value.ToString();  // Display 1-9 directly
+            this->ForeColor = Drawing::Color::Black;  // Clue values in black
+        } else if (value.HasValue && value.Value >= 0 && value.Value < 1) {
+            this->Text = "";
+            this->ForeColor = Drawing::Color::Black;
         } else {
             this->Text = "";
             this->ForeColor = Drawing::Color::Black;
@@ -85,7 +88,7 @@ public:
         InitializeMenu();
         CreateGameBoard();
         SetupKeyBindings();
-        OnNewGame(nullptr, nullptr);
+        OnGenerateEasy(nullptr, nullptr);  // Auto-load easy puzzle on startup
     }
 
 private:
@@ -152,10 +155,19 @@ private:
     }
     
     void CreateGameBoard() {
-        Panel^ boardPanel = gcnew Panel();
+        // Create outer border panel
+        Panel^ borderPanel = gcnew Panel();
+        borderPanel->Size = Drawing::Size(560, 560);
+        borderPanel->Location = Drawing::Point(70, 50);
+        borderPanel->BackColor = Drawing::Color::Black;
+        borderPanel->BorderStyle = BorderStyle::Fixed3D;
+        this->Controls->Add(borderPanel);
+        
+        boardPanel = gcnew Panel();
         boardPanel->Size = Drawing::Size(540, 540);
-        boardPanel->Location = Drawing::Point(80, 60);
-        boardPanel->BorderStyle = BorderStyle::Fixed3D;
+        boardPanel->Location = Drawing::Point(10, 10);
+        boardPanel->BackColor = Drawing::Color::White;
+        borderPanel->Controls->Add(boardPanel);
         
         buttons = gcnew array<array<SudokuButton^>^>(9);
         
@@ -165,7 +177,7 @@ private:
                 SudokuButton^ btn = gcnew SudokuButton(x, y);
                 btn->Location = Drawing::Point(x * 60, y * 60);
                 
-                // Add borders for 3x3 boxes and edges
+                // Borders for 3x3 boxes
                 int top = 1, left = 1, right = 1, bottom = 1;
                 if (x % 3 == 0) left = 3;
                 if ((x + 1) % 3 == 0) right = 3;
@@ -266,7 +278,7 @@ private:
             for (int x = 0; x < 9; x++) {
                 int value = nativeSudoku->GetValue(x, y);
                 if (value >= 1 && value <= 9) {
-                    buttons[y][x]->SetValue(Nullable<int>(value - 1));
+                    buttons[y][x]->SetValue(Nullable<int>(value));  // Pass 1-9 directly
                 } else {
                     buttons[y][x]->SetValue(Nullable<int>());
                 }
