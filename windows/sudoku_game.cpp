@@ -39,11 +39,8 @@ public:
     
     void SetValue(Nullable<int> value) {
         cellValue = value;
-        if (value.HasValue && value.Value >= 1 && value.Value <= 9) {
-            this->Text = value.Value.ToString();  // Display 1-9 directly
-            this->ForeColor = Drawing::Color::Black;  // Clue values in black
-        } else if (value.HasValue && value.Value >= 0 && value.Value < 1) {
-            this->Text = "";
+        if (value.HasValue && value.Value >= 0 && value.Value <= 8) {
+            this->Text = (value.Value + 1).ToString();  // Display 1-9
             this->ForeColor = Drawing::Color::Black;
         } else {
             this->Text = "";
@@ -156,38 +153,49 @@ private:
     }
     
     void CreateGameBoard() {
-        // Create main board panel with border
-        boardPanel = gcnew Panel();
-        boardPanel->Size = Drawing::Size(542, 542);
-        boardPanel->Location = Drawing::Point(70, 50);
-        boardPanel->BackColor = Drawing::Color::Black;
-        boardPanel->BorderStyle = BorderStyle::Fixed3D;
-        this->Controls->Add(boardPanel);
-        
         buttons = gcnew array<array<SudokuButton^>^>(9);
+        int cellWidth = 60;
+        int cellHeight = 60;
         
+        // Create a container panel for the Sudoku grid with white background
+        boardPanel = gcnew Panel();
+        boardPanel->Location = Drawing::Point(70, 50);
+        boardPanel->Size = Drawing::Size(540, 540);
+        boardPanel->BackColor = Drawing::Color::White;
+        this->Controls->Add(boardPanel);
+
+        // Draw bold grid lines for 3x3 boxes FIRST (underneath cells)
+        for (int i = 0; i <= 9; i++) {
+            int thickness = (i % 3 == 0) ? 3 : 1;
+            int offset = (i % 3 == 0) ? 1 : 0;
+            
+            Panel ^ vline = gcnew Panel();
+            vline->BorderStyle = BorderStyle::None;
+            vline->Location = Drawing::Point(i * cellWidth - offset, 0);
+            vline->Size = Drawing::Size(thickness, 540);
+            vline->BackColor = Drawing::Color::Black;
+            boardPanel->Controls->Add(vline);
+
+            Panel ^ hline = gcnew Panel();
+            hline->BorderStyle = BorderStyle::None;
+            hline->Location = Drawing::Point(0, i * cellHeight - offset);
+            hline->Size = Drawing::Size(540, thickness);
+            hline->BackColor = Drawing::Color::Black;
+            boardPanel->Controls->Add(hline);
+        }
+
+        // Initialize grid cells
         for (int y = 0; y < 9; y++) {
             buttons[y] = gcnew array<SudokuButton^>(9);
             for (int x = 0; x < 9; x++) {
                 SudokuButton^ btn = gcnew SudokuButton(x, y);
-                btn->Location = Drawing::Point(x * 60 + 1, y * 60 + 1);
-                
-                // Borders for 3x3 boxes
-                int top = 1, left = 1, right = 1, bottom = 1;
-                if (x % 3 == 0) left = 2;
-                if ((x + 1) % 3 == 0) right = 2;
-                if (y % 3 == 0) top = 2;
-                if ((y + 1) % 3 == 0) bottom = 2;
-                
-                btn->Margin = Windows::Forms::Padding(left, top, right, bottom);
-                
+                btn->Location = Drawing::Point(x * cellWidth, y * cellHeight);
+                btn->Size = Drawing::Size(cellWidth, cellHeight);
                 btn->Click += gcnew EventHandler(this, &SudokuGameWindow::OnButtonClick);
                 buttons[y][x] = btn;
                 boardPanel->Controls->Add(btn);
             }
         }
-        
-        this->Controls->Add(boardPanel);
     }
     
     void SetupKeyBindings() {
@@ -199,18 +207,18 @@ private:
         SudokuButton^ btn = safe_cast<SudokuButton^>(sender);
         if (btn->isImmutable) return;
         
-        int value = btn->cellValue.HasValue ? btn->cellValue.Value : 0;
+        int value = btn->cellValue.HasValue ? btn->cellValue.Value : -1;
         
-        // Check if right-click (clear)
+        // Check if control key pressed (clear)
         if (Control::ModifierKeys == Windows::Forms::Keys::Control) {
             nativeSudoku->ClearValue(btn->cellX, btn->cellY);
         } else {
-            // Left-click: increment 1-9, wrapping to empty
+            // Left-click: increment 0-8, wrapping to -1 (empty)
             value = (value >= 8) ? -1 : value + 1;
             if (value == -1) {
                 nativeSudoku->ClearValue(btn->cellX, btn->cellY);
             } else {
-                nativeSudoku->SetValue(btn->cellX, btn->cellY, value + 1);
+                nativeSudoku->SetValue(btn->cellX, btn->cellY, value + 1);  // Convert to 1-9
             }
         }
         
@@ -273,7 +281,7 @@ private:
             for (int x = 0; x < 9; x++) {
                 int value = nativeSudoku->GetValue(x, y);
                 if (value >= 1 && value <= 9) {
-                    buttons[y][x]->SetValue(Nullable<int>(value));  // Pass 1-9 directly
+                    buttons[y][x]->SetValue(Nullable<int>(value - 1));  // Convert 1-9 to 0-8
                 } else {
                     buttons[y][x]->SetValue(Nullable<int>());
                 }
