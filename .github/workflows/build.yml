@@ -95,6 +95,7 @@ jobs:
       working-directory: windows
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
+        msbuild /p:Configuration=Release /p:Platform=x64 SudokuGame.vcxproj
 
     - name: Create Portable ZIP
       shell: powershell
@@ -103,6 +104,7 @@ jobs:
         New-Item -ItemType Directory -Path $portableDir -Force | Out-Null
         
         Copy-Item "windows/x64/Release/SudokuSolver.exe" "$portableDir/" -ErrorAction SilentlyContinue
+        Copy-Item "windows/x64/Release/SudokuGame.exe" "$portableDir/" -ErrorAction SilentlyContinue
         Copy-Item "README.md" "$portableDir/" -ErrorAction SilentlyContinue
         Copy-Item "LICENSE.md" "$portableDir/" -ErrorAction SilentlyContinue
         
@@ -287,6 +289,7 @@ jobs:
         
         # Copy executables
         Copy-Item "windows/x64/Release/SudokuSolver.exe" $buildDir/ -ErrorAction SilentlyContinue
+        Copy-Item "windows/x64/Release/SudokuGame.exe" $buildDir/ -ErrorAction SilentlyContinue
         Copy-Item "python_generate_puzzles/dist/SudokuSolver.exe" "$buildDir/SudokuSolver-PyQT5.exe" -ErrorAction SilentlyContinue
         Copy-Item "python_generate_puzzles/dist/SudokuPuzzler.exe" $buildDir/ -ErrorAction SilentlyContinue
         
@@ -585,6 +588,7 @@ jobs:
         New-Item -ItemType Directory -Path $portableDir -Force | Out-Null
         
         Copy-Item "windows/x64/Release/SudokuSolver.exe" "$portableDir/" -ErrorAction SilentlyContinue
+        Copy-Item "windows/x64/Release/SudokuGame.exe" "$portableDir/" -ErrorAction SilentlyContinue
         Copy-Item "python_generate_puzzles/dist/SudokuSolver.exe" "$portableDir/SudokuSolver-PyQT5.exe" -ErrorAction SilentlyContinue
         Copy-Item "python_generate_puzzles/dist/SudokuPuzzler.exe" "$portableDir/" -ErrorAction SilentlyContinue
         Copy-Item "README.md" "$portableDir/" -ErrorAction SilentlyContinue
