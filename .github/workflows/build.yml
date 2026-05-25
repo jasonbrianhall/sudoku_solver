@@ -91,10 +91,14 @@ jobs:
     - name: Setup Developer Command Prompt
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Build C++ Executable (Release x64)
+    - name: Build C++ Executable (Release x64) (sudoku solver)
       working-directory: windows
       run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuSolver.vcxproj
+
+    - name: Build C++ Executable (Release x64) (sudoku game)
+      working-directory: windows
+      run: |
         msbuild /p:Configuration=Release /p:Platform=x64 SudokuGame.vcxproj
 
     - name: Create Portable ZIP
