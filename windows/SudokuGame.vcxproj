@@ -14,7 +14,7 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <ProjectGuid>{6faa6cb4-5856-11f1-a968-00e04c6821d4}</ProjectGuid>
     <Keyword>ManagedCProj</Keyword>
-    <RootNamespace>SudokuSolver</RootNamespace>
+    <RootNamespace>SudokuGame</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
   </PropertyGroup>
