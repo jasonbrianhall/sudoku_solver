@@ -602,7 +602,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize MenuStrip
     menuStrip = gcnew MenuStrip();
-    ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
+    ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("Game");
 
     // New Game submenu
     ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("New Game");
@@ -647,13 +647,12 @@ public ref class MainForm : public System::Windows::Forms::Form {
     fileMenu->DropDownItems->Add(saveMenu);
     fileMenu->DropDownItems->Add(loadMenu);
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "High Scores", nullptr, gcnew EventHandler(this, &MainForm::ViewHighscores_Click)));
+    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Quit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
 
     // Help Menu
     ToolStripMenuItem^ helpMenu = gcnew ToolStripMenuItem("Help");
-    helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "High Scores", nullptr,
-        gcnew EventHandler(this, &MainForm::ViewHighscores_Click)));
     helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "About", nullptr,
         gcnew EventHandler(this, &MainForm::About_Click)));
@@ -700,8 +699,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
         L"  - Use keypad (1-9) to enter numbers in cells. Middle mouse click or press 0 to clear.\r\n"
         L"  - Press 'T' or click 'Toggle Notes' to show/hide the notes areas under cells.\r\n"
         L"  - Click in a notes area to add candidate numbers (e.g., '2 5 8').\r\n"
-        L"  - Press 'A' for auto-solve. Press F1-F4 for new puzzles (easy to expert). Press Shift+F1 for master.\r\n"
-        L"  - Press F5-F8 to save, Shift+F5-F8 to load. F9-F12 to export as XML. Arrow keys navigate cells.";
+        L"  - Press F1-F4 for new puzzles (easy to master). Press Shift+F1 for expert.\r\n"
+        L"  - Press F5-F8 to save, Shift+F5-F8 to load. Arrow keys navigate cells.";
 
     instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9); // Consistent fixed-width font
     this->Controls->Add(instructionsBox);
@@ -1412,24 +1411,27 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   }
 
   void ValidateAndHighlight() {
-    // Clear all previous highlights
+    // Clear all previous highlights, respecting immutable cell colors
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
-        grid[i, j]->BackColor = Color::White;
-        grid[i, j]->ForeColor = Color::Black;
+        if (sudoku->IsCellImmutable(i, j)) {
+          grid[i, j]->BackColor = Color::LightSalmon;
+          grid[i, j]->ForeColor = Color::DarkRed;
+        } else {
+          grid[i, j]->BackColor = Color::White;
+          grid[i, j]->ForeColor = Color::Black;
+        }
       }
     }
 
-    // ONLY check for direct conflicts (duplicates) - no solver validation
-    // This catches immediate rule violations
+    // Check for direct conflicts (duplicates)
     for (int row = 0; row < 9; row++) {
       for (int col = 0; col < 9; col++) {
         int value = sudoku->GetValue(row, col);
-        if (value == -1) continue;  // Skip empty cells
+        if (value == -1) continue;
 
         bool hasConflict = false;
 
-        // Check row for duplicates
         for (int c = 0; c < 9; c++) {
           if (c != col && sudoku->GetValue(row, c) == value) {
             hasConflict = true;
@@ -1437,7 +1439,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           }
         }
 
-        // Check column for duplicates
         if (!hasConflict) {
           for (int r = 0; r < 9; r++) {
             if (r != row && sudoku->GetValue(r, col) == value) {
@@ -1447,7 +1448,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           }
         }
 
-        // Check 3x3 box for duplicates
         if (!hasConflict) {
           int boxRow = (row / 3) * 3;
           int boxCol = (col / 3) * 3;
@@ -1462,7 +1462,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           }
         }
 
-        // If direct conflict found, highlight in red
         if (hasConflict) {
           grid[row, col]->BackColor = Color::Red;
           grid[row, col]->ForeColor = Color::White;
@@ -1795,7 +1794,9 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         e->Handled = true;
         break;
       case Keys::F11:
-        if (!e->Shift) {
+        if (e->Shift) {
+          RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::Solve), "Full solve completed");
+        } else {
           sudoku->ExportToExcelXML("puzzle3.xml");
         }
         e->Handled = true;
