@@ -3,6 +3,7 @@
 #define _HAS_STD_BYTE 0
 #include <msclr/marshal_cppstd.h>
 #include <fstream>
+#include <windows.h>
 
 #include "resource.h"
 #include "sudoku.h"
@@ -500,7 +501,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
   Timer^ gameTimer;
   int elapsedSeconds;
   bool isSolving;  // prevents re-entrant solver calls
-  int correctStreak; // consecutive correct user entries for quasi-immutable
+  // Sliding window of last 5 correct cell positions for quasi-immutable locking
+  System::Collections::Generic::Queue<array<int>^>^ correctQueue;
   Highscores* highscores;
   String^ currentDifficulty;  // "easy","medium","hard","master","expert" or "" if none
   bool puzzleSolved;          // prevent multiple win triggers
@@ -532,7 +534,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       sudoku->MarkPuzzleAsGenerated();
       currentDifficulty = "easy";
       puzzleSolved = false;
-      correctStreak = 0;
+      correctQueue->Clear();
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new easy puzzle - clues are immutable");
@@ -550,7 +552,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       sudoku->MarkPuzzleAsGenerated();
       currentDifficulty = "medium";
       puzzleSolved = false;
-      correctStreak = 0;
+      correctQueue->Clear();
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new medium puzzle - clues are immutable");
@@ -568,7 +570,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       sudoku->MarkPuzzleAsGenerated();
       currentDifficulty = "hard";
       puzzleSolved = false;
-      correctStreak = 0;
+      correctQueue->Clear();
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new hard puzzle - clues are immutable");
@@ -586,7 +588,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       sudoku->MarkPuzzleAsGenerated();
       currentDifficulty = "expert";
       puzzleSolved = false;
-      correctStreak = 0;
+      correctQueue->Clear();
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new expert puzzle - clues are immutable");
@@ -604,7 +606,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       sudoku->MarkPuzzleAsGenerated();
       currentDifficulty = "master";
       puzzleSolved = false;
-      correctStreak = 0;
+      correctQueue->Clear();
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new extreme puzzle - clues are immutable");
@@ -1239,6 +1241,69 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     UpdateStatus(msg);
   }
 
+  // Sound helpers - all played on background thread so they don't block UI
+  ref class SoundPlayer {
+  public:
+    int freq, duration;
+    SoundPlayer(int f, int d) : freq(f), duration(d) {}
+    void Play() { ::Beep(freq, duration); }
+  };
+
+  ref class SoundSequence {
+  public:
+    array<int>^ freqs;
+    array<int>^ durations;
+    SoundSequence(array<int>^ f, array<int>^ d) : freqs(f), durations(d) {}
+    void Play() {
+      for (int i = 0; i < freqs->Length; i++) {
+        if (freqs[i] == 0)
+          System::Threading::Thread::Sleep(durations[i]);
+        else
+          ::Beep(freqs[i], durations[i]);
+      }
+    }
+  };
+
+  void PlaySoundAsync(int freq, int duration) {
+    SoundPlayer^ sp = gcnew SoundPlayer(freq, duration);
+    System::Threading::Thread^ t = gcnew System::Threading::Thread(
+      gcnew System::Threading::ThreadStart(sp, &SoundPlayer::Play));
+    t->IsBackground = true;
+    t->Start();
+  }
+
+  void PlaySequenceAsync(array<int>^ freqs, array<int>^ durations) {
+    SoundSequence^ ss = gcnew SoundSequence(freqs, durations);
+    System::Threading::Thread^ t = gcnew System::Threading::Thread(
+      gcnew System::Threading::ThreadStart(ss, &SoundSequence::Play));
+    t->IsBackground = true;
+    t->Start();
+  }
+
+  // Wrong digit entered
+  void PlayWrongSound() {
+    PlaySoundAsync(200, 150);
+  }
+
+  // Correct digit entered (not yet quasi-immutable)
+  void PlayCorrectSound() {
+    PlaySoundAsync(880, 80);
+  }
+
+  // Cell becomes quasi-immutable (streak of 5 correct)
+  void PlayQuasiImmutableSound() {
+    PlaySequenceAsync(
+      gcnew array<int>  {523, 659, 784, 1047},
+      gcnew array<int>  { 80,  80,  80,  160});
+  }
+
+  // Puzzle solved - victory fanfare
+  void PlayWinSound() {
+    PlaySequenceAsync(
+      gcnew array<int>  {523, 523,   0, 523,   0, 415, 523,   0, 784,   0, 392,   0, 523},
+      gcnew array<int>  {100, 100,  50, 100,  50, 100, 100, 100, 400, 200, 400, 200, 500});
+  }
+
   // Returns the correct value (0-8) for a cell by solving a copy, or -1 if unsolvable
   int GetCorrectValue(int row, int col) {
     Sudoku* copy = new Sudoku();
@@ -1317,6 +1382,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
     puzzleSolved = true;
     gameTimer->Stop();
+    PlayWinSound();
 
     int mins = elapsedSeconds / 60;
     int secs = elapsedSeconds % 60;
@@ -1682,19 +1748,21 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           sudoku->SetValue(row, col, enteredVal);
           UpdateGrid();
           UpdateUndoButtonState();
-          // Track streak for quasi-immutable
+          // Track sliding window for quasi-immutable locking
           if (correctVal != -1 && enteredVal == correctVal) {
-            correctStreak++;
-            if (correctStreak >= 5) {
-              // Every 5th+ correct entry locks the previous correct cell green
-              // Lock THIS cell as quasi-immutable on the 6th+
-              sudoku->SetQuasiImmutable(row, col);
+            correctQueue->Enqueue(gcnew array<int>{row, col});
+            if (correctQueue->Count >= 5) {
+              array<int>^ toLock = correctQueue->Dequeue();
+              sudoku->SetQuasiImmutable(toLock[0], toLock[1]);
               UpdateGrid();
+              PlayQuasiImmutableSound();
               UpdateStatus("Correct! Cell locked.");
-              correctStreak = 0;
+            } else {
+              PlayCorrectSound();
             }
           } else {
-            correctStreak = 0;
+            PlayWrongSound();
+            correctQueue->Clear();
           }
         }
         e->Handled = true;
@@ -1707,7 +1775,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           e->Handled = true;
           break;
         }
-        correctStreak = 0;
+        correctQueue->Clear();
         sudoku->SaveBoardState();
         sudoku->ClearValue(row, col);
         UpdateGrid();
@@ -2059,9 +2127,8 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     highscores = new Highscores();
     currentDifficulty = "";
     puzzleSolved = false;
-      correctStreak = 0;
     isSolving = false;
-    correctStreak = 0;
+    correctQueue = gcnew System::Collections::Generic::Queue<array<int>^>();
     InitializeComponent();
 
     // Set the form icon
