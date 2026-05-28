@@ -895,8 +895,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     // Handle form resize to expand grid
     this->Resize += gcnew EventHandler(this, &MainForm::Form_Resize);
     // Pause timer when window loses focus
-    this->Deactivate += gcnew EventHandler(this, &MainForm::Form_Deactivate);
-    this->Activate += gcnew EventHandler(this, &MainForm::Form_Activate);
+    this->Deactivated += gcnew EventHandler(this, &MainForm::Form_Deactivate);
+    this->Activated += gcnew EventHandler(this, &MainForm::Form_Activate);
 
     // Initialize game timer
     elapsedSeconds = 0;
