@@ -5,7 +5,7 @@
 
 struct Score {
     std::string name;
-    int time;
+    int time;           // seconds
     std::string difficulty;
 };
 
@@ -20,10 +20,9 @@ public:
 private:
     void loadScores();
     void saveScores();
-    
+
     std::string scorePath;
-    std::vector<Score> scores;  // All scores
-    std::map<std::string, std::vector<Score>> scoresByDifficulty;  // Scores grouped by difficulty
+    std::vector<Score> scores;
+    std::map<std::string, std::vector<Score>> scoresByDifficulty;
     const size_t MAX_SCORES_PER_DIFFICULTY = 10;
 };
-

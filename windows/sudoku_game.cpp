@@ -7,6 +7,7 @@
 #include "resource.h"
 #include "sudoku.h"
 #include "generatepuzzle.h"
+#include "highscores.h"
 
 using namespace System;
 using namespace System::ComponentModel;
@@ -468,6 +469,9 @@ public ref class MainForm : public System::Windows::Forms::Form {
   ToolStripStatusLabel^ timerLabel;
   Timer^ gameTimer;
   int elapsedSeconds;
+  Highscores* highscores;
+  String^ currentDifficulty;  // "easy","medium","hard","master","expert" or "" if none
+  bool puzzleSolved;          // prevent multiple win triggers
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle1.xml");
@@ -494,6 +498,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     if (generator.generatePuzzle("easy")) {
       sudoku->Clean();
       sudoku->MarkPuzzleAsGenerated();
+      currentDifficulty = "easy";
+      puzzleSolved = false;
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new easy puzzle - clues are immutable");
@@ -509,6 +515,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     if (generator.generatePuzzle("medium")) {
       sudoku->Clean();
       sudoku->MarkPuzzleAsGenerated();
+      currentDifficulty = "medium";
+      puzzleSolved = false;
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new medium puzzle - clues are immutable");
@@ -524,6 +532,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     if (generator.generatePuzzle("hard")) {
       sudoku->Clean();
       sudoku->MarkPuzzleAsGenerated();
+      currentDifficulty = "hard";
+      puzzleSolved = false;
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new hard puzzle - clues are immutable");
@@ -539,6 +549,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     if (generator.generatePuzzle("expert")) {
       sudoku->Clean();
       sudoku->MarkPuzzleAsGenerated();
+      currentDifficulty = "expert";
+      puzzleSolved = false;
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new expert puzzle - clues are immutable");
@@ -554,6 +566,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     if (generator.generatePuzzle("extreme")) {
       sudoku->Clean();
       sudoku->MarkPuzzleAsGenerated();
+      currentDifficulty = "master";
+      puzzleSolved = false;
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new extreme puzzle - clues are immutable");
@@ -645,6 +659,9 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Help Menu
     ToolStripMenuItem^ helpMenu = gcnew ToolStripMenuItem("Help");
+    helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "High Scores", nullptr,
+        gcnew EventHandler(this, &MainForm::ViewHighscores_Click)));
     helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "About", nullptr,
         gcnew EventHandler(this, &MainForm::About_Click)));
@@ -964,9 +981,8 @@ private: void SafeSetClipboard(DataObject^ data) {
       }
     }
     ValidateAndHighlight();
-  }
-
-    String^ GetBoardAsText() {
+    CheckForWin();
+  } {
         String^ result = "<table border='1' style='border-collapse: collapse; border: 2px solid black;'>";
     
         // Generate the HTML table
@@ -1148,6 +1164,148 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
               notes[row, col]->Text = number;
           }
       }
+  }
+
+  void CheckForWin() {
+    if (puzzleSolved || currentDifficulty == "") return;
+
+    // Check all 81 cells are filled
+    for (int i = 0; i < 9; i++)
+      for (int j = 0; j < 9; j++)
+        if (sudoku->GetValue(i, j) == -1) return;
+
+    // Check valid solution
+    if (!sudoku->IsValidSolution()) return;
+
+    puzzleSolved = true;
+    gameTimer->Stop();
+
+    int mins = elapsedSeconds / 60;
+    int secs = elapsedSeconds % 60;
+    String^ timeStr = String::Format("{0:D2}:{1:D2}", mins, secs);
+    String^ diff = currentDifficulty;
+
+    // Convert to std string for highscores
+    std::string diffStd = msclr::interop::marshal_as<std::string>(diff);
+    bool isHigh = highscores->isHighScore(elapsedSeconds, diffStd);
+
+    String^ msg = "Congratulations! You solved the " + diff + " puzzle in " + timeStr + "!";
+    if (isHigh) msg += "\r\nNew high score! Enter your name:";
+
+    if (isHigh) {
+      // Simple name input dialog
+      Form^ inputDlg = gcnew Form();
+      inputDlg->Text = "New High Score!";
+      inputDlg->Size = System::Drawing::Size(340, 160);
+      inputDlg->StartPosition = FormStartPosition::CenterParent;
+      inputDlg->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedDialog;
+      inputDlg->MaximizeBox = false;
+
+      Label^ lbl = gcnew Label();
+      lbl->Text = msg + "\r\nEnter your name:";
+      lbl->Location = Point(10, 10);
+      lbl->Size = System::Drawing::Size(310, 60);
+      inputDlg->Controls->Add(lbl);
+
+      TextBox^ nameTxt = gcnew TextBox();
+      nameTxt->Text = "Player";
+      nameTxt->Location = Point(10, 75);
+      nameTxt->Size = System::Drawing::Size(200, 25);
+      inputDlg->Controls->Add(nameTxt);
+
+      Button^ okBtn = gcnew Button();
+      okBtn->Text = "OK";
+      okBtn->Location = Point(220, 75);
+      okBtn->DialogResult = System::Windows::Forms::DialogResult::OK;
+      inputDlg->Controls->Add(okBtn);
+      inputDlg->AcceptButton = okBtn;
+
+      String^ name = "Anonymous";
+      if (inputDlg->ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
+        name = nameTxt->Text->Trim();
+        if (name == "") name = "Anonymous";
+      }
+
+      Score score;
+      score.name = msclr::interop::marshal_as<std::string>(name);
+      score.time = elapsedSeconds;
+      score.difficulty = diffStd;
+      highscores->addScore(score);
+      ShowHighscoresDialog(diff);
+    } else {
+      MessageBox::Show(this, msg, "Puzzle Solved!", MessageBoxButtons::OK, MessageBoxIcon::Information);
+    }
+
+    UpdateStatus("Puzzle solved in " + timeStr + "!");
+  }
+
+  void ShowHighscoresDialog(String^ highlightDiff) {
+    Form^ dlg = gcnew Form();
+    dlg->Text = "High Scores";
+    dlg->Size = System::Drawing::Size(420, 480);
+    dlg->StartPosition = FormStartPosition::CenterParent;
+    dlg->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedDialog;
+    dlg->MaximizeBox = false;
+
+    TabControl^ tabs = gcnew TabControl();
+    tabs->Dock = DockStyle::Fill;
+
+    array<String^>^ difficulties = {"easy","medium","hard","master","expert"};
+    for each (String^ d in difficulties) {
+      TabPage^ page = gcnew TabPage(d->Substring(0,1)->ToUpper() + d->Substring(1));
+
+      ListView^ lv = gcnew ListView();
+      lv->Dock = DockStyle::Fill;
+      lv->View = View::Details;
+      lv->FullRowSelect = true;
+      lv->GridLines = true;
+      lv->Columns->Add("Rank", 50);
+      lv->Columns->Add("Name", 180);
+      lv->Columns->Add("Time", 100);
+
+      std::string dStd = msclr::interop::marshal_as<std::string>(d);
+      auto scores = highscores->getScoresByDifficulty(dStd);
+      int rank = 1;
+      for (const auto& s : scores) {
+        int m = s.time / 60, sec = s.time % 60;
+        String^ t = String::Format("{0:D2}:{1:D2}", m, sec);
+        String^ n = gcnew String(s.name.c_str());
+        ListViewItem^ item = gcnew ListViewItem(rank.ToString());
+        item->SubItems->Add(n);
+        item->SubItems->Add(t);
+        if (d == highlightDiff && rank == 1)
+          item->BackColor = Color::LightGoldenrodYellow;
+        lv->Items->Add(item);
+        rank++;
+      }
+      if (scores.empty()) {
+        ListViewItem^ item = gcnew ListViewItem("-");
+        item->SubItems->Add("No scores yet");
+        item->SubItems->Add("-");
+        lv->Items->Add(item);
+      }
+
+      page->Controls->Add(lv);
+      tabs->TabPages->Add(page);
+
+      // Select the tab matching highlight difficulty
+      if (d == highlightDiff)
+        tabs->SelectedTab = page;
+    }
+
+    dlg->Controls->Add(tabs);
+
+    Button^ closeBtn = gcnew Button();
+    closeBtn->Text = "Close";
+    closeBtn->DialogResult = System::Windows::Forms::DialogResult::OK;
+    closeBtn->Dock = DockStyle::Bottom;
+    dlg->Controls->Add(closeBtn);
+
+    dlg->ShowDialog(this);
+  }
+
+  void ViewHighscores_Click(Object^ sender, EventArgs^ e) {
+    ShowHighscoresDialog("");
   }
 
   void UpdateStatus(String ^ message) {
@@ -1880,6 +2038,9 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
  public:
   MainForm() {
     sudoku = gcnew SudokuWrapper();
+    highscores = new Highscores();
+    currentDifficulty = "";
+    puzzleSolved = false;
     InitializeComponent();
 
     // Set the form icon
