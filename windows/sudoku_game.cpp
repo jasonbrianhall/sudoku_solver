@@ -894,9 +894,6 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Handle form resize to expand grid
     this->Resize += gcnew EventHandler(this, &MainForm::Form_Resize);
-    // Pause timer when window loses focus
-    Form::Deactivated += gcnew EventHandler(this, &MainForm::Form_Deactivate);
-    Form::Activated += gcnew EventHandler(this, &MainForm::Form_Activate);
 
     // Initialize game timer
     elapsedSeconds = 0;
@@ -1600,20 +1597,27 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     ShowHighscoresDialog("");
   }
 
-  void Form_Deactivate(Object^ sender, EventArgs^ e) {
-    if (!timerPaused) {
-      timerPaused = true;
-      gameTimer->Stop();
-      UpdateStatus("Game paused");
+  virtual void WndProc(System::Windows::Forms::Message% m) override {
+    // WM_ACTIVATE: wParam low word 0 = deactivated, nonzero = activated
+    if (m.Msg == 0x0006) {
+      int loWord = (int)(m.WParam.ToInt64() & 0xFFFF);
+      if (loWord == 0) {
+        // Deactivated
+        if (!timerPaused) {
+          timerPaused = true;
+          gameTimer->Stop();
+          UpdateStatus("Game paused");
+        }
+      } else {
+        // Activated
+        if (timerPaused && !puzzleSolved) {
+          timerPaused = false;
+          gameTimer->Start();
+          UpdateStatus("Game resumed");
+        }
+      }
     }
-  }
-
-  void Form_Activate(Object^ sender, EventArgs^ e) {
-    if (timerPaused && !puzzleSolved) {
-      timerPaused = false;
-      gameTimer->Start();
-      UpdateStatus("Game resumed");
-    }
+    Form::WndProc(m);
   }
 
   void FontSize_Click(Object^ sender, EventArgs^ e) {
@@ -1631,7 +1635,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     colorblindMode = !colorblindMode;
     ToolStripMenuItem^ item = safe_cast<ToolStripMenuItem^>(sender);
     item->Checked = colorblindMode;
-    // In colorblind mode: immutable = bold+underline, quasi = bold+italic, normal = regular
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
         if (sudoku->IsCellImmutable(i, j) || sudoku->IsCellQuasiImmutable(i, j)) {
