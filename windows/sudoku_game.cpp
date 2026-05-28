@@ -9,9 +9,6 @@
 #include "generatepuzzle.h"
 #include "highscores.h"
 
-// Inline highscores implementation to avoid needing a separate .cpp in the project
-#include "highscores.cpp"
-
 using namespace System;
 using namespace System::ComponentModel;
 using namespace System::Collections;
