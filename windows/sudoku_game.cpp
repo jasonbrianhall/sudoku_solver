@@ -624,7 +624,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
   void InitializeComponent() {
     this->Size = System::Drawing::Size(800, 600);
-    this->Text = L"Sudoku Solver";
+    this->Text = L"Sudoku Game";
     this->StartPosition = FormStartPosition::CenterScreen;
 
     // Initialize StatusStrip
@@ -2027,26 +2027,28 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
   void About_Click(Object ^ sender, EventArgs ^ e) {
     String^ aboutText = 
-      "Sudoku Solver\r\n\r\n" +
-      "(C) 2025 Jason Brian Hall\r\n" +
+      "Sudoku Game\r\n\r\n" +
+      "(C) 2026 Jason Brian Hall\r\n" +
       "MIT License - https://opensource.org/licenses/MIT\r\n\r\n" +
       "GitHub: https://github.com/jasonbrianhall/sudoku_solver\r\n\r\n" +
-      "A powerful Sudoku puzzle generator and solver with support for multiple difficulty levels " +
-      "and advanced solving techniques including X-Wing, Swordfish, XY-Wing, and XYZ-Wing patterns.\r\n\r\n" +
+      "A feature-rich Sudoku game with puzzle generation across five difficulty levels, " +
+      "real-time conflict detection, and a progressive locking system that rewards correct answers.\r\n\r\n" +
       "Features:\r\n" +
-      "- Generate puzzles at 6 difficulty levels\r\n" +
+      "- Generate puzzles at 5 difficulty levels (Easy to Expert)\r\n" +
       "- Real-time conflict detection and highlighting\r\n" +
+      "- Progressive cell locking - solve 5 correct in a row to earn green locks\r\n" +
       "- Pencil mark notes for candidates\r\n" +
-      "- Multiple solving techniques\r\n" +
-      "- Save/load games\r\n" +
-      "- Export to Excel XML\r\n";
+      "- Game timer with save/load (timer persists across saves)\r\n" +
+      "- High score tracking per difficulty\r\n" +
+      "- Sound feedback for correct, incorrect, locks, and wins\r\n" +
+      "- Save/load games across 4 slots\r\n";
 
-    MessageBox::Show(this, aboutText, "About Sudoku Solver", MessageBoxButtons::OK, MessageBoxIcon::Information);
+    MessageBox::Show(this, aboutText, "About Sudoku Game", MessageBoxButtons::OK, MessageBoxIcon::Information);
   }
 
   void SupportAuthor_Click(Object ^ sender, EventArgs ^ e) {
     String^ supportText = 
-      "If you enjoy this Sudoku Solver, please consider supporting the author!\r\n\r\n" +
+      "If you enjoy Sudoku Game, please consider supporting the author!\r\n\r\n" +
       "Visit: https://buymeacoffee.com/jasonbrianhall\r\n\r\n" +
       "Your support helps fund development and keeps this project active.";
 
