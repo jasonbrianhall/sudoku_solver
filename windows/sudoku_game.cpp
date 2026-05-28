@@ -167,6 +167,7 @@ ref class SudokuWrapper {
         } else {
           immutableCells[col][row] = false;
         }
+        quasiImmutableCells[col][row] = false;
       }
     }
   }
@@ -506,6 +507,10 @@ public ref class MainForm : public System::Windows::Forms::Form {
   Highscores* highscores;
   String^ currentDifficulty;  // "easy","medium","hard","master","expert" or "" if none
   bool puzzleSolved;          // prevent multiple win triggers
+  bool timerPaused;           // pause timer on window deactivate
+  int highlightValue;         // currently highlighted digit (0-8, or -1 for none)
+  bool colorblindMode;        // use font style instead of color for cell types
+  float gridFontSize;         // current font size for grid numbers
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle1.xml");
@@ -527,7 +532,24 @@ public ref class MainForm : public System::Windows::Forms::Form {
     UpdateStatus("Saved puzzle as Excel/puzzle4.xml");
   }
 
+  bool ConfirmNewGame() {
+    if (puzzleSolved || currentDifficulty == "") return true;
+    // Check if any user cells are filled
+    bool hasProgress = false;
+    for (int i = 0; i < 9 && !hasProgress; i++)
+      for (int j = 0; j < 9 && !hasProgress; j++)
+        if (!sudoku->IsCellImmutable(i, j) && sudoku->GetValue(i, j) != -1)
+          hasProgress = true;
+    if (!hasProgress) return true;
+    return MessageBox::Show(this,
+      "You have a game in progress. Start a new game?",
+      "New Game",
+      MessageBoxButtons::YesNo,
+      MessageBoxIcon::Question) == System::Windows::Forms::DialogResult::Yes;
+  }
+
   void GenerateEasy_Click(Object ^ sender, EventArgs ^ e) {
+    if (!ConfirmNewGame()) return;
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("easy")) {
       sudoku->Clean();
@@ -547,6 +569,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
   }
 
   void GenerateMedium_Click(Object ^ sender, EventArgs ^ e) {
+    if (!ConfirmNewGame()) return;
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("medium")) {
       sudoku->Clean();
@@ -566,6 +589,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
   }
 
   void GenerateHard_Click(Object ^ sender, EventArgs ^ e) {
+    if (!ConfirmNewGame()) return;
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("hard")) {
       sudoku->Clean();
@@ -585,6 +609,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
   }
 
   void GenerateExpert_Click(Object ^ sender, EventArgs ^ e) {
+    if (!ConfirmNewGame()) return;
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("expert")) {
       sudoku->Clean();
@@ -604,6 +629,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
   }
 
   void GenerateMaster_Click(Object ^ sender, EventArgs ^ e) {
+    if (!ConfirmNewGame()) return;
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("extreme")) {
       sudoku->Clean();
@@ -691,6 +717,22 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Help Menu
     ToolStripMenuItem^ helpMenu = gcnew ToolStripMenuItem("Help");
+
+    // Font size submenu
+    ToolStripMenuItem^ fontSizeMenu = gcnew ToolStripMenuItem("Font Size");
+    array<String^>^ fontSizes = {"Small (14)", "Medium (20)", "Large (26)", "Extra Large (32)"};
+    array<float>^ fontSizeVals = {14.0f, 20.0f, 26.0f, 32.0f};
+    for (int i = 0; i < fontSizes->Length; i++) {
+      ToolStripMenuItem^ item = gcnew ToolStripMenuItem(fontSizes[i]);
+      item->Tag = fontSizeVals[i];
+      item->Click += gcnew EventHandler(this, &MainForm::FontSize_Click);
+      fontSizeMenu->DropDownItems->Add(item);
+    }
+    helpMenu->DropDownItems->Add(fontSizeMenu);
+
+    helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Colorblind Mode", nullptr,
+        gcnew EventHandler(this, &MainForm::ColorblindMode_Click)));
     helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "About", nullptr,
         gcnew EventHandler(this, &MainForm::About_Click)));
@@ -793,7 +835,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
         grid[i, j]->Size = System::Drawing::Size(60, 45);
         grid[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight);
         grid[i, j]->MaxLength = 1;
-        grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", 20);
+        grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize);
         grid[i, j]->TextAlign = HorizontalAlignment::Center;
         grid[i, j]->Tag = gcnew array<int>{i, j};
         grid[i, j]->TextChanged +=
@@ -852,6 +894,9 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Handle form resize to expand grid
     this->Resize += gcnew EventHandler(this, &MainForm::Form_Resize);
+    // Pause timer when window loses focus
+    this->Deactivate += gcnew EventHandler(this, &MainForm::Form_Deactivate);
+    this->Activate += gcnew EventHandler(this, &MainForm::Form_Activate);
 
     // Initialize game timer
     elapsedSeconds = 0;
@@ -1150,13 +1195,17 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
   void Cell_GotFocus(Object^ sender, EventArgs^ e) {
     TextBox^ tb = safe_cast<TextBox^>(sender);
-    // Select all text to show block-style highlight
+    array<int>^ pos = safe_cast<array<int>^>(tb->Tag);
+    int val = sudoku->GetValue(pos[0], pos[1]);
+    highlightValue = val; // -1 if empty, highlights matching digits
+    ValidateAndHighlight();
     tb->SelectAll();
   }
 
   void Cell_LostFocus(Object^ sender, EventArgs^ e) {
     TextBox^ tb = safe_cast<TextBox^>(sender);
-    // Deselect on blur
+    highlightValue = -1;
+    ValidateAndHighlight();
     tb->SelectionLength = 0;
   }
 
@@ -1551,6 +1600,52 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     ShowHighscoresDialog("");
   }
 
+  void Form_Deactivate(Object^ sender, EventArgs^ e) {
+    if (!timerPaused) {
+      timerPaused = true;
+      gameTimer->Stop();
+      UpdateStatus("Game paused");
+    }
+  }
+
+  void Form_Activate(Object^ sender, EventArgs^ e) {
+    if (timerPaused && !puzzleSolved) {
+      timerPaused = false;
+      gameTimer->Start();
+      UpdateStatus("Game resumed");
+    }
+  }
+
+  void FontSize_Click(Object^ sender, EventArgs^ e) {
+    ToolStripMenuItem^ item = safe_cast<ToolStripMenuItem^>(sender);
+    gridFontSize = safe_cast<float>(item->Tag);
+    // Apply to all grid cells
+    for (int i = 0; i < 9; i++)
+      for (int j = 0; j < 9; j++)
+        grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize);
+    ValidateAndHighlight();
+    UpdateStatus("Font size changed");
+  }
+
+  void ColorblindMode_Click(Object^ sender, EventArgs^ e) {
+    colorblindMode = !colorblindMode;
+    ToolStripMenuItem^ item = safe_cast<ToolStripMenuItem^>(sender);
+    item->Checked = colorblindMode;
+    // In colorblind mode: immutable = bold+underline, quasi = bold+italic, normal = regular
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 9; j++) {
+        if (sudoku->IsCellImmutable(i, j) || sudoku->IsCellQuasiImmutable(i, j)) {
+          // Font style set by ValidateAndHighlight
+        } else {
+          grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize,
+            System::Drawing::FontStyle::Regular);
+        }
+      }
+    }
+    ValidateAndHighlight();
+    UpdateStatus(colorblindMode ? "Colorblind mode on" : "Colorblind mode off");
+  }
+
   void UpdateStatus(String ^ message) {
     statusLabel->Text = message;
     statusStrip->Refresh();
@@ -1563,15 +1658,29 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   }
 
   void ValidateAndHighlight() {
-    // Clear all previous highlights, respecting immutable cell colors
+    // Reset all cells to their base color/style
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
         if (sudoku->IsCellImmutable(i, j)) {
-          grid[i, j]->BackColor = Color::White;
-          grid[i, j]->ForeColor = Color::Salmon;
+          if (colorblindMode) {
+            grid[i, j]->BackColor = Color::White;
+            grid[i, j]->ForeColor = Color::Black;
+            grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize,
+              System::Drawing::FontStyle::Bold | System::Drawing::FontStyle::Underline);
+          } else {
+            grid[i, j]->BackColor = Color::White;
+            grid[i, j]->ForeColor = Color::Salmon;
+          }
         } else if (sudoku->IsCellQuasiImmutable(i, j)) {
-          grid[i, j]->BackColor = Color::LightGreen;
-          grid[i, j]->ForeColor = Color::DarkGreen;
+          if (colorblindMode) {
+            grid[i, j]->BackColor = Color::White;
+            grid[i, j]->ForeColor = Color::Black;
+            grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize,
+              System::Drawing::FontStyle::Bold | System::Drawing::FontStyle::Italic);
+          } else {
+            grid[i, j]->BackColor = Color::LightGreen;
+            grid[i, j]->ForeColor = Color::DarkGreen;
+          }
         } else {
           grid[i, j]->BackColor = Color::White;
           grid[i, j]->ForeColor = Color::Black;
@@ -1579,44 +1688,34 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       }
     }
 
-    // Check for direct conflicts (duplicates)
+    // Same-number highlight
+    if (highlightValue >= 0) {
+      for (int i = 0; i < 9; i++)
+        for (int j = 0; j < 9; j++)
+          if (sudoku->GetValue(i, j) == highlightValue &&
+              grid[i, j]->BackColor != Color::Red)
+            grid[i, j]->BackColor = Color::LightYellow;
+    }
+
+    // Conflict detection
     for (int row = 0; row < 9; row++) {
       for (int col = 0; col < 9; col++) {
         int value = sudoku->GetValue(row, col);
         if (value == -1) continue;
 
         bool hasConflict = false;
-
-        for (int c = 0; c < 9; c++) {
-          if (c != col && sudoku->GetValue(row, c) == value) {
-            hasConflict = true;
-            break;
-          }
-        }
-
+        for (int c = 0; c < 9; c++)
+          if (c != col && sudoku->GetValue(row, c) == value) { hasConflict = true; break; }
+        if (!hasConflict)
+          for (int r = 0; r < 9; r++)
+            if (r != row && sudoku->GetValue(r, col) == value) { hasConflict = true; break; }
         if (!hasConflict) {
-          for (int r = 0; r < 9; r++) {
-            if (r != row && sudoku->GetValue(r, col) == value) {
-              hasConflict = true;
-              break;
-            }
-          }
-        }
-
-        if (!hasConflict) {
-          int boxRow = (row / 3) * 3;
-          int boxCol = (col / 3) * 3;
-          for (int r = boxRow; r < boxRow + 3; r++) {
-            for (int c = boxCol; c < boxCol + 3; c++) {
-              if ((r != row || c != col) && sudoku->GetValue(r, c) == value) {
+          int boxRow = (row / 3) * 3, boxCol = (col / 3) * 3;
+          for (int r = boxRow; r < boxRow + 3 && !hasConflict; r++)
+            for (int c = boxCol; c < boxCol + 3 && !hasConflict; c++)
+              if ((r != row || c != col) && sudoku->GetValue(r, c) == value)
                 hasConflict = true;
-                break;
-              }
-            }
-            if (hasConflict) break;
-          }
         }
-
         if (hasConflict) {
           grid[row, col]->BackColor = Color::Red;
           grid[row, col]->ForeColor = Color::White;
@@ -1785,6 +1884,13 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           sudoku->SaveBoardState();
           sudoku->Clean();
           sudoku->SetValue(row, col, enteredVal);
+          // Auto-clear pencil marks in same row, col, and box
+          for (int c = 0; c < 9; c++) ClearNotes(row, c);
+          for (int r = 0; r < 9; r++) ClearNotes(r, col);
+          int boxR = (row / 3) * 3, boxC = (col / 3) * 3;
+          for (int r = boxR; r < boxR + 3; r++)
+            for (int c = boxC; c < boxC + 3; c++)
+              ClearNotes(r, c);
           UpdateGrid();
           UpdateUndoButtonState();
           // Track sliding window for quasi-immutable locking
@@ -2169,6 +2275,10 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     currentDifficulty = "";
     puzzleSolved = false;
     isSolving = false;
+    timerPaused = false;
+    highlightValue = -1;
+    colorblindMode = false;
+    gridFontSize = 20.0f;
     correctQueue = gcnew System::Collections::Generic::Queue<array<int>^>();
     InitializeComponent();
 
