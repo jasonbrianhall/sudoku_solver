@@ -268,9 +268,8 @@ ref class SudokuWrapper {
   void FindSwordFish() { nativeSudoku->FindSwordFish(); }
   void FindXYWing() { nativeSudoku->FindXYWing(); }
   void FindXYZWing() { nativeSudoku->FindXYZWing(); }
-  void FindSimpleColoring() {
-    nativeSudoku->FindSimpleColoring();
-  }  // This seems broken right now
+  void FindSimpleColoring() { nativeSudoku->FindSimpleColoring(); }
+  void Solve() { nativeSudoku->Solve(); }
   
   // Stateful solving - runs algorithms in sequence up to selected one
   void SolveToAlgorithm(AlgorithmType targetAlgorithm) {
@@ -479,6 +478,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
   ToolStripStatusLabel^ timerLabel;
   Timer^ gameTimer;
   int elapsedSeconds;
+  bool isSolving;  // prevents re-entrant solver calls
   Highscores* highscores;
   String^ currentDifficulty;  // "easy","medium","hard","master","expert" or "" if none
   bool puzzleSolved;          // prevent multiple win triggers
@@ -608,33 +608,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     menuStrip = gcnew MenuStrip();
     ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
 
-    // Save Slots
-    ToolStripMenuItem^ saveMenu = gcnew ToolStripMenuItem("Save Game");
-    int k;
-    for (int i = 1; i <= 4; i++) {
-        k=i+4;
-        ToolStripMenuItem^ saveSlot = gcnew ToolStripMenuItem("Slot " + i + " F(" + k + ")");
-        saveSlot->Tag = i; // Store slot number in Tag
-        saveSlot->Click += gcnew EventHandler(this, &MainForm::SaveSlot_Click);
-        saveMenu->DropDownItems->Add(saveSlot);
-    }
-
-    // Load Slots
-    ToolStripMenuItem^ loadMenu = gcnew ToolStripMenuItem("Load Game");
-    for (int i = 1; i <= 4; i++) {
-        k=i+4;
-        ToolStripMenuItem^ loadSlot = gcnew ToolStripMenuItem("Slot " + i + " Shift F(" + k + ")");
-        loadSlot->Tag = i; // Store slot number in Tag
-        loadSlot->Click += gcnew EventHandler(this, &MainForm::LoadSlot_Click);
-        loadMenu->DropDownItems->Add(loadSlot);
-    }
-
-    // Add Save and Load Menus to File Menu
-    fileMenu->DropDownItems->Add(saveMenu);
-    fileMenu->DropDownItems->Add(loadMenu);
-
-    // Generate Board submenu inside File menu
-    ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
+    // New Game submenu
+    ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("New Game");
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Easy F(1)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateEasy_Click)));
@@ -650,20 +625,31 @@ public ref class MainForm : public System::Windows::Forms::Form {
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Expert Shift F(1)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateExpert_Click)));
-    generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Save as spreadsheet puzzle1.xml F(9)", nullptr,
-        gcnew EventHandler(this, &MainForm::GeneratePuzzle1)));
-    generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Save as spreadsheet puzzle2.xml F(10)", nullptr,
-        gcnew EventHandler(this, &MainForm::GeneratePuzzle2)));
-    generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Save as spreadsheet puzzle3.xml F(11)", nullptr,
-        gcnew EventHandler(this, &MainForm::GeneratePuzzle3)));
-    generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Save as spreadsheet puzzle4.xml F(12)", nullptr,
-        gcnew EventHandler(this, &MainForm::GeneratePuzzle4)));
     fileMenu->DropDownItems->Add(generateBoardMenu);
 
+    // Save Slots
+    ToolStripMenuItem^ saveMenu = gcnew ToolStripMenuItem("Save Game");
+    int k;
+    for (int i = 1; i <= 4; i++) {
+        k=i+4;
+        ToolStripMenuItem^ saveSlot = gcnew ToolStripMenuItem("Slot " + i + " F(" + k + ")");
+        saveSlot->Tag = i;
+        saveSlot->Click += gcnew EventHandler(this, &MainForm::SaveSlot_Click);
+        saveMenu->DropDownItems->Add(saveSlot);
+    }
+
+    // Load Slots
+    ToolStripMenuItem^ loadMenu = gcnew ToolStripMenuItem("Load Game");
+    for (int i = 1; i <= 4; i++) {
+        k=i+4;
+        ToolStripMenuItem^ loadSlot = gcnew ToolStripMenuItem("Slot " + i + " Shift F(" + k + ")");
+        loadSlot->Tag = i;
+        loadSlot->Click += gcnew EventHandler(this, &MainForm::LoadSlot_Click);
+        loadMenu->DropDownItems->Add(loadSlot);
+    }
+
+    fileMenu->DropDownItems->Add(saveMenu);
+    fileMenu->DropDownItems->Add(loadMenu);
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Quit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
 
@@ -1178,6 +1164,54 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       }
   }
 
+  delegate void SolverDelegate();
+
+  void RunSolverAsync(SolverDelegate^ solverWork, String^ completionMsg) {
+    if (isSolving) {
+      UpdateStatus("Solver is already running...");
+      return;
+    }
+    if (!sudoku->IsValidSolution()) {
+      UpdateStatus("Current board is invalid");
+      return;
+    }
+    isSolving = true;
+    UpdateStatus("Solving...");
+
+    // Capture for lambda
+    SolverDelegate^ work = solverWork;
+    String^ msg = completionMsg;
+    MainForm^ form = this;
+
+    System::Threading::Thread^ t = gcnew System::Threading::Thread(
+      gcnew System::Threading::ThreadStart(
+        gcnew System::Action(gcnew SolverRunner(form, work, msg), &SolverRunner::Run)
+      )
+    );
+    t->IsBackground = true;
+    t->Start();
+  }
+
+  // Helper class to capture context for background thread
+  ref class SolverRunner {
+    MainForm^ form;
+    SolverDelegate^ work;
+    String^ msg;
+  public:
+    SolverRunner(MainForm^ f, SolverDelegate^ w, String^ m) : form(f), work(w), msg(m) {}
+    void Run() {
+      work->Invoke();
+      form->BeginInvoke(gcnew System::Action<String^>(form, &MainForm::SolverFinished), msg);
+    }
+  };
+
+  void SolverFinished(String^ msg) {
+    isSolving = false;
+    ClearDebugBox();
+    UpdateGrid();
+    UpdateStatus(msg);
+  }
+
   void HintCell() {
     // Solve a copy to find the answer, then place one random unknown cell
     Sudoku* copy = new Sudoku();
@@ -1630,126 +1664,49 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
       // Solving techniques
       case Keys::S:
-        if (sudoku->IsValidSolution()) {
-          sudoku->StdElim();
-          ClearDebugBox();
-          UpdateGrid();
-          UpdateStatus("Standard elimination completed");
-        } else {
-          UpdateStatus("Current Board is Invalid");
-        }
+        RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::StdElim), "Standard elimination completed");
         e->Handled = true;
         break;
       case Keys::L:
-        if (sudoku->IsValidSolution()) {
-          ClearDebugBox();
-          sudoku->LinElim();
-          UpdateGrid();
-          UpdateStatus("Line elimination completed");
-        } else {
-          UpdateStatus("Current Board is Invalid");
-        }
+        RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::LinElim), "Line elimination completed");
         e->Handled = true;
         break;
       case Keys::H:
-        if (sudoku->IsValidSolution()) {
-          ClearDebugBox();
-          sudoku->FindHiddenPairs();
-          UpdateGrid();
-          UpdateStatus("Hidden pairs completed");
-        } else {
-          UpdateStatus("Current Board is Invalid");
-        }
+        RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindHiddenPairs), "Hidden pairs completed");
         e->Handled = true;
         break;
       case Keys::P:
-        if (sudoku->IsValidSolution()) {
-          ClearDebugBox();
-          sudoku->FindPointingPairs();
-          UpdateGrid();
-          UpdateStatus("Pointing pairs completed");
-        } else {
-          UpdateStatus("Current Board is Invalid");
-        }
+        RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindPointingPairs), "Pointing pairs completed");
         e->Handled = true;
         break;
       case Keys::N:
-        if (sudoku->IsValidSolution()) {
-          ClearDebugBox();
-          sudoku->FindHiddenSingles();
-          UpdateGrid();
-          UpdateStatus("Hidden singles completed");
-          e->Handled = true;
-        } else {
-          UpdateStatus("Current Board is Invalid");
-        }
+        RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindHiddenSingles), "Hidden singles completed");
+        e->Handled = true;
         break;
       case Keys::K:
-        if (sudoku->IsValidSolution()) {
-          ClearDebugBox();
-          sudoku->FindNakedSets();
-          UpdateGrid();
-          UpdateStatus("Naked sets completed");
-        } else {
-          UpdateStatus("Current Board is Invalid");
-        }
+        RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindNakedSets), "Naked sets completed");
         e->Handled = true;
         break;
       case Keys::X:
-        if (sudoku->IsValidSolution()) {
-          ClearDebugBox();
-          sudoku->FindXWing();
-          UpdateGrid();
-          UpdateStatus("X-Wing technique completed");
-        } else {
-          UpdateStatus("Current Board is Invalid");
-        }
+        RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindXWing), "X-Wing technique completed");
         e->Handled = true;
         break;
       case Keys::F:
-        if (sudoku->IsValidSolution()) {
-          ClearDebugBox();
-          sudoku->FindSwordFish();
-          UpdateGrid();
-          UpdateStatus("Swordfish technique completed");
-        } else {
-          UpdateStatus("Current Board is Invalid");
-        }
+        RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindSwordFish), "Swordfish technique completed");
         e->Handled = true;
         break;
       case Keys::Y:
-        if (sudoku->IsValidSolution()) {
-          ClearDebugBox();
-          sudoku->FindXYWing();
-          UpdateGrid();
-          UpdateStatus("XY-Wing technique completed");
-        } else {
-          UpdateStatus("Current Board is Invalid");
-        }
+        RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindXYWing), "XY-Wing technique completed");
         e->Handled = true;
         break;
-      case Keys::OemSemicolon:  // For XYZ-Wing (;)
+      case Keys::OemSemicolon:
         if (!e->Shift) {
-          if (sudoku->IsValidSolution()) {
-            ClearDebugBox();
-            sudoku->FindXYZWing();
-            UpdateGrid();
-            UpdateStatus("XYZ-Wing technique completed");
-          } else {
-            UpdateStatus("Current Board is Invalid");
-          }
+          RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindXYZWing), "XYZ-Wing technique completed");
           e->Handled = true;
         }
         break;
       case Keys::A:
-        if (sudoku->IsValidSolution()) {
-          ClearDebugBox();
-          sudoku->Solve();
-          UpdateGrid();
-          UpdateStatus("Full solve completed");
-        } else {
-          UpdateStatus("Current Board is Invalid");
-        }
+        RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::Solve), "Full solve completed");
         e->Handled = true;
         break;
       case Keys::Z:
@@ -1936,113 +1893,47 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
   // Solving technique handlers
   void Solve_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->Solve();
-      UpdateGrid();
-      UpdateStatus("Full solve completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::Solve), "Full solve completed");
   }
 
   void StdElim_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->StdElim();
-      UpdateGrid();
-      UpdateStatus("Standard elimination completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::StdElim), "Standard elimination completed");
   }
 
   void LineElim_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->LinElim();
-      UpdateGrid();
-      UpdateStatus("Line elimination completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::LinElim), "Line elimination completed");
   }
 
   void HiddenSingles_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->FindHiddenSingles();
-      UpdateGrid();
-      UpdateStatus("Hidden singles technique completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindHiddenSingles), "Hidden singles technique completed");
   }
 
   void HiddenPairs_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->FindHiddenPairs();
-      UpdateGrid();
-      UpdateStatus("Hidden pairs technique completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindHiddenPairs), "Hidden pairs technique completed");
   }
 
   void PointingPairs_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->FindPointingPairs();
-      UpdateGrid();
-      UpdateStatus("Pointing pairs technique completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindPointingPairs), "Pointing pairs technique completed");
   }
 
   void NakedSets_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->FindNakedSets();
-      UpdateGrid();
-      UpdateStatus("Naked sets technique completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindNakedSets), "Naked sets technique completed");
   }
 
   void XWing_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->FindXWing();
-      UpdateGrid();
-      UpdateStatus("X-Wing technique completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindXWing), "X-Wing technique completed");
   }
 
   void Swordfish_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->FindSwordFish();
-      UpdateGrid();
-      UpdateStatus("Swordfish technique completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindSwordFish), "Swordfish technique completed");
   }
 
   void XYWing_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->FindXYWing();
-      UpdateGrid();
-      UpdateStatus("XY-Wing technique completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindXYWing), "XY-Wing technique completed");
   }
 
   void XYZWing_Click(Object ^ sender, EventArgs ^ e) {
-    if (sudoku->IsValidSolution()) {
-      sudoku->FindXYZWing();
-      UpdateGrid();
-      UpdateStatus("XYZ-Wing technique completed");
-    } else {
-      UpdateStatus("Current board is invalid");
-    }
+    RunSolverAsync(gcnew SolverDelegate(sudoku, &SudokuWrapper::FindXYZWing), "XYZ-Wing technique completed");
   }
 
   void SaveSlot_Click(Object^ sender, EventArgs^ e) {
@@ -2113,6 +2004,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     highscores = new Highscores();
     currentDifficulty = "";
     puzzleSolved = false;
+    isSolving = false;
     InitializeComponent();
 
     // Set the form icon
