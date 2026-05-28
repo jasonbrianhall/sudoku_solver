@@ -74,6 +74,8 @@ ref class SudokuWrapper {
   
   System::Collections::Generic::Stack<BoardState^>^ undoStack;
   static const int MAX_UNDO_STATES = 100;
+
+ public:
   int savedElapsedSeconds;
 
  public:
@@ -1896,7 +1898,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   }
 
   void Save_Click(Object ^ sender, EventArgs ^ e) {
-    sudoku->SaveToFile("sudoku_1.txt");
+    sudoku->SaveToFile("sudoku_1.txt", elapsedSeconds);
     UpdateStatus("Game saved successfully (sudoku_1.txt)");
   }
 
