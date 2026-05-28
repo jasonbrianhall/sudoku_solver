@@ -40,7 +40,8 @@ ref class SudokuWrapper {
  private:
   Sudoku* nativeSudoku;
   AlgorithmType currentAlgorithm;
-  array<array<bool>^>^ immutableCells;  // Track which cells are from generated puzzle
+  array<array<bool>^>^ immutableCells;      // Original puzzle clues (salmon text)
+  array<array<bool>^>^ quasiImmutableCells; // User-earned locks (green)
   
   // Undo history system
   ref class BoardState {
@@ -83,10 +84,13 @@ ref class SudokuWrapper {
     
     // Initialize immutable cells array
     immutableCells = gcnew array<array<bool>^>(9);
+    quasiImmutableCells = gcnew array<array<bool>^>(9);
     for (int i = 0; i < 9; i++) {
       immutableCells[i] = gcnew array<bool>(9);
+      quasiImmutableCells[i] = gcnew array<bool>(9);
       for (int j = 0; j < 9; j++) {
         immutableCells[i][j] = false;
+        quasiImmutableCells[i][j] = false;
       }
     }
     
@@ -173,12 +177,33 @@ ref class SudokuWrapper {
     }
     return false;
   }
-  
+
+  // Check if a cell is quasi-immutable (user-earned green lock)
+  bool IsCellQuasiImmutable(int col, int row) {
+    if (col >= 0 && col < 9 && row >= 0 && row < 9) {
+      return quasiImmutableCells[col][row];
+    }
+    return false;
+  }
+
+  // Lock a cell as quasi-immutable
+  void SetQuasiImmutable(int col, int row) {
+    if (col >= 0 && col < 9 && row >= 0 && row < 9) {
+      quasiImmutableCells[col][row] = true;
+    }
+  }
+
+  // Check if a cell is locked (either type)
+  bool IsCellLocked(int col, int row) {
+    return IsCellImmutable(col, row) || IsCellQuasiImmutable(col, row);
+  }
+
   // Reset immutability when starting new game
   void ClearImmutability() {
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
         immutableCells[i][j] = false;
+        quasiImmutableCells[i][j] = false;
       }
     }
   }
@@ -475,6 +500,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
   Timer^ gameTimer;
   int elapsedSeconds;
   bool isSolving;  // prevents re-entrant solver calls
+  int correctStreak; // consecutive correct user entries for quasi-immutable
   Highscores* highscores;
   String^ currentDifficulty;  // "easy","medium","hard","master","expert" or "" if none
   bool puzzleSolved;          // prevent multiple win triggers
@@ -506,6 +532,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       sudoku->MarkPuzzleAsGenerated();
       currentDifficulty = "easy";
       puzzleSolved = false;
+      correctStreak = 0;
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new easy puzzle - clues are immutable");
@@ -523,6 +550,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       sudoku->MarkPuzzleAsGenerated();
       currentDifficulty = "medium";
       puzzleSolved = false;
+      correctStreak = 0;
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new medium puzzle - clues are immutable");
@@ -540,6 +568,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       sudoku->MarkPuzzleAsGenerated();
       currentDifficulty = "hard";
       puzzleSolved = false;
+      correctStreak = 0;
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new hard puzzle - clues are immutable");
@@ -557,6 +586,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       sudoku->MarkPuzzleAsGenerated();
       currentDifficulty = "expert";
       puzzleSolved = false;
+      correctStreak = 0;
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new expert puzzle - clues are immutable");
@@ -574,6 +604,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       sudoku->MarkPuzzleAsGenerated();
       currentDifficulty = "master";
       puzzleSolved = false;
+      correctStreak = 0;
       ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new extreme puzzle - clues are immutable");
@@ -955,13 +986,19 @@ private: void SafeSetClipboard(DataObject^ data) {
         
         // Check if this cell is immutable (from generated puzzle)
         if (sudoku->IsCellImmutable(i, j)) {
-          // Display immutable cells in red/salmon
-          grid[i, j]->BackColor = Color::LightSalmon;
-          grid[i, j]->ForeColor = Color::DarkRed;
+          // Original clues: white background, salmon bold text
+          grid[i, j]->BackColor = Color::White;
+          grid[i, j]->ForeColor = Color::Salmon;
+          grid[i, j]->ReadOnly = true;
+          grid[i, j]->Font = gcnew System::Drawing::Font(grid[i, j]->Font, System::Drawing::FontStyle::Bold);
+        } else if (sudoku->IsCellQuasiImmutable(i, j)) {
+          // Earned locks: light green background, dark green text
+          grid[i, j]->BackColor = Color::LightGreen;
+          grid[i, j]->ForeColor = Color::DarkGreen;
           grid[i, j]->ReadOnly = true;
           grid[i, j]->Font = gcnew System::Drawing::Font(grid[i, j]->Font, System::Drawing::FontStyle::Bold);
         } else {
-          // Regular cells are white
+          // Regular cells
           grid[i, j]->BackColor = Color::White;
           grid[i, j]->ForeColor = Color::Black;
           grid[i, j]->ReadOnly = false;
@@ -1202,6 +1239,16 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     UpdateStatus(msg);
   }
 
+  // Returns the correct value (0-8) for a cell by solving a copy, or -1 if unsolvable
+  int GetCorrectValue(int row, int col) {
+    Sudoku* copy = new Sudoku();
+    memcpy(copy->board, sudoku->NativeSudoku->board, sizeof(copy->board));
+    copy->Solve();
+    int val = copy->GetValue(row, col);
+    delete copy;
+    return val;
+  }
+
   void HintCell() {
     // Solve a copy to find the answer, then place one random unknown cell
     Sudoku* copy = new Sudoku();
@@ -1415,8 +1462,11 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     for (int i = 0; i < 9; i++) {
       for (int j = 0; j < 9; j++) {
         if (sudoku->IsCellImmutable(i, j)) {
-          grid[i, j]->BackColor = Color::LightSalmon;
-          grid[i, j]->ForeColor = Color::DarkRed;
+          grid[i, j]->BackColor = Color::White;
+          grid[i, j]->ForeColor = Color::Salmon;
+        } else if (sudoku->IsCellQuasiImmutable(i, j)) {
+          grid[i, j]->BackColor = Color::LightGreen;
+          grid[i, j]->ForeColor = Color::DarkGreen;
         } else {
           grid[i, j]->BackColor = Color::White;
           grid[i, j]->ForeColor = Color::Black;
@@ -1476,9 +1526,8 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     int col = position[0];
     int row = position[1];
 
-    // Check if this cell is immutable (from generated puzzle)
-    if (sudoku->IsCellImmutable(col, row)) {
-      // Don't allow any changes to immutable cells
+    // Check if this cell is locked
+    if (sudoku->IsCellLocked(col, row)) {
       return;
     }
 
@@ -1510,8 +1559,8 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     int row = position[0];
     int col = position[1];
     
-    // Block any number input (0-9) for immutable cells
-    if (sudoku->IsCellImmutable(row, col)) {
+    // Block any number input (0-9) for locked cells
+    if (sudoku->IsCellLocked(row, col)) {
       if (e->KeyChar >= '0' && e->KeyChar <= '9') {
         e->Handled = true;
         return;
@@ -1620,31 +1669,45 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       case Keys::D7:
       case Keys::D8:
       case Keys::D9:
-        // Check if cell is immutable
-        if (sudoku->IsCellImmutable(row, col)) {
-          UpdateStatus("That cell is from the puzzle and cannot be changed");
+        if (sudoku->IsCellLocked(row, col)) {
+          UpdateStatus("That cell is locked and cannot be changed");
           e->Handled = true;
           break;
         }
-        // Save state before modification
-        sudoku->SaveBoardState();
-        // Normal input mode - set the cell value
-        sudoku->Clean();
-        sudoku->SetValue(row, col, ((int)e->KeyCode - (int)Keys::D1));
-        UpdateGrid();
-        UpdateUndoButtonState();
+        {
+          int enteredVal = (int)e->KeyCode - (int)Keys::D1;
+          int correctVal = GetCorrectValue(row, col);
+          sudoku->SaveBoardState();
+          sudoku->Clean();
+          sudoku->SetValue(row, col, enteredVal);
+          UpdateGrid();
+          UpdateUndoButtonState();
+          // Track streak for quasi-immutable
+          if (correctVal != -1 && enteredVal == correctVal) {
+            correctStreak++;
+            if (correctStreak >= 5) {
+              // Every 5th+ correct entry locks the previous correct cell green
+              // Lock THIS cell as quasi-immutable on the 6th+
+              sudoku->SetQuasiImmutable(row, col);
+              UpdateGrid();
+              UpdateStatus("Correct! Cell locked.");
+              correctStreak = 0;
+            }
+          } else {
+            correctStreak = 0;
+          }
+        }
         e->Handled = true;
         break;
 
       // Clear cell with 0
       case Keys::D0:
-        // Check if cell is immutable
-        if (sudoku->IsCellImmutable(row, col)) {
-          UpdateStatus("That cell is from the puzzle and cannot be changed");
+        if (sudoku->IsCellLocked(row, col)) {
+          UpdateStatus("That cell is locked and cannot be changed");
           e->Handled = true;
           break;
         }
-        // Save state before modification
+        correctStreak = 0;
         sudoku->SaveBoardState();
         sudoku->ClearValue(row, col);
         UpdateGrid();
@@ -1996,7 +2059,9 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     highscores = new Highscores();
     currentDifficulty = "";
     puzzleSolved = false;
+      correctStreak = 0;
     isSolving = false;
+    correctStreak = 0;
     InitializeComponent();
 
     // Set the form icon
