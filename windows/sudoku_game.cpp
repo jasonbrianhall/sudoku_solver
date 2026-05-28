@@ -1382,6 +1382,14 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
     puzzleSolved = true;
     gameTimer->Stop();
+
+    // Lock all user-entered cells as quasi-immutable (green)
+    for (int i = 0; i < 9; i++)
+      for (int j = 0; j < 9; j++)
+        if (!sudoku->IsCellImmutable(i, j) && !sudoku->IsCellQuasiImmutable(i, j))
+          sudoku->SetQuasiImmutable(i, j);
+    UpdateGrid();
+
     PlayWinSound();
 
     int mins = elapsedSeconds / 60;
