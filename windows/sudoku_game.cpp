@@ -269,7 +269,6 @@ ref class SudokuWrapper {
   void FindXYWing() { nativeSudoku->FindXYWing(); }
   void FindXYZWing() { nativeSudoku->FindXYZWing(); }
   void FindSimpleColoring() { nativeSudoku->FindSimpleColoring(); }
-  void Solve() { nativeSudoku->Solve(); }
   
   // Stateful solving - runs algorithms in sequence up to selected one
   void SolveToAlgorithm(AlgorithmType targetAlgorithm) {
@@ -1166,6 +1165,20 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
   delegate void SolverDelegate();
 
+  // Helper class to capture context for background thread
+  ref class SolverRunner {
+  public:
+    MainForm^ form;
+    SolverDelegate^ work;
+    String^ msg;
+    SolverRunner(MainForm^ f, SolverDelegate^ w, String^ m) : form(f), work(w), msg(m) {}
+    void Run() {
+      work->Invoke();
+      array<Object^>^ args = gcnew array<Object^>{msg};
+      form->BeginInvoke(gcnew System::Action<String^>(form, &MainForm::SolverFinished), args);
+    }
+  };
+
   void RunSolverAsync(SolverDelegate^ solverWork, String^ completionMsg) {
     if (isSolving) {
       UpdateStatus("Solver is already running...");
@@ -1178,32 +1191,13 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     isSolving = true;
     UpdateStatus("Solving...");
 
-    // Capture for lambda
-    SolverDelegate^ work = solverWork;
-    String^ msg = completionMsg;
-    MainForm^ form = this;
-
+    SolverRunner^ runner = gcnew SolverRunner(this, solverWork, completionMsg);
     System::Threading::Thread^ t = gcnew System::Threading::Thread(
-      gcnew System::Threading::ThreadStart(
-        gcnew System::Action(gcnew SolverRunner(form, work, msg), &SolverRunner::Run)
-      )
+      gcnew System::Threading::ThreadStart(runner, &SolverRunner::Run)
     );
     t->IsBackground = true;
     t->Start();
   }
-
-  // Helper class to capture context for background thread
-  ref class SolverRunner {
-    MainForm^ form;
-    SolverDelegate^ work;
-    String^ msg;
-  public:
-    SolverRunner(MainForm^ f, SolverDelegate^ w, String^ m) : form(f), work(w), msg(m) {}
-    void Run() {
-      work->Invoke();
-      form->BeginInvoke(gcnew System::Action<String^>(form, &MainForm::SolverFinished), msg);
-    }
-  };
 
   void SolverFinished(String^ msg) {
     isSolving = false;
