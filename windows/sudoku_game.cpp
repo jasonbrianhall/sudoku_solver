@@ -537,6 +537,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       correctQueue->Clear();
       ResetTimer();
       UpdateGrid();
+      PlayNewGameSound();
       UpdateStatus("Generated new easy puzzle - clues are immutable");
     } else {
       UpdateStatus("Failed to generate easy puzzle");
@@ -555,6 +556,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       correctQueue->Clear();
       ResetTimer();
       UpdateGrid();
+      PlayNewGameSound();
       UpdateStatus("Generated new medium puzzle - clues are immutable");
     } else {
       UpdateStatus("Failed to generate medium puzzle");
@@ -573,6 +575,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       correctQueue->Clear();
       ResetTimer();
       UpdateGrid();
+      PlayNewGameSound();
       UpdateStatus("Generated new hard puzzle - clues are immutable");
     } else {
       UpdateStatus("Failed to generate hard puzzle");
@@ -591,6 +594,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       correctQueue->Clear();
       ResetTimer();
       UpdateGrid();
+      PlayNewGameSound();
       UpdateStatus("Generated new expert puzzle - clues are immutable");
     } else {
       UpdateStatus("Failed to generate expert puzzle");
@@ -609,6 +613,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
       correctQueue->Clear();
       ResetTimer();
       UpdateGrid();
+      PlayNewGameSound();
       UpdateStatus("Generated new extreme puzzle - clues are immutable");
     } else {
       UpdateStatus("Failed to generate extreme puzzle");
@@ -799,6 +804,9 @@ public ref class MainForm : public System::Windows::Forms::Form {
             gcnew KeyPressEventHandler(this, &MainForm::Cell_KeyPress);
         grid[i, j]->BackColor = Color::White;
         grid[i, j]->BorderStyle = BorderStyle::None;
+        grid[i, j]->Cursor = Cursors::IBeam;
+        grid[i, j]->GotFocus += gcnew EventHandler(this, &MainForm::Cell_GotFocus);
+        grid[i, j]->LostFocus += gcnew EventHandler(this, &MainForm::Cell_LostFocus);
         gridContainer->Controls->Add(grid[i, j]);
         grid[i, j]->MouseWheel += gcnew MouseEventHandler(this, &MainForm::Cell_MouseWheel);
         grid[i, j]->MouseDown += gcnew MouseEventHandler(this, &MainForm::Cell_MouseDown);
@@ -1012,6 +1020,10 @@ private: void SafeSetClipboard(DataObject^ data) {
     }
     ValidateAndHighlight();
     CheckForWin();
+    // Restore block cursor on currently focused cell
+    for (int i = 0; i < 9; i++)
+      for (int j = 0; j < 9; j++)
+        if (grid[i, j]->Focused) grid[i, j]->SelectAll();
   }
 
   String^ GetBoardAsText() {
@@ -1135,6 +1147,18 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     }
 }
 
+
+  void Cell_GotFocus(Object^ sender, EventArgs^ e) {
+    TextBox^ tb = safe_cast<TextBox^>(sender);
+    // Select all text to show block-style highlight
+    tb->SelectAll();
+  }
+
+  void Cell_LostFocus(Object^ sender, EventArgs^ e) {
+    TextBox^ tb = safe_cast<TextBox^>(sender);
+    // Deselect on blur
+    tb->SelectionLength = 0;
+  }
 
   void Cell_MouseWheel(Object^ sender, MouseEventArgs^ e) {
       TextBox^ textBox = safe_cast<TextBox^>(sender);
@@ -1278,6 +1302,13 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       gcnew System::Threading::ThreadStart(ss, &SoundSequence::Play));
     t->IsBackground = true;
     t->Start();
+  }
+
+  // New game started - cheerful ascending arpeggio
+  void PlayNewGameSound() {
+    PlaySequenceAsync(
+      gcnew array<int>  {392, 523, 659, 784, 1047},
+      gcnew array<int>  { 80,  80,  80,  80,  200});
   }
 
   // Wrong digit entered
