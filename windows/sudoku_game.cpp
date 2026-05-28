@@ -982,7 +982,9 @@ private: void SafeSetClipboard(DataObject^ data) {
     }
     ValidateAndHighlight();
     CheckForWin();
-  } {
+  }
+
+  String^ GetBoardAsText() {
         String^ result = "<table border='1' style='border-collapse: collapse; border: 2px solid black;'>";
     
         // Generate the HTML table
@@ -1174,8 +1176,23 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       for (int j = 0; j < 9; j++)
         if (sudoku->GetValue(i, j) == -1) return;
 
-    // Check valid solution
-    if (!sudoku->IsValidSolution()) return;
+    // Check no conflicts (no red cells) - same logic as ValidateAndHighlight
+    for (int row = 0; row < 9; row++) {
+      for (int col = 0; col < 9; col++) {
+        int value = sudoku->GetValue(row, col);
+        // Check row
+        for (int c = 0; c < 9; c++)
+          if (c != col && sudoku->GetValue(row, c) == value) return;
+        // Check column
+        for (int r = 0; r < 9; r++)
+          if (r != row && sudoku->GetValue(r, col) == value) return;
+        // Check 3x3 box
+        int boxRow = (row / 3) * 3, boxCol = (col / 3) * 3;
+        for (int r = boxRow; r < boxRow + 3; r++)
+          for (int c = boxCol; c < boxCol + 3; c++)
+            if ((r != row || c != col) && sudoku->GetValue(r, c) == value) return;
+      }
+    }
 
     puzzleSolved = true;
     gameTimer->Stop();
