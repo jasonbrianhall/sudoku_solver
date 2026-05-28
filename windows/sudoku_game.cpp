@@ -715,8 +715,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Quit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
 
-    // Help Menu
-    ToolStripMenuItem^ helpMenu = gcnew ToolStripMenuItem("Help");
+    // Options Menu
+    ToolStripMenuItem^ optionsMenu = gcnew ToolStripMenuItem("Options");
 
     // Font size submenu
     ToolStripMenuItem^ fontSizeMenu = gcnew ToolStripMenuItem("Font Size");
@@ -728,11 +728,13 @@ public ref class MainForm : public System::Windows::Forms::Form {
       item->Click += gcnew EventHandler(this, &MainForm::FontSize_Click);
       fontSizeMenu->DropDownItems->Add(item);
     }
-    helpMenu->DropDownItems->Add(fontSizeMenu);
-
-    helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+    optionsMenu->DropDownItems->Add(fontSizeMenu);
+    optionsMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Colorblind Mode", nullptr,
         gcnew EventHandler(this, &MainForm::ColorblindMode_Click)));
+
+    // Help Menu
+    ToolStripMenuItem^ helpMenu = gcnew ToolStripMenuItem("Help");
     helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "About", nullptr,
         gcnew EventHandler(this, &MainForm::About_Click)));
@@ -742,6 +744,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Add Menus to MenuStrip
     menuStrip->Items->Add(fileMenu);
+    menuStrip->Items->Add(optionsMenu);
     menuStrip->Items->Add(helpMenu);
 
     // Attach MenuStrip to the Form
@@ -1637,16 +1640,11 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     colorblindMode = !colorblindMode;
     ToolStripMenuItem^ item = safe_cast<ToolStripMenuItem^>(sender);
     item->Checked = colorblindMode;
-    for (int i = 0; i < 9; i++) {
-      for (int j = 0; j < 9; j++) {
-        if (sudoku->IsCellImmutable(i, j) || sudoku->IsCellQuasiImmutable(i, j)) {
-          // Font style set by ValidateAndHighlight
-        } else {
-          grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize,
-            System::Drawing::FontStyle::Regular);
-        }
-      }
-    }
+    // Reset all cell fonts first, then let ValidateAndHighlight reapply styles
+    for (int i = 0; i < 9; i++)
+      for (int j = 0; j < 9; j++)
+        grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize,
+          System::Drawing::FontStyle::Regular);
     ValidateAndHighlight();
     UpdateStatus(colorblindMode ? "Colorblind mode on" : "Colorblind mode off");
   }
@@ -1675,6 +1673,8 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           } else {
             grid[i, j]->BackColor = Color::White;
             grid[i, j]->ForeColor = Color::Salmon;
+            grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize,
+              System::Drawing::FontStyle::Bold);
           }
         } else if (sudoku->IsCellQuasiImmutable(i, j)) {
           if (colorblindMode) {
@@ -1685,10 +1685,14 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           } else {
             grid[i, j]->BackColor = Color::LightGreen;
             grid[i, j]->ForeColor = Color::DarkGreen;
+            grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize,
+              System::Drawing::FontStyle::Bold);
           }
         } else {
           grid[i, j]->BackColor = Color::White;
           grid[i, j]->ForeColor = Color::Black;
+          grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize,
+            System::Drawing::FontStyle::Regular);
         }
       }
     }
@@ -1900,15 +1904,26 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           UpdateUndoButtonState();
           // Track sliding window for quasi-immutable locking
           if (correctVal != -1 && enteredVal == correctVal) {
-            correctQueue->Enqueue(gcnew array<int>{row, col});
-            if (correctQueue->Count >= 5) {
-              array<int>^ toLock = correctQueue->Dequeue();
-              sudoku->SetQuasiImmutable(toLock[0], toLock[1]);
-              UpdateGrid();
-              PlayQuasiImmutableSound();
-              UpdateStatus("Correct! Cell locked.");
+            // Reject if this cell is already in the queue (can't spam same cell)
+            bool alreadyQueued = false;
+            for each (array<int>^ cell in correctQueue)
+              if (cell[0] == row && cell[1] == col) { alreadyQueued = true; break; }
+
+            if (alreadyQueued) {
+              // Re-entering a queued cell resets the streak
+              correctQueue->Clear();
+              PlayWrongSound();
             } else {
-              PlayCorrectSound();
+              correctQueue->Enqueue(gcnew array<int>{row, col});
+              if (correctQueue->Count >= 5) {
+                array<int>^ toLock = correctQueue->Dequeue();
+                sudoku->SetQuasiImmutable(toLock[0], toLock[1]);
+                UpdateGrid();
+                PlayQuasiImmutableSound();
+                UpdateStatus("Correct! Cell locked.");
+              } else {
+                PlayCorrectSound();
+              }
             }
           } else {
             PlayWrongSound();
