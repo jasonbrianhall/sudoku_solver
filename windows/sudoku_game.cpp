@@ -1597,6 +1597,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     ShowHighscoresDialog("");
   }
 
+ protected:
   virtual void WndProc(System::Windows::Forms::Message% m) override {
     // WM_ACTIVATE: wParam low word 0 = deactivated, nonzero = activated
     if (m.Msg == 0x0006) {
@@ -1620,6 +1621,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     Form::WndProc(m);
   }
 
+ private:
   void FontSize_Click(Object^ sender, EventArgs^ e) {
     ToolStripMenuItem^ item = safe_cast<ToolStripMenuItem^>(sender);
     gridFontSize = safe_cast<float>(item->Tag);
