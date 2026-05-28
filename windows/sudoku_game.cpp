@@ -2,6 +2,7 @@
 
 #define _HAS_STD_BYTE 0
 #include <msclr/marshal_cppstd.h>
+#include <fstream>
 
 #include "resource.h"
 #include "sudoku.h"
@@ -196,12 +197,45 @@ ref class SudokuWrapper {
   // File operations
   bool LoadFromFile(String ^ filename) {
     std::wstring wstr = msclr::interop::marshal_as<std::wstring>(filename);
-    return nativeSudoku->LoadFromFile(std::string(wstr.begin(), wstr.end()));
+    bool result = nativeSudoku->LoadFromFile(std::string(wstr.begin(), wstr.end()));
+    if (result) {
+      // Clear all immutability first
+      ClearImmutability();
+      // Try to load immutability sidecar file
+      String^ sidecar = filename + ".imm";
+      std::wstring sidecarW = msclr::interop::marshal_as<std::wstring>(sidecar);
+      std::ifstream fin(std::string(sidecarW.begin(), sidecarW.end()));
+      if (fin.is_open()) {
+        for (int col = 0; col < 9; col++) {
+          for (int row = 0; row < 9; row++) {
+            int v = 0;
+            fin >> v;
+            immutableCells[col][row] = (v == 1);
+          }
+        }
+        fin.close();
+      }
+    }
+    return result;
   }
 
   void SaveToFile(String ^ filename) {
     std::wstring wstr = msclr::interop::marshal_as<std::wstring>(filename);
     nativeSudoku->SaveToFile(std::string(wstr.begin(), wstr.end()));
+    // Save immutability sidecar file
+    String^ sidecar = filename + ".imm";
+    std::wstring sidecarW = msclr::interop::marshal_as<std::wstring>(sidecar);
+    std::ofstream fout(std::string(sidecarW.begin(), sidecarW.end()));
+    if (fout.is_open()) {
+      for (int col = 0; col < 9; col++) {
+        for (int row = 0; row < 9; row++) {
+          fout << (immutableCells[col][row] ? 1 : 0);
+          if (row < 8) fout << " ";
+        }
+        fout << "\n";
+      }
+      fout.close();
+    }
   }
 
   void ExportToExcelXML(String ^ filename) {
@@ -431,6 +465,9 @@ public ref class MainForm : public System::Windows::Forms::Form {
   ToolStripButton^ undoBtn;
   ToolStripButton^ clearBoardBtn;
   ToolStripLabel^ undoCountLabel;
+  ToolStripStatusLabel^ timerLabel;
+  Timer^ gameTimer;
+  int elapsedSeconds;
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle1.xml");
@@ -456,7 +493,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("easy")) {
       sudoku->Clean();
-      sudoku->MarkPuzzleAsGenerated();  // Mark all filled cells as immutable
+      sudoku->MarkPuzzleAsGenerated();
+      ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new easy puzzle - clues are immutable");
     } else {
@@ -470,7 +508,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("medium")) {
       sudoku->Clean();
-      sudoku->MarkPuzzleAsGenerated();  // Mark all filled cells as immutable
+      sudoku->MarkPuzzleAsGenerated();
+      ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new medium puzzle - clues are immutable");
     } else {
@@ -484,7 +523,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("hard")) {
       sudoku->Clean();
-      sudoku->MarkPuzzleAsGenerated();  // Mark all filled cells as immutable
+      sudoku->MarkPuzzleAsGenerated();
+      ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new hard puzzle - clues are immutable");
     } else {
@@ -498,7 +538,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("expert")) {
       sudoku->Clean();
-      sudoku->MarkPuzzleAsGenerated();  // Mark all filled cells as immutable
+      sudoku->MarkPuzzleAsGenerated();
+      ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new expert puzzle - clues are immutable");
     } else {
@@ -512,7 +553,8 @@ public ref class MainForm : public System::Windows::Forms::Form {
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("extreme")) {
       sudoku->Clean();
-      sudoku->MarkPuzzleAsGenerated();  // Mark all filled cells as immutable
+      sudoku->MarkPuzzleAsGenerated();
+      ResetTimer();
       UpdateGrid();
       UpdateStatus("Generated new extreme puzzle - clues are immutable");
     } else {
@@ -530,15 +572,17 @@ public ref class MainForm : public System::Windows::Forms::Form {
     // Initialize StatusStrip
     statusStrip = gcnew StatusStrip();
     statusLabel = gcnew ToolStripStatusLabel("Ready");
+    statusLabel->Spring = true;
+    statusLabel->TextAlign = System::Drawing::ContentAlignment::MiddleLeft;
     statusStrip->Items->Add(statusLabel);
+    timerLabel = gcnew ToolStripStatusLabel("00:00");
+    timerLabel->TextAlign = System::Drawing::ContentAlignment::MiddleRight;
+    statusStrip->Items->Add(timerLabel);
     this->Controls->Add(statusStrip);
 
     // Initialize MenuStrip
     menuStrip = gcnew MenuStrip();
     ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("File");
-    ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
-
-
 
     // Save Slots
     ToolStripMenuItem^ saveMenu = gcnew ToolStripMenuItem("Save Game");
@@ -564,10 +608,9 @@ public ref class MainForm : public System::Windows::Forms::Form {
     // Add Save and Load Menus to File Menu
     fileMenu->DropDownItems->Add(saveMenu);
     fileMenu->DropDownItems->Add(loadMenu);
-    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "Quit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
 
-    // Generate Board Menu Items
+    // Generate Board submenu inside File menu
+    ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("Generate Board");
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Easy F(1)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateEasy_Click)));
@@ -583,7 +626,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Expert Shift F(1)", nullptr,
         gcnew EventHandler(this, &MainForm::GenerateExpert_Click)));
-   generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+    generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Save as spreadsheet puzzle1.xml F(9)", nullptr,
         gcnew EventHandler(this, &MainForm::GeneratePuzzle1)));
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
@@ -595,6 +638,10 @@ public ref class MainForm : public System::Windows::Forms::Form {
     generateBoardMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Save as spreadsheet puzzle4.xml F(12)", nullptr,
         gcnew EventHandler(this, &MainForm::GeneratePuzzle4)));
+    fileMenu->DropDownItems->Add(generateBoardMenu);
+
+    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
+        "Quit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
 
     // Help Menu
     ToolStripMenuItem^ helpMenu = gcnew ToolStripMenuItem("Help");
@@ -607,7 +654,6 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Add Menus to MenuStrip
     menuStrip->Items->Add(fileMenu);
-    menuStrip->Items->Add(generateBoardMenu);
     menuStrip->Items->Add(helpMenu);
 
     // Attach MenuStrip to the Form
@@ -757,6 +803,25 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Handle form resize to expand grid
     this->Resize += gcnew EventHandler(this, &MainForm::Form_Resize);
+
+    // Initialize game timer
+    elapsedSeconds = 0;
+    gameTimer = gcnew Timer();
+    gameTimer->Interval = 1000;
+    gameTimer->Tick += gcnew EventHandler(this, &MainForm::GameTimer_Tick);
+    gameTimer->Start();
+  }
+
+  void GameTimer_Tick(Object^ sender, EventArgs^ e) {
+    elapsedSeconds++;
+    int minutes = elapsedSeconds / 60;
+    int seconds = elapsedSeconds % 60;
+    timerLabel->Text = String::Format("{0:D2}:{1:D2}", minutes, seconds);
+  }
+
+  void ResetTimer() {
+    elapsedSeconds = 0;
+    timerLabel->Text = "00:00";
   }
 
   void UpdateDebugBox(Object^ sender, EventArgs^ e) {
@@ -1824,10 +1889,12 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
               ->GetManifestResourceStream("app.ico"));
       this->Icon = icon;
     } catch (Exception ^ ex) {
-      // Icon loading failed, will use default icon
       System::Diagnostics::Debug::WriteLine("Failed to load icon: " +
                                             ex->Message);
     }
+
+    // Auto-generate easy puzzle on startup (as if F1 was pressed)
+    GenerateEasy_Click(nullptr, nullptr);
   }
 };
 }  // namespace SudokuGame
