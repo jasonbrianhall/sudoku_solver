@@ -9,6 +9,9 @@
 #include "generatepuzzle.h"
 #include "highscores.h"
 
+// Inline highscores implementation to avoid needing a separate .cpp in the project
+#include "highscores.cpp"
+
 using namespace System;
 using namespace System::ComponentModel;
 using namespace System::Collections;
@@ -71,11 +74,13 @@ ref class SudokuWrapper {
   
   System::Collections::Generic::Stack<BoardState^>^ undoStack;
   static const int MAX_UNDO_STATES = 100;
+  int savedElapsedSeconds;
 
  public:
   SudokuWrapper() { 
     nativeSudoku = new Sudoku(); 
     currentAlgorithm = AlgorithmType::ALG_NONE;
+    savedElapsedSeconds = 0;
     
     // Initialize immutable cells array
     immutableCells = gcnew array<array<bool>^>(9);
@@ -200,9 +205,7 @@ ref class SudokuWrapper {
     std::wstring wstr = msclr::interop::marshal_as<std::wstring>(filename);
     bool result = nativeSudoku->LoadFromFile(std::string(wstr.begin(), wstr.end()));
     if (result) {
-      // Clear all immutability first
       ClearImmutability();
-      // Try to load immutability sidecar file
       String^ sidecar = filename + ".imm";
       std::wstring sidecarW = msclr::interop::marshal_as<std::wstring>(sidecar);
       std::ifstream fin(std::string(sidecarW.begin(), sidecarW.end()));
@@ -214,16 +217,19 @@ ref class SudokuWrapper {
             immutableCells[col][row] = (v == 1);
           }
         }
+        // Load saved elapsed time
+        int savedTime = 0;
+        fin >> savedTime;
+        savedElapsedSeconds = savedTime;
         fin.close();
       }
     }
     return result;
   }
 
-  void SaveToFile(String ^ filename) {
+  void SaveToFile(String ^ filename, int elapsedSecs) {
     std::wstring wstr = msclr::interop::marshal_as<std::wstring>(filename);
     nativeSudoku->SaveToFile(std::string(wstr.begin(), wstr.end()));
-    // Save immutability sidecar file
     String^ sidecar = filename + ".imm";
     std::wstring sidecarW = msclr::interop::marshal_as<std::wstring>(sidecar);
     std::ofstream fout(std::string(sidecarW.begin(), sidecarW.end()));
@@ -235,6 +241,8 @@ ref class SudokuWrapper {
         }
         fout << "\n";
       }
+      // Save elapsed time on final line
+      fout << elapsedSecs << "\n";
       fout.close();
     }
   }
@@ -964,9 +972,9 @@ private: void SafeSetClipboard(DataObject^ data) {
         
         // Check if this cell is immutable (from generated puzzle)
         if (sudoku->IsCellImmutable(i, j)) {
-          // Display immutable cells in blue
-          grid[i, j]->BackColor = Color::LightBlue;
-          grid[i, j]->ForeColor = Color::DarkBlue;
+          // Display immutable cells in red/salmon
+          grid[i, j]->BackColor = Color::LightSalmon;
+          grid[i, j]->ForeColor = Color::DarkRed;
           grid[i, j]->ReadOnly = true;
           grid[i, j]->Font = gcnew System::Drawing::Font(grid[i, j]->Font, System::Drawing::FontStyle::Bold);
         } else {
@@ -1166,6 +1174,46 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
               notes[row, col]->Text = number;
           }
       }
+  }
+
+  void HintCell() {
+    // Solve a copy to find the answer, then place one random unknown cell
+    Sudoku* copy = new Sudoku();
+    memcpy(copy->board, sudoku->NativeSudoku->board, sizeof(copy->board));
+    copy->Solve();
+
+    // Collect all empty cells
+    System::Collections::Generic::List<array<int>^>^ emptyCells =
+        gcnew System::Collections::Generic::List<array<int>^>();
+    for (int i = 0; i < 9; i++)
+      for (int j = 0; j < 9; j++)
+        if (sudoku->GetValue(i, j) == -1)
+          emptyCells->Add(gcnew array<int>{i, j});
+
+    if (emptyCells->Count == 0) {
+      delete copy;
+      UpdateStatus("No empty cells to fill");
+      return;
+    }
+
+    // Pick a random empty cell
+    Random^ rng = gcnew Random();
+    array<int>^ cell = emptyCells[rng->Next(emptyCells->Count)];
+    int row = cell[0], col = cell[1];
+    int solvedVal = copy->GetValue(row, col);
+    delete copy;
+
+    if (solvedVal == -1) {
+      UpdateStatus("Cheat: Could not solve current board");
+      return;
+    }
+
+    sudoku->SaveBoardState();
+    sudoku->SetValue(row, col, solvedVal);
+    UpdateGrid();
+    UpdateUndoButtonState();
+    UpdateStatus("Cheat: placed " + (solvedVal + 1).ToString() +
+                 " at row " + (row + 1).ToString() + ", col " + (col + 1).ToString());
   }
 
   void CheckForWin() {
@@ -1724,13 +1772,14 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_1.txt")) {
             ClearDebugBox();
+            elapsedSeconds = sudoku->savedElapsedSeconds;
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_1.txt");
           } else {
             UpdateStatus("Failed to load sudoku_1.txt");
           }
         } else {
-          sudoku->SaveToFile("sudoku_1.txt");
+          sudoku->SaveToFile("sudoku_1.txt", elapsedSeconds);
           UpdateStatus("Game saved to sudoku_1.txt");
         }
         e->Handled = true;
@@ -1739,13 +1788,14 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_2.txt")) {
             ClearDebugBox();
+            elapsedSeconds = sudoku->savedElapsedSeconds;
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_2.txt");
           } else {
             UpdateStatus("Failed to load sudoku_2.txt");
           }
         } else {
-          sudoku->SaveToFile("sudoku_2.txt");
+          sudoku->SaveToFile("sudoku_2.txt", elapsedSeconds);
           UpdateStatus("Game saved to sudoku_2.txt");
         }
         e->Handled = true;
@@ -1754,13 +1804,14 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_3.txt")) {
             ClearDebugBox();
+            elapsedSeconds = sudoku->savedElapsedSeconds;
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_3.txt");
           } else {
             UpdateStatus("Failed to load sudoku_3.txt");
           }
         } else {
-          sudoku->SaveToFile("sudoku_3.txt");
+          sudoku->SaveToFile("sudoku_3.txt", elapsedSeconds);
           UpdateStatus("Game saved to sudoku_3.txt");
         }
         e->Handled = true;
@@ -1769,13 +1820,14 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         if (e->Shift) {
           if (sudoku->LoadFromFile("sudoku_4.txt")) {
             ClearDebugBox();
+            elapsedSeconds = sudoku->savedElapsedSeconds;
             UpdateGrid();
             UpdateStatus("Game loaded from sudoku_4.txt");
           } else {
             UpdateStatus("Failed to load sudoku_4.txt");
           }
         } else {
-          sudoku->SaveToFile("sudoku_4.txt");
+          sudoku->SaveToFile("sudoku_4.txt", elapsedSeconds);
           UpdateStatus("Game saved to sudoku_4.txt");
         }
         e->Handled = true;
@@ -1799,7 +1851,9 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         e->Handled = true;
         break;
       case Keys::F12:
-        if (!e->Shift) {
+        if (e->Shift) {
+          HintCell();
+        } else {
           sudoku->ExportToExcelXML("puzzle4.xml");
         }
         e->Handled = true;
@@ -1991,23 +2045,22 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
   void SaveSlot_Click(Object^ sender, EventArgs^ e) {
     ToolStripMenuItem^ menuItem = safe_cast<ToolStripMenuItem^>(sender);
-    int slot = safe_cast<int>(menuItem->Tag); // Retrieve slot number
+    int slot = safe_cast<int>(menuItem->Tag);
     String^ filename = "sudoku_slot_" + slot + ".txt";
-
-    sudoku->SaveToFile(filename);
+    sudoku->SaveToFile(filename, elapsedSeconds);
     UpdateStatus("Game saved to " + filename);
   }
 
   void LoadSlot_Click(Object^ sender, EventArgs^ e) {
     ToolStripMenuItem^ menuItem = safe_cast<ToolStripMenuItem^>(sender);
-    int slot = safe_cast<int>(menuItem->Tag); // Retrieve slot number
+    int slot = safe_cast<int>(menuItem->Tag);
     String^ filename = "sudoku_slot_" + slot + ".txt";
-
     if (sudoku->LoadFromFile(filename)) {
-        UpdateGrid();
-        UpdateStatus("Game loaded from " + filename);
+      elapsedSeconds = sudoku->savedElapsedSeconds;
+      UpdateGrid();
+      UpdateStatus("Game loaded from " + filename);
     } else {
-        UpdateStatus("Failed to load " + filename);
+      UpdateStatus("Failed to load " + filename);
     }
   }
 
