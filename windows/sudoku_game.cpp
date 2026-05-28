@@ -540,9 +540,6 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
 
 
-    fileMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
-        "New Game (Z)", nullptr, gcnew EventHandler(this, &MainForm::NewGame_Click)));
-
     // Save Slots
     ToolStripMenuItem^ saveMenu = gcnew ToolStripMenuItem("Save Game");
     int k;
@@ -619,35 +616,6 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize ToolStrip
     toolStrip = gcnew ToolStrip();
-    ToolStripButton^ newGameBtn = gcnew ToolStripButton(
-        "New Game (Z)", nullptr,
-        gcnew EventHandler(this, &MainForm::NewGame_Click));
-    newGameBtn->AutoSize = false;
-    newGameBtn->Size = System::Drawing::Size(100, 25);
-    toolStrip->Items->Add(newGameBtn);
-    
-    // Add Undo button
-    undoBtn = gcnew ToolStripButton(
-        "Undo", nullptr,
-        gcnew EventHandler(this, &MainForm::Undo_Click));
-    undoBtn->AutoSize = false;
-    undoBtn->Size = System::Drawing::Size(60, 25);
-    undoBtn->Enabled = false;
-    toolStrip->Items->Add(undoBtn);
-    
-    // Add Undo count label
-    undoCountLabel = gcnew ToolStripLabel("Undo (0)");
-    toolStrip->Items->Add(undoCountLabel);
-    
-    // Add Clear Board button
-    clearBoardBtn = gcnew ToolStripButton(
-        "Clear Board", nullptr,
-        gcnew EventHandler(this, &MainForm::ClearBoard_Click));
-    clearBoardBtn->AutoSize = false;
-    clearBoardBtn->Size = System::Drawing::Size(85, 25);
-    toolStrip->Items->Add(clearBoardBtn);
-    
-    toolStrip->Items->Add(gcnew ToolStripSeparator());
     
     // Add Toggle Notes button
     ToolStripButton^ toggleNotesBtn = gcnew ToolStripButton(
@@ -657,11 +625,6 @@ public ref class MainForm : public System::Windows::Forms::Form {
     toggleNotesBtn->Size = System::Drawing::Size(110, 25);
     toolStrip->Items->Add(toggleNotesBtn);
     
-    toolStrip->Items->Add(gcnew ToolStripSeparator());
-    
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Complete Auto-Solve (A)", nullptr,
-        gcnew EventHandler(this, &MainForm::Solve_Click)));
     toolStrip->Items->Add(gcnew ToolStripSeparator());
 
     toolStrip->Items->Add(gcnew ToolStripButton(
@@ -687,49 +650,6 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     instructionsBox->Font = gcnew System::Drawing::Font(L"Lucida Console", 9); // Consistent fixed-width font
     this->Controls->Add(instructionsBox);
-
-
-    // Basic techniques group
-    toolStrip->Items->Add(gcnew ToolStripLabel("Basic Algorithms: "));
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Standard Elim (S)", nullptr,
-        gcnew EventHandler(this, &MainForm::StdElim_Click)));
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Line Elim (L)", nullptr,
-        gcnew EventHandler(this, &MainForm::LineElim_Click)));
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Hidden Singles (N)", nullptr,
-        gcnew EventHandler(this, &MainForm::HiddenSingles_Click)));
-    toolStrip->Items->Add(gcnew ToolStripSeparator());
-
-    // Advanced techniques group
-    toolStrip->Items->Add(gcnew ToolStripLabel("Advanced Algorithms: "));
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Hidden Pairs (H)", nullptr,
-        gcnew EventHandler(this, &MainForm::HiddenPairs_Click)));
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Pointing Pairs (P)", nullptr,
-        gcnew EventHandler(this, &MainForm::PointingPairs_Click)));
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Naked Sets (K)", nullptr,
-        gcnew EventHandler(this, &MainForm::NakedSets_Click)));
-    toolStrip->Items->Add(gcnew ToolStripSeparator());
-
-    // Expert techniques group
-    toolStrip->Items->Add(gcnew ToolStripLabel("Expert Algorithms: "));
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "X-Wing (X)", nullptr,
-        gcnew EventHandler(this, &MainForm::XWing_Click)));
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "Swordfish (F)", nullptr,
-        gcnew EventHandler(this, &MainForm::Swordfish_Click)));
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "XY-Wing (Y)", nullptr,
-        gcnew EventHandler(this, &MainForm::XYWing_Click)));
-    toolStrip->Items->Add(gcnew ToolStripButton(
-        "XYZ-Wing (;)", nullptr,
-        gcnew EventHandler(this, &MainForm::XYZWing_Click)));
-
 
 
     this->Controls->Add(toolStrip);
@@ -1896,7 +1816,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   MainForm() {
     sudoku = gcnew SudokuWrapper();
     InitializeComponent();
-    GenerateEasy_Click(nullptr, nullptr);
 
     // Set the form icon
     try {
