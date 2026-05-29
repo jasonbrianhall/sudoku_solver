@@ -831,7 +831,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Create a timer for updating debug messages
     Timer^ debugTimer = gcnew Timer();
-    debugTimer->Interval = 100; // Check every 100ms
+    debugTimer->Interval = 16; // ~60fps flush rate
     debugTimer->Tick += gcnew EventHandler(this, &MainForm::UpdateDebugBox);
     debugTimer->Start();
 
@@ -840,15 +840,17 @@ public ref class MainForm : public System::Windows::Forms::Form {
   }
 
   void UpdateDebugBox(Object^ sender, EventArgs^ e) {
-      char* msg;
-      while ((msg = sudoku->NativeSudoku->get_next_debug_message()) != nullptr) {
-          std::string unixMsg(msg);
-          std::string dosMsg = unix2dos(unixMsg);
-          String^ managedMsg = gcnew String(dosMsg.c_str());
-          debugBox->AppendText(managedMsg);
-          debugBox->SelectionStart = debugBox->Text->Length;
-          debugBox->ScrollToCaret();
-      }
+    char* msg;
+    System::Text::StringBuilder^ sb = gcnew System::Text::StringBuilder();
+    while ((msg = sudoku->NativeSudoku->get_next_debug_message()) != nullptr) {
+      sb->Append(gcnew String(msg));
+      sb->Append("\r\n");
+    }
+    if (sb->Length > 0) {
+      debugBox->AppendText(sb->ToString());
+      debugBox->SelectionStart = debugBox->Text->Length;
+      debugBox->ScrollToCaret();
+    }
   }
 
   void Form_Resize(Object^ sender, EventArgs^ e) {
