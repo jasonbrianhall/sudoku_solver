@@ -8,7 +8,7 @@
         char messages[MAX_SIZE][256];
         int front = 0;
         int rear = -1;
-        int size = 0;
+        volatile long size = 0;
     };
 #else
     #ifdef MSDOS
