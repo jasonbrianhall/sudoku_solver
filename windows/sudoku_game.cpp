@@ -901,6 +901,18 @@ public ref class MainForm : public System::Windows::Forms::Form {
     timerLabel->Text = String::Format("{0:D2}:{1:D2}", minutes, seconds);
   }
 
+  String^ GetSaveDir() {
+    String^ appData = Environment::GetFolderPath(Environment::SpecialFolder::ApplicationData);
+    String^ dir = System::IO::Path::Combine(appData, ".sudoku_solver");
+    if (!System::IO::Directory::Exists(dir))
+      System::IO::Directory::CreateDirectory(dir);
+    return dir;
+  }
+
+  String^ GetSavePath(String^ filename) {
+    return System::IO::Path::Combine(GetSaveDir(), filename);
+  }
+
   void ResetTimer() {
     elapsedSeconds = 0;
     timerPaused = false;
@@ -1990,7 +2002,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         break;
       case Keys::F5:
         if (e->Shift) {
-          if (sudoku->LoadFromFile("sudoku_1.txt")) {
+          if (sudoku->LoadFromFile(GetSavePath("sudoku_1.txt"))) {
             ClearDebugBox();
             elapsedSeconds = sudoku->savedElapsedSeconds;
             UpdateGrid();
@@ -1999,14 +2011,14 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
             UpdateStatus("Failed to load sudoku_1.txt");
           }
         } else {
-          sudoku->SaveToFile("sudoku_1.txt", elapsedSeconds);
+          sudoku->SaveToFile(GetSavePath("sudoku_1.txt"), elapsedSeconds);
           UpdateStatus("Game saved to sudoku_1.txt");
         }
         e->Handled = true;
         break;
       case Keys::F6:
         if (e->Shift) {
-          if (sudoku->LoadFromFile("sudoku_2.txt")) {
+          if (sudoku->LoadFromFile(GetSavePath("sudoku_2.txt"))) {
             ClearDebugBox();
             elapsedSeconds = sudoku->savedElapsedSeconds;
             UpdateGrid();
@@ -2015,14 +2027,14 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
             UpdateStatus("Failed to load sudoku_2.txt");
           }
         } else {
-          sudoku->SaveToFile("sudoku_2.txt", elapsedSeconds);
+          sudoku->SaveToFile(GetSavePath("sudoku_2.txt"), elapsedSeconds);
           UpdateStatus("Game saved to sudoku_2.txt");
         }
         e->Handled = true;
         break;
       case Keys::F7:
         if (e->Shift) {
-          if (sudoku->LoadFromFile("sudoku_3.txt")) {
+          if (sudoku->LoadFromFile(GetSavePath("sudoku_3.txt"))) {
             ClearDebugBox();
             elapsedSeconds = sudoku->savedElapsedSeconds;
             UpdateGrid();
@@ -2031,14 +2043,14 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
             UpdateStatus("Failed to load sudoku_3.txt");
           }
         } else {
-          sudoku->SaveToFile("sudoku_3.txt", elapsedSeconds);
+          sudoku->SaveToFile(GetSavePath("sudoku_3.txt"), elapsedSeconds);
           UpdateStatus("Game saved to sudoku_3.txt");
         }
         e->Handled = true;
         break;
       case Keys::F8:
         if (e->Shift) {
-          if (sudoku->LoadFromFile("sudoku_4.txt")) {
+          if (sudoku->LoadFromFile(GetSavePath("sudoku_4.txt"))) {
             ClearDebugBox();
             elapsedSeconds = sudoku->savedElapsedSeconds;
             UpdateGrid();
@@ -2047,7 +2059,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
             UpdateStatus("Failed to load sudoku_4.txt");
           }
         } else {
-          sudoku->SaveToFile("sudoku_4.txt", elapsedSeconds);
+          sudoku->SaveToFile(GetSavePath("sudoku_4.txt"), elapsedSeconds);
           UpdateStatus("Game saved to sudoku_4.txt");
         }
         e->Handled = true;
@@ -2112,14 +2124,16 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   }
 
   void Load_Click(Object ^ sender, EventArgs ^ e) {
-    sudoku->LoadFromFile("sudoku_1.txt");
-    UpdateStatus("Game loaded successfully (sudoku_1.txt)");
-    UpdateGrid();
+    if (sudoku->LoadFromFile(GetSavePath("sudoku_1.txt"))) {
+      elapsedSeconds = sudoku->savedElapsedSeconds;
+      UpdateStatus("Game loaded successfully (slot 1)");
+      UpdateGrid();
+    }
   }
 
   void Save_Click(Object ^ sender, EventArgs ^ e) {
-    sudoku->SaveToFile("sudoku_1.txt", elapsedSeconds);
-    UpdateStatus("Game saved successfully (sudoku_1.txt)");
+    sudoku->SaveToFile(GetSavePath("sudoku_1.txt"), elapsedSeconds);
+    UpdateStatus("Game saved successfully (slot 1)");
   }
 
   void Exit_Click(Object ^ sender, EventArgs ^ e) {
@@ -2204,21 +2218,21 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   void SaveSlot_Click(Object^ sender, EventArgs^ e) {
     ToolStripMenuItem^ menuItem = safe_cast<ToolStripMenuItem^>(sender);
     int slot = safe_cast<int>(menuItem->Tag);
-    String^ filename = "sudoku_slot_" + slot + ".txt";
+    String^ filename = GetSavePath("sudoku_slot_" + slot + ".txt");
     sudoku->SaveToFile(filename, elapsedSeconds);
-    UpdateStatus("Game saved to " + filename);
+    UpdateStatus("Game saved to slot " + slot);
   }
 
   void LoadSlot_Click(Object^ sender, EventArgs^ e) {
     ToolStripMenuItem^ menuItem = safe_cast<ToolStripMenuItem^>(sender);
     int slot = safe_cast<int>(menuItem->Tag);
-    String^ filename = "sudoku_slot_" + slot + ".txt";
+    String^ filename = GetSavePath("sudoku_slot_" + slot + ".txt");
     if (sudoku->LoadFromFile(filename)) {
       elapsedSeconds = sudoku->savedElapsedSeconds;
       UpdateGrid();
-      UpdateStatus("Game loaded from " + filename);
+      UpdateStatus("Game loaded from slot " + slot);
     } else {
-      UpdateStatus("Failed to load " + filename);
+      UpdateStatus("Failed to load slot " + slot);
     }
   }
 
