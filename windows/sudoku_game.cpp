@@ -1252,7 +1252,9 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           array<int>^ position = safe_cast<array<int>^>(textBox->Tag);
           int row = position[0];
           int col = position[1];
-        
+
+          if (sudoku->IsCellLocked(row, col)) return;
+
           // Clear the cell
           sudoku->ClearValue(row, col);
           textBox->Text = "";
