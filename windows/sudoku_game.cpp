@@ -510,7 +510,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
   bool timerPaused;           // pause timer on window deactivate
   int highlightValue;         // currently highlighted digit (0-8, or -1 for none)
   bool colorblindMode;        // use font style instead of color for cell types
-  float gridFontSize;         // current font size for grid numbers
+  float gridFontSize = 32.0f;  // fixed font size
 
   void GeneratePuzzle1(Object ^ sender, EventArgs ^ e) {
     sudoku->ExportToExcelXML("puzzle1.xml");
@@ -717,18 +717,6 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Options Menu
     ToolStripMenuItem^ optionsMenu = gcnew ToolStripMenuItem("Options");
-
-    // Font size submenu
-    ToolStripMenuItem^ fontSizeMenu = gcnew ToolStripMenuItem("Font Size");
-    array<String^>^ fontSizes = {"Small (14)", "Medium (20)", "Large (26)", "Extra Large (32)"};
-    array<float>^ fontSizeVals = {14.0f, 20.0f, 26.0f, 32.0f};
-    for (int i = 0; i < fontSizes->Length; i++) {
-      ToolStripMenuItem^ item = gcnew ToolStripMenuItem(fontSizes[i]);
-      item->Tag = fontSizeVals[i];
-      item->Click += gcnew EventHandler(this, &MainForm::FontSize_Click);
-      fontSizeMenu->DropDownItems->Add(item);
-    }
-    optionsMenu->DropDownItems->Add(fontSizeMenu);
     optionsMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Colorblind Mode", nullptr,
         gcnew EventHandler(this, &MainForm::ColorblindMode_Click)));
@@ -1627,17 +1615,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
   }
 
  private:
-  void FontSize_Click(Object^ sender, EventArgs^ e) {
-    ToolStripMenuItem^ item = safe_cast<ToolStripMenuItem^>(sender);
-    gridFontSize = safe_cast<float>(item->Tag);
-    // Apply to all grid cells
-    for (int i = 0; i < 9; i++)
-      for (int j = 0; j < 9; j++)
-        grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize);
-    ValidateAndHighlight();
-    UpdateStatus("Font size changed");
-  }
-
   void ColorblindMode_Click(Object^ sender, EventArgs^ e) {
     colorblindMode = !colorblindMode;
     ToolStripMenuItem^ item = safe_cast<ToolStripMenuItem^>(sender);
@@ -2293,7 +2270,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     timerPaused = false;
     highlightValue = -1;
     colorblindMode = false;
-    gridFontSize = 20.0f;
     correctQueue = gcnew System::Collections::Generic::Queue<array<int>^>();
     InitializeComponent();
 
