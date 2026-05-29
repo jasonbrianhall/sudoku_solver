@@ -1063,8 +1063,6 @@ private: void SafeSetClipboard(DataObject^ data) {
           grid[i, j]->ReadOnly = false;
           grid[i, j]->Font = gcnew System::Drawing::Font(grid[i, j]->Font, System::Drawing::FontStyle::Regular);
         }
-        
-        ClearNotes(i, j);  // Clear notes when updating grid
       }
     }
     ValidateAndHighlight();
