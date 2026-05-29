@@ -961,9 +961,9 @@ public ref class MainForm : public System::Windows::Forms::Form {
         grid[i, j]->Size = System::Drawing::Size(cellWidth, mainCellHeight);
         grid[i, j]->Location = System::Drawing::Point(j * cellWidth, i * cellHeight);
         
-        // Scale font based on cell size
-        float fontSize = System::Math::Max(8.0f, (float)mainCellHeight * 0.5f);
-        grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", fontSize);
+        // Scale font based on cell size and keep gridFontSize in sync
+        gridFontSize = System::Math::Max(8.0f, (float)mainCellHeight * 0.5f);
+        grid[i, j]->Font = gcnew System::Drawing::Font(L"Arial", gridFontSize);
         
         // Update notes box
         notes[i, j]->Size = System::Drawing::Size(cellWidth, notesCellHeight);
@@ -1009,6 +1009,9 @@ public ref class MainForm : public System::Windows::Forms::Form {
     // Update debug box position and size
     debugBox->Location = Point(gridContainer->Right + 20, gridTop);
     debugBox->Size = System::Drawing::Size(availableWidth - gridWidth - 70, gridHeight);
+
+    // Reapply font styles at new size
+    ValidateAndHighlight();
   }
 
 private: void SafeSetClipboard(DataObject^ data) {
