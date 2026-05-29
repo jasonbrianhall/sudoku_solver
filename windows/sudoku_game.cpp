@@ -1893,13 +1893,6 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
           sudoku->SaveBoardState();
           sudoku->Clean();
           sudoku->SetValue(row, col, enteredVal);
-          // Auto-clear pencil marks in same row, col, and box
-          for (int c = 0; c < 9; c++) ClearNotes(row, c);
-          for (int r = 0; r < 9; r++) ClearNotes(r, col);
-          int boxR = (row / 3) * 3, boxC = (col / 3) * 3;
-          for (int r = boxR; r < boxR + 3; r++)
-            for (int c = boxC; c < boxC + 3; c++)
-              ClearNotes(r, c);
           UpdateGrid();
           UpdateUndoButtonState();
           // Track sliding window for quasi-immutable locking
