@@ -610,11 +610,11 @@ jobs:
       shell: powershell
       run: |
         # Copy individual executables for standalone download
-        Copy-Item "windows/x64/Release/SudokuSolver.exe" "SudokuSolver-${{ env.PRODUCT_VERSION }}.exe" -ErrorAction SilentlyContinue
-        Copy-Item "windows/x64/Release/SudokuGame.exe" "SudokuGame-${{ env.PRODUCT_VERSION }}.exe" -ErrorAction SilentlyContinue
+        Copy-Item "windows/x64/Release/SudokuSolver.exe" "SudokuSolver.exe" -ErrorAction SilentlyContinue
+        Copy-Item "windows/x64/Release/SudokuGame.exe" "SudokuGame.exe" -ErrorAction SilentlyContinue
         
         Write-Host "✅ Independent EXE files created"
-        Get-Item "SudokuSolver-*.exe", "SudokuGame-*.exe" | Select-Object Name
+        Get-Item "SudokuSolver.exe", "SudokuGame.exe" | Select-Object Name
 
     - name: Prepare Release Artifacts
       shell: powershell
@@ -623,8 +623,8 @@ jobs:
         Copy-Item "artifacts/build/windows/Sudoku-*.msi" "release-artifacts/" -ErrorAction SilentlyContinue
         Copy-Item "Sudoku-*.msix" "release-artifacts/" -ErrorAction SilentlyContinue
         Copy-Item "Sudoku-Portable-*.zip" "release-artifacts/" -ErrorAction SilentlyContinue
-        Copy-Item "SudokuSolver-*.exe" "release-artifacts/" -ErrorAction SilentlyContinue
-        Copy-Item "SudokuGame-*.exe" "release-artifacts/" -ErrorAction SilentlyContinue
+        Copy-Item "SudokuSolver.exe" "release-artifacts/" -ErrorAction SilentlyContinue
+        Copy-Item "SudokuGame.exe" "release-artifacts/" -ErrorAction SilentlyContinue
         Get-ChildItem "release-artifacts/"
 
     - name: Upload Artifacts
@@ -660,8 +660,8 @@ jobs:
           release/Sudoku-*.msi
           release/Sudoku-*.msix
           release/Sudoku-Portable-*.zip
-          release/SudokuSolver-*.exe
-          release/SudokuGame-*.exe
+          release/SudokuSolver.exe
+          release/SudokuGame.exe
           release/Sudoku-MSDOS.zip
         tag_name: ${{ github.ref == 'refs/heads/master' && format('v{0}', github.run_number) || format('dev-v{0}', github.run_number) }}
         name: ${{ github.ref == 'refs/heads/master' && format('Release {0}', github.run_number) || format('Dev Build {0}', github.run_number) }}
@@ -675,8 +675,8 @@ jobs:
           - **Sudoku-*.msi** - Windows installer with Start Menu shortcuts
           - **Sudoku-*.msix** - Microsoft Store package (unsigned, ready for Store submission)
           - **Sudoku-Portable-*.zip** - Portable version (all executables in one package)
-          - **SudokuSolver-*.exe** - Standalone C++ Sudoku Solver executable
-          - **SudokuGame-*.exe** - Standalone C++ Sudoku Game executable
+          - **SudokuSolver.exe** - Standalone C++ Sudoku Solver executable
+          - **SudokuGame.exe** - Standalone C++ Sudoku Game executable
           - **Sudoku-MSDOS.zip** - MS-DOS version for retro systems (requires DOSBox)
           
           ## Features
