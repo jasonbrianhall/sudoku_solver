@@ -915,7 +915,9 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
   void ResetTimer() {
     elapsedSeconds = 0;
+    timerPaused = false;
     timerLabel->Text = "00:00";
+    gameTimer->Start();
   }
 
   void UpdateDebugBox(Object^ sender, EventArgs^ e) {
