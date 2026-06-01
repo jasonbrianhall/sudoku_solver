@@ -1558,7 +1558,8 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
         Score score;
         score.name = msclr::interop::marshal_as<std::string>(name);
         score.time = pendingElapsedSeconds;
-        score.difficulty = msclr::interop::marshal_as<std::string>(pendingDiff);
+        String^ localDiff = pendingDiff;
+        score.difficulty = msclr::interop::marshal_as<std::string>(localDiff);
         highscores->addScore(score);
         ShowHighscoresDialog(pendingDiff);
       } else {
@@ -1609,7 +1610,8 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     PlayWinSound();
 
     // Check high score before starting celebration so we can show the right dialog after
-    std::string diffStd = msclr::interop::marshal_as<std::string>(currentDifficulty);
+    String^ localDifficulty = currentDifficulty;
+    std::string diffStd = msclr::interop::marshal_as<std::string>(localDifficulty);
     bool isHigh = highscores->isHighScore(elapsedSeconds, diffStd);
 
     // Kick off the diagonal wave; dialogs shown when animation finishes
