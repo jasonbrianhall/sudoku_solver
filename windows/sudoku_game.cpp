@@ -1,5 +1,4 @@
 // Microsoft Windows Native Version
-// dotnet
 
 #define _HAS_STD_BYTE 0
 #include <msclr/marshal_cppstd.h>
@@ -676,7 +675,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Initialize MenuStrip
     menuStrip = gcnew MenuStrip();
-    ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("Game");
+    ToolStripMenuItem^ fileMenu = gcnew ToolStripMenuItem("&Game");
 
     // New Game submenu
     ToolStripMenuItem^ generateBoardMenu = gcnew ToolStripMenuItem("New Game");
@@ -726,13 +725,13 @@ public ref class MainForm : public System::Windows::Forms::Form {
         "Quit", nullptr, gcnew EventHandler(this, &MainForm::Exit_Click)));
 
     // Options Menu
-    ToolStripMenuItem^ optionsMenu = gcnew ToolStripMenuItem("Options");
+    ToolStripMenuItem^ optionsMenu = gcnew ToolStripMenuItem("&Options");
     optionsMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "Colorblind Mode", nullptr,
         gcnew EventHandler(this, &MainForm::ColorblindMode_Click)));
 
     // Help Menu
-    ToolStripMenuItem^ helpMenu = gcnew ToolStripMenuItem("Help");
+    ToolStripMenuItem^ helpMenu = gcnew ToolStripMenuItem("&Help");
     helpMenu->DropDownItems->Add(gcnew ToolStripMenuItem(
         "About", nullptr,
         gcnew EventHandler(this, &MainForm::About_Click)));
@@ -1507,7 +1506,7 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
       }
     }
 
-    this->Refresh();
+    gridContainer->Refresh();
     celebrationStep++;
 
     if (celebrationStep > totalSteps) {
