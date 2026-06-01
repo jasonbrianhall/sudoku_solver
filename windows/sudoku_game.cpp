@@ -894,6 +894,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
     // Handle form resize to expand grid
     this->Resize += gcnew EventHandler(this, &MainForm::Form_Resize);
+    this->Shown  += gcnew EventHandler(this, &MainForm::Form_Resize);
 
     // Initialize game timer
     elapsedSeconds = 0;
