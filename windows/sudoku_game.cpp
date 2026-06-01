@@ -508,6 +508,14 @@ public ref class MainForm : public System::Windows::Forms::Form {
   String^ currentDifficulty;  // "easy","medium","hard","master","expert" or "" if none
   bool puzzleSolved;          // prevent multiple win triggers
   bool timerPaused;           // pause timer on window deactivate
+
+  // Victory celebration (mirrors Minesweeper diagonal wave)
+  System::Windows::Forms::Timer ^ celebrationTimer;
+  int celebrationStep = 0;
+  // Pending win data captured before the wave starts
+  bool pendingHighScore = false;
+  int  pendingElapsedSeconds = 0;
+  String^ pendingDiff = "";
   int highlightValue;         // currently highlighted digit (0-8, or -1 for none)
   bool colorblindMode;        // use font style instead of color for cell types
   float gridFontSize = 32.0f;  // fixed font size
@@ -550,6 +558,7 @@ public ref class MainForm : public System::Windows::Forms::Form {
 
   void GenerateEasy_Click(Object ^ sender, EventArgs ^ e) {
     if (!ConfirmNewGame()) return;
+    if (celebrationTimer != nullptr) celebrationTimer->Stop();
     PuzzleGenerator generator(*sudoku->NativeSudoku);
     if (generator.generatePuzzle("easy")) {
       sudoku->Clean();
@@ -1441,6 +1450,126 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
                  " at row " + (row + 1).ToString() + ", col " + (col + 1).ToString());
   }
 
+  // ---------------------------------------------------------------
+  // Victory celebration: diagonal gold→green wave across the 9×9 grid
+  // ---------------------------------------------------------------
+  void StartVictoryCelebration(bool isHighScore, int elapsed, String^ diff) {
+    pendingHighScore      = isHighScore;
+    pendingElapsedSeconds = elapsed;
+    pendingDiff           = diff;
+
+    celebrationStep = 0;
+    if (celebrationTimer == nullptr) {
+      celebrationTimer = gcnew System::Windows::Forms::Timer();
+      celebrationTimer->Interval = 30; // ~33 fps
+      celebrationTimer->Tick += gcnew EventHandler(this, &MainForm::CelebrationTick);
+    }
+    celebrationTimer->Start();
+  }
+
+  void CelebrationTick(Object ^ sender, EventArgs ^ e) {
+    const int GRID_SIZE  = 9;
+    int maxDiag   = GRID_SIZE + GRID_SIZE - 2; // 16
+    int totalSteps = maxDiag + 30;
+
+    for (int row = 0; row < GRID_SIZE; row++) {
+      for (int col = 0; col < GRID_SIZE; col++) {
+        TextBox^ cell = grid[row, col];
+        int diag = row + col;
+
+        int waveFront = celebrationStep;
+        int waveBack  = celebrationStep - 8;
+
+        bool inWave    = (diag <= waveFront && diag >= waveBack);
+        bool behindWave = (diag < waveBack);
+
+        if (inWave) {
+          double t = (double)(waveFront - diag) / 8.0;
+          int r = (int)(255 - t * 155); // gold → green-gold
+          int g = (int)(200 + t * 20);
+          int b = (int)(t * 30);
+          cell->BackColor = Color::FromArgb(
+            Math::Max(0, Math::Min(255, r)),
+            Math::Max(0, Math::Min(255, g)),
+            Math::Max(0, Math::Min(255, b)));
+        } else if (behindWave) {
+          int fadeStepsDone = celebrationStep - (diag + 8);
+          double fadeFraction = (double)fadeStepsDone / Math::Max(1, 30);
+          fadeFraction = Math::Max(0.0, Math::Min(1.0, fadeFraction));
+          // Lerp from green (100, 220, 80) → white (255, 255, 255)
+          int r = (int)(100 + fadeFraction * (255 - 100));
+          int g = (int)(220 + fadeFraction * (255 - 220));
+          int b = (int)(80  + fadeFraction * (255 - 80));
+          cell->BackColor = Color::FromArgb(r, g, b);
+        }
+        // cells ahead of wave: untouched
+      }
+    }
+
+    this->Refresh();
+    celebrationStep++;
+
+    if (celebrationStep > totalSteps) {
+      celebrationTimer->Stop();
+      // Restore proper grid colours
+      UpdateGrid();
+
+      // Now show high-score entry / congratulations dialog
+      int mins = pendingElapsedSeconds / 60;
+      int secs = pendingElapsedSeconds % 60;
+      String^ timeStr = String::Format("{0:D2}:{1:D2}", mins, secs);
+      String^ msg = "Congratulations! You solved the " + pendingDiff +
+                    " puzzle in " + timeStr + "!";
+
+      if (pendingHighScore) {
+        msg += "\r\nNew high score! Enter your name:";
+        Form^ inputDlg = gcnew Form();
+        inputDlg->Text = "New High Score!";
+        inputDlg->Size = System::Drawing::Size(340, 160);
+        inputDlg->StartPosition = FormStartPosition::CenterParent;
+        inputDlg->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedDialog;
+        inputDlg->MaximizeBox = false;
+
+        Label^ lbl = gcnew Label();
+        lbl->Text = msg + "\r\nEnter your name:";
+        lbl->Location = Point(10, 10);
+        lbl->Size = System::Drawing::Size(310, 60);
+        inputDlg->Controls->Add(lbl);
+
+        TextBox^ nameTxt = gcnew TextBox();
+        nameTxt->Text = "Player";
+        nameTxt->Location = Point(10, 75);
+        nameTxt->Size = System::Drawing::Size(200, 25);
+        inputDlg->Controls->Add(nameTxt);
+
+        Button^ okBtn = gcnew Button();
+        okBtn->Text = "OK";
+        okBtn->Location = Point(220, 75);
+        okBtn->DialogResult = System::Windows::Forms::DialogResult::OK;
+        inputDlg->Controls->Add(okBtn);
+        inputDlg->AcceptButton = okBtn;
+
+        String^ name = "Anonymous";
+        if (inputDlg->ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
+          name = nameTxt->Text->Trim();
+          if (name == "") name = "Anonymous";
+        }
+
+        Score score;
+        score.name = msclr::interop::marshal_as<std::string>(name);
+        score.time = pendingElapsedSeconds;
+        score.difficulty = msclr::interop::marshal_as<std::string>(pendingDiff);
+        highscores->addScore(score);
+        ShowHighscoresDialog(pendingDiff);
+      } else {
+        MessageBox::Show(this, msg, "Puzzle Solved!", MessageBoxButtons::OK, MessageBoxIcon::Information);
+      }
+
+      int m2 = pendingElapsedSeconds / 60, s2 = pendingElapsedSeconds % 60;
+      UpdateStatus("Puzzle solved in " + String::Format("{0:D2}:{1:D2}", m2, s2) + "!");
+    }
+  }
+
   void CheckForWin() {
     if (puzzleSolved || currentDifficulty == "") return;
 
@@ -1479,63 +1608,13 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
 
     PlayWinSound();
 
-    int mins = elapsedSeconds / 60;
-    int secs = elapsedSeconds % 60;
-    String^ timeStr = String::Format("{0:D2}:{1:D2}", mins, secs);
-    String^ diff = currentDifficulty;
-
-    // Convert to std string for highscores
-    std::string diffStd = msclr::interop::marshal_as<std::string>(diff);
+    // Check high score before starting celebration so we can show the right dialog after
+    std::string diffStd = msclr::interop::marshal_as<std::string>(currentDifficulty);
     bool isHigh = highscores->isHighScore(elapsedSeconds, diffStd);
 
-    String^ msg = "Congratulations! You solved the " + diff + " puzzle in " + timeStr + "!";
-    if (isHigh) msg += "\r\nNew high score! Enter your name:";
-
-    if (isHigh) {
-      // Simple name input dialog
-      Form^ inputDlg = gcnew Form();
-      inputDlg->Text = "New High Score!";
-      inputDlg->Size = System::Drawing::Size(340, 160);
-      inputDlg->StartPosition = FormStartPosition::CenterParent;
-      inputDlg->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedDialog;
-      inputDlg->MaximizeBox = false;
-
-      Label^ lbl = gcnew Label();
-      lbl->Text = msg + "\r\nEnter your name:";
-      lbl->Location = Point(10, 10);
-      lbl->Size = System::Drawing::Size(310, 60);
-      inputDlg->Controls->Add(lbl);
-
-      TextBox^ nameTxt = gcnew TextBox();
-      nameTxt->Text = "Player";
-      nameTxt->Location = Point(10, 75);
-      nameTxt->Size = System::Drawing::Size(200, 25);
-      inputDlg->Controls->Add(nameTxt);
-
-      Button^ okBtn = gcnew Button();
-      okBtn->Text = "OK";
-      okBtn->Location = Point(220, 75);
-      okBtn->DialogResult = System::Windows::Forms::DialogResult::OK;
-      inputDlg->Controls->Add(okBtn);
-      inputDlg->AcceptButton = okBtn;
-
-      String^ name = "Anonymous";
-      if (inputDlg->ShowDialog(this) == System::Windows::Forms::DialogResult::OK) {
-        name = nameTxt->Text->Trim();
-        if (name == "") name = "Anonymous";
-      }
-
-      Score score;
-      score.name = msclr::interop::marshal_as<std::string>(name);
-      score.time = elapsedSeconds;
-      score.difficulty = diffStd;
-      highscores->addScore(score);
-      ShowHighscoresDialog(diff);
-    } else {
-      MessageBox::Show(this, msg, "Puzzle Solved!", MessageBoxButtons::OK, MessageBoxIcon::Information);
-    }
-
-    UpdateStatus("Puzzle solved in " + timeStr + "!");
+    // Kick off the diagonal wave; dialogs shown when animation finishes
+    UpdateStatus("Congratulations! You solved the " + currentDifficulty + " puzzle!");
+    StartVictoryCelebration(isHigh, elapsedSeconds, currentDifficulty);
   }
 
   void ShowHighscoresDialog(String^ highlightDiff) {
@@ -2289,6 +2368,11 @@ void CopyBoard_Click(Object^ sender, EventArgs^ e) {
     timerPaused = false;
     highlightValue = -1;
     colorblindMode = false;
+    celebrationTimer = nullptr;
+    celebrationStep = 0;
+    pendingHighScore = false;
+    pendingElapsedSeconds = 0;
+    pendingDiff = "";
     correctQueue = gcnew System::Collections::Generic::Queue<array<int>^>();
     InitializeComponent();
 
