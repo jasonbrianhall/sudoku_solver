@@ -1,4 +1,5 @@
 // Microsoft Windows Native Version
+// dotnet
 
 #define _HAS_STD_BYTE 0
 #include <msclr/marshal_cppstd.h>
